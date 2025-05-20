@@ -1,5 +1,17 @@
 import React from "react";
-import { Typography, Box, Paper, Divider, CircularProgress, Button } from "@mui/material";
+import {
+  Typography,
+  Box,
+  Paper,
+  Divider,
+  CircularProgress,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions
+} from "@mui/material";
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 import { listEnvoyGateways, listEnvoyHTTPRoutes, checkEnvoyGatewayCRDs, installEnvoyGateway } from "./helper/kubernetes";
 
@@ -13,6 +25,7 @@ export function App() {
   const [isEnvoyGatewayInstalled, setIsEnvoyGatewayInstalled] = React.useState(false);
   const [isInstalling, setIsInstalling] = React.useState(false);
   const [installationError, setInstallationError] = React.useState<string | null>(null);
+  const [quickStartDialogOpen, setQuickStartDialogOpen] = React.useState(false);
 
   const fetchData = React.useCallback(async () => {
     setLoading(true);
@@ -65,6 +78,14 @@ export function App() {
       setInstallationError(typeof e === 'string' ? e : JSON.stringify(e, null, 2));
     }
     setIsInstalling(false);
+  };
+
+  const handleQuickStartOpen = () => {
+    setQuickStartDialogOpen(true);
+  };
+
+  const handleQuickStartClose = () => {
+    setQuickStartDialogOpen(false);
   };
 
   return (
@@ -156,12 +177,57 @@ export function App() {
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6">🚀 Quick Setup</Typography>
             <Divider sx={{ my: 1 }} />
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               Get started with Envoy Gateway quickly for learning and local development.
             </Typography>
+            <Button 
+              variant="contained" 
+              color="primary" 
+              onClick={handleQuickStartOpen}
+              sx={{ mt: 1 }}
+            >
+              Launch Quick Start
+            </Button>
           </Paper>
         </>
       )}
+
+      {/* Quick Start Dialog */}
+      <Dialog
+        open={quickStartDialogOpen}
+        onClose={handleQuickStartClose}
+        aria-labelledby="quick-start-dialog-title"
+        aria-describedby="quick-start-dialog-description"
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle id="quick-start-dialog-title">
+          🚀 Envoy Gateway Quick Start
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="quick-start-dialog-description" sx={{ mb: 2 }}>
+            Welcome to the Envoy Gateway Quick Start! This wizard will help you get started with common Envoy Gateway use cases.
+            Choose one of the examples below to deploy a complete working configuration to your Kubernetes cluster.
+          </DialogContentText>
+          <Typography variant="subtitle1" sx={{ mt: 3, mb: 1 }}>
+            Available Examples:
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            • Basic HTTP Routing - Deploy a simple web service with HTTP routing
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            • TLS Termination - Secure your services with HTTPS
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            • Traffic Splitting - Route traffic to multiple versions of a service
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleQuickStartClose} color="primary">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
