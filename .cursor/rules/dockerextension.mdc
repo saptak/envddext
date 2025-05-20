@@ -1,0 +1,9 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+always first uninstall the old extension before a clean rebuild and installation the new docker extension
+while installing the docker extension us the --force flag
+break down every request into small tasks that do not regress or break the functionalities. 
+clean rebuild, install and take feedback from user after every task to verify the functionality of the docker extension. if the docker extension is not functional revert back the codebase to last known functional state, before trying out any new tasks to fulfil the request.

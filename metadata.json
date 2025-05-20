@@ -1,0 +1,42 @@
+{
+  "name": "Envoy Gateway",
+  "description": "Manage and observe Envoy Gateway resources in your local Kubernetes cluster using Docker Desktop.",
+  "icon": "docker.svg",
+  "ui": {
+    "dashboard-tab": {
+      "title": "Envoy Gateway",
+      "src": "index.html",
+      "root": "ui"
+    }
+  },
+  "host": {
+    "binaries": [
+      {
+        "darwin": [
+          { "path": "/darwin/kubectl" }
+        ],
+        "linux": [
+          { "path": "/linux/kubectl" }
+        ],
+        "windows": [
+          { "path": "/windows/kubectl.exe" }
+        ]
+      },
+      {
+        "name": "helm",
+        "darwin": [
+          { "path": "/darwin/helm" },
+          { "path": "/darwin/helm-arm64", "arch": "arm64" }
+        ],
+        "linux": [
+          { "path": "/linux/helm" },
+          { "path": "/linux/helm-arm64", "arch": "arm64" }
+        ],
+        "windows": [
+          { "path": "/windows/helm.exe" },
+          { "path": "/windows/helm-arm64.exe", "arch": "arm64" }
+        ]
+      }
+    ]
+  }
+}
