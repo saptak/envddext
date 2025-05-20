@@ -10,10 +10,21 @@ import {
   DialogTitle,
   DialogContent,
   DialogContentText,
-  DialogActions
+  DialogActions,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Card,
+  CardContent,
+  CardActions,
+  Grid,
+  Snackbar,
+  Alert
 } from "@mui/material";
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 import { listEnvoyGateways, listEnvoyHTTPRoutes, checkEnvoyGatewayCRDs, installEnvoyGateway } from "./helper/kubernetes";
+import { getTemplatesMetadata, loadTemplate, applyTemplate, Template, TemplateMetadata } from "./services/templateService";
 
 const ddClient = createDockerDesktopClient();
 
@@ -26,6 +37,14 @@ export function App() {
   const [isInstalling, setIsInstalling] = React.useState(false);
   const [installationError, setInstallationError] = React.useState<string | null>(null);
   const [quickStartDialogOpen, setQuickStartDialogOpen] = React.useState(false);
+
+  // Template related state
+  const [templates, setTemplates] = React.useState<TemplateMetadata[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = React.useState<Template | null>(null);
+  const [templateYaml, setTemplateYaml] = React.useState<string>('');
+  const [isApplyingTemplate, setIsApplyingTemplate] = React.useState(false);
+  const [templateError, setTemplateError] = React.useState<string | null>(null);
+  const [templateSuccess, setTemplateSuccess] = React.useState<boolean>(false);
 
   const fetchData = React.useCallback(async () => {
     setLoading(true);
@@ -81,11 +100,66 @@ export function App() {
   };
 
   const handleQuickStartOpen = () => {
+    // Load templates metadata when opening the dialog
+    setTemplates(getTemplatesMetadata());
+    setSelectedTemplate(null);
+    setTemplateYaml('');
+    setTemplateError(null);
+    setTemplateSuccess(false);
     setQuickStartDialogOpen(true);
   };
 
   const handleQuickStartClose = () => {
     setQuickStartDialogOpen(false);
+  };
+
+  const handleTemplateSelect = async (templateId: string) => {
+    setTemplateError(null);
+    setTemplateSuccess(false);
+
+    try {
+      const template = await loadTemplate(templateId);
+      setSelectedTemplate(template);
+
+      if (template) {
+        // Combine all resources into a single YAML document with separators
+        const yaml = template.resources.join('\n---\n');
+        setTemplateYaml(yaml);
+      } else {
+        setTemplateError(`Failed to load template: ${templateId}`);
+      }
+    } catch (e: any) {
+      console.error('Error loading template:', e);
+      setTemplateError(typeof e === 'string' ? e : JSON.stringify(e, null, 2));
+    }
+  };
+
+  const handleApplyTemplate = async () => {
+    if (!selectedTemplate) {
+      setTemplateError('No template selected');
+      return;
+    }
+
+    setIsApplyingTemplate(true);
+    setTemplateError(null);
+    setTemplateSuccess(false);
+
+    try {
+      const result = await applyTemplate(ddClient, selectedTemplate);
+
+      if (result.success) {
+        setTemplateSuccess(true);
+        // Refresh the list of gateways and routes
+        await fetchData();
+      } else {
+        setTemplateError(result.error || 'Unknown error applying template');
+      }
+    } catch (e: any) {
+      console.error('Error applying template:', e);
+      setTemplateError(typeof e === 'string' ? e : JSON.stringify(e, null, 2));
+    } finally {
+      setIsApplyingTemplate(false);
+    }
   };
 
   return (
@@ -123,9 +197,9 @@ export function App() {
             Envoy Gateway Custom Resource Definitions (CRDs) were not found in your Kubernetes cluster.
             Please install Envoy Gateway to use this extension.
           </Typography>
-          <Button 
-            variant="contained" 
-            color="primary" 
+          <Button
+            variant="contained"
+            color="primary"
             onClick={handleInstallClick}
             disabled={isInstalling}
           >
@@ -180,9 +254,9 @@ export function App() {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               Get started with Envoy Gateway quickly for learning and local development.
             </Typography>
-            <Button 
-              variant="contained" 
-              color="primary" 
+            <Button
+              variant="contained"
+              color="primary"
               onClick={handleQuickStartOpen}
               sx={{ mt: 1 }}
             >
@@ -209,18 +283,113 @@ export function App() {
             Welcome to the Envoy Gateway Quick Start! This wizard will help you get started with common Envoy Gateway use cases.
             Choose one of the examples below to deploy a complete working configuration to your Kubernetes cluster.
           </DialogContentText>
-          <Typography variant="subtitle1" sx={{ mt: 3, mb: 1 }}>
-            Available Examples:
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            • Basic HTTP Routing - Deploy a simple web service with HTTP routing
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            • TLS Termination - Secure your services with HTTPS
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            • Traffic Splitting - Route traffic to multiple versions of a service
-          </Typography>
+
+          {templateError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {templateError}
+            </Alert>
+          )}
+
+          {templateSuccess && (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              Template applied successfully!
+            </Alert>
+          )}
+
+          {!selectedTemplate ? (
+            <>
+              <Typography variant="subtitle1" sx={{ mt: 3, mb: 1 }}>
+                Available Examples:
+              </Typography>
+              <Grid container spacing={2}>
+                {templates.map((template) => (
+                  <Grid item xs={12} md={6} key={template.id}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom>
+                          {template.name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {template.description}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                          Difficulty: {template.difficulty}
+                        </Typography>
+                      </CardContent>
+                      <CardActions>
+                        <Button
+                          size="small"
+                          color="primary"
+                          onClick={() => handleTemplateSelect(template.id)}
+                        >
+                          Select
+                        </Button>
+                      </CardActions>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            </>
+          ) : (
+            <>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6">
+                  {selectedTemplate.metadata.name}
+                </Typography>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => setSelectedTemplate(null)}
+                >
+                  Back to Templates
+                </Button>
+              </Box>
+
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                {selectedTemplate.metadata.description}
+              </Typography>
+
+              <Typography variant="subtitle1" sx={{ mt: 3, mb: 1 }}>
+                Template YAML:
+              </Typography>
+
+              <Paper
+                elevation={0}
+                variant="outlined"
+                sx={{
+                  mb: 2,
+                  maxHeight: '300px',
+                  overflow: 'auto',
+                  backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                }}
+              >
+                <Box
+                  component="pre"
+                  sx={{
+                    fontFamily: 'monospace',
+                    fontSize: '0.875rem',
+                    p: 2,
+                    m: 0,
+                    overflowX: 'auto',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word'
+                  }}
+                >
+                  {templateYaml}
+                </Box>
+              </Paper>
+
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleApplyTemplate}
+                disabled={isApplyingTemplate}
+                sx={{ mt: 2 }}
+              >
+                {isApplyingTemplate ? "Applying..." : "Apply Template"}
+              </Button>
+            </>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleQuickStartClose} color="primary">
@@ -228,6 +397,17 @@ export function App() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Success Snackbar */}
+      <Snackbar
+        open={templateSuccess}
+        autoHideDuration={6000}
+        onClose={() => setTemplateSuccess(false)}
+      >
+        <Alert onClose={() => setTemplateSuccess(false)} severity="success">
+          Template applied successfully!
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
