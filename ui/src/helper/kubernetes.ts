@@ -90,16 +90,16 @@ export const listNamespaces = async (ddClient: v1.DockerDesktopClient) => {
 export const listEnvoyGateways = async (ddClient: v1.DockerDesktopClient) => {
   const output = await ddClient.extension.host?.cli.exec("kubectl", [
     "get",
-    "gateways.gateway.envoyproxy.io",
+    "gateways.gateway.networking.k8s.io",
     "-A",
     "-o",
     "json"
   ]);
-  if (output?.stderr) {
+  if (output?.stderr && !output.stderr.includes("not found")) {
     return { error: output.stderr };
   }
   try {
-    return JSON.parse(output?.stdout || '{}');
+    return JSON.parse(output?.stdout || '{"items":[]}');
   } catch (e) {
     return { error: 'Failed to parse gateways JSON' };
   }
@@ -108,16 +108,16 @@ export const listEnvoyGateways = async (ddClient: v1.DockerDesktopClient) => {
 export const listEnvoyHTTPRoutes = async (ddClient: v1.DockerDesktopClient) => {
   const output = await ddClient.extension.host?.cli.exec("kubectl", [
     "get",
-    "httproutes.gateway.envoyproxy.io",
+    "httproutes.gateway.networking.k8s.io",
     "-A",
     "-o",
     "json"
   ]);
-  if (output?.stderr) {
+  if (output?.stderr && !output.stderr.includes("not found")) {
     return { error: output.stderr };
   }
   try {
-    return JSON.parse(output?.stdout || '{}');
+    return JSON.parse(output?.stdout || '{"items":[]}');
   } catch (e) {
     return { error: 'Failed to parse httproutes JSON' };
   }
@@ -125,74 +125,54 @@ export const listEnvoyHTTPRoutes = async (ddClient: v1.DockerDesktopClient) => {
 
 export const installEnvoyGateway = async (ddClient: v1.DockerDesktopClient, version: string = "latest") => {
   try {
-    // Check if the release already exists
-    const statusOutput = await ddClient.extension.host?.cli.exec("helm", [
-      "status",
-      "envoy-gateway"
-    ]);
-    console.log("Helm status output:", statusOutput);
-
-    // If the release exists (status command does not return "release: not found" in stderr), uninstall it.
-    if (statusOutput?.stderr?.includes("release: not found")) {
-      console.log("Envoy Gateway release not found, skipping uninstall.");
-    } else {
-      console.log("Envoy Gateway release found, attempting uninstall.");
+    // First, try to uninstall any existing Envoy Gateway installation
+    try {
+      console.log("Attempting to uninstall any existing Envoy Gateway installation...");
       const uninstallOutput = await ddClient.extension.host?.cli.exec("helm", [
         "uninstall",
         "envoy-gateway"
       ]);
       console.log("Helm uninstall output:", uninstallOutput);
-
-      // Check for errors during uninstall, ignoring "release: not found" which shouldn't happen here but as a safeguard.
-      if (uninstallOutput?.stderr && !uninstallOutput.stderr.includes("release: not found")) {
-        return { error: uninstallOutput.stderr };
-      }
+    } catch (uninstallError) {
+      // Ignore uninstall errors - the release might not exist
+      console.log("Uninstall error (likely release not found, which is fine):", uninstallError);
     }
 
-    // Add the Envoy Gateway Helm repository
-    const repoAddOutput = await ddClient.extension.host?.cli.exec("helm", [
-      "repo",
-      "add",
-      "envoy-gateway",
-      "https://envoyproxy.github.io/envoy-gateway-helm"
-    ]);
-    console.log("Helm repo add output:", repoAddOutput);
-
-    if (repoAddOutput?.stderr) {
-      return { error: repoAddOutput.stderr };
-    }
-
-    // Update Helm repositories
-    const repoUpdateOutput = await ddClient.extension.host?.cli.exec("helm", [
-      "repo",
-      "update"
-    ]);
-    console.log("Helm repo update output:", repoUpdateOutput);
-
-    if (repoUpdateOutput?.stderr) {
-      return { error: repoUpdateOutput.stderr };
-    }
-
-    // Install Envoy Gateway using Helm
+    // Install Envoy Gateway directly from OCI registry
+    console.log("Installing Envoy Gateway from OCI registry...");
     const installOutput = await ddClient.extension.host?.cli.exec("helm", [
       "install",
       "envoy-gateway",
-      "envoy-gateway/envoy-gateway",
+      "oci://docker.io/envoyproxy/gateway-helm",
       "--version",
       version === "latest" ? "v0.0.0-latest" : version,
-      "--set",
-      "installCRDs=true",
+      "--namespace",
+      "envoy-gateway-system",
+      "--create-namespace",
       "--wait",
       "--debug"
     ]);
     console.log("Helm install output:", installOutput);
 
-    if (installOutput?.stderr && installOutput.stderr.startsWith('Error: ')) {
+    if (installOutput?.stderr && installOutput.stderr.includes('Error: ') &&
+        !installOutput.stderr.includes('already exists')) {
       return { error: installOutput.stderr };
     }
 
+    // Wait for a few seconds to allow CRDs to be properly registered
+    console.log("Waiting for CRDs to be properly registered...");
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
     // Verify CRDs are installed
-    const crdCheck = await checkEnvoyGatewayCRDs(ddClient);
+    let crdCheck = await checkEnvoyGatewayCRDs(ddClient);
+
+    // If first check fails, wait a bit longer and try again
+    if (!crdCheck) {
+      console.log("First CRD check failed, waiting longer...");
+      await new Promise(resolve => setTimeout(resolve, 10000));
+      crdCheck = await checkEnvoyGatewayCRDs(ddClient);
+    }
+
     if (!crdCheck) {
       return { error: "Failed to verify Envoy Gateway CRDs installation" };
     }
@@ -206,18 +186,69 @@ export const installEnvoyGateway = async (ddClient: v1.DockerDesktopClient, vers
 
 export const checkEnvoyGatewayCRDs = async (ddClient: v1.DockerDesktopClient): Promise<boolean> => {
   try {
-    const output = await ddClient.extension.host?.cli.exec("kubectl", [
-      "api-resources",
+    // First, check if the namespace exists
+    const nsOutput = await ddClient.extension.host?.cli.exec("kubectl", [
+      "get",
+      "namespace",
+      "envoy-gateway-system",
+      "--no-headers",
+      "--ignore-not-found"
     ]);
-    if (output?.stderr) {
-      console.error("Error checking for CRDs:", output.stderr);
+
+    if (!nsOutput?.stdout || nsOutput.stdout.trim() === "") {
+      console.log("Envoy Gateway namespace not found");
       return false;
     }
-    console.log("CRD check output:", output?.stdout);
-    // Check if the output contains the specific CRD name
-    return output?.stdout?.includes("gateways.gateway.envoyproxy.io") || false;
+
+    // Check if the deployment is running
+    const deployOutput = await ddClient.extension.host?.cli.exec("kubectl", [
+      "get",
+      "deployment",
+      "-n",
+      "envoy-gateway-system",
+      "envoy-gateway",
+      "--no-headers",
+      "--ignore-not-found"
+    ]);
+
+    if (!deployOutput?.stdout || deployOutput.stdout.trim() === "") {
+      console.log("Envoy Gateway deployment not found");
+      return false;
+    }
+
+    // Check for Gateway API CRDs
+    const crdOutput = await ddClient.extension.host?.cli.exec("kubectl", [
+      "get",
+      "crd",
+      "gateways.gateway.networking.k8s.io",
+      "httproutes.gateway.networking.k8s.io",
+      "--no-headers",
+      "--ignore-not-found"
+    ]);
+
+    if (!crdOutput?.stdout || crdOutput.stdout.trim() === "") {
+      console.log("Gateway API CRDs not found");
+      return false;
+    }
+
+    // Check for Envoy Gateway specific CRDs
+    const egCrdOutput = await ddClient.extension.host?.cli.exec("kubectl", [
+      "get",
+      "crd",
+      "envoyproxies.gateway.envoyproxy.io",
+      "--no-headers",
+      "--ignore-not-found"
+    ]);
+
+    if (!egCrdOutput?.stdout || egCrdOutput.stdout.trim() === "") {
+      console.log("Envoy Gateway specific CRDs not found");
+      return false;
+    }
+
+    // All checks passed
+    return true;
   } catch (e) {
-    console.error("Error executing kubectl api-resources:", e);
+    console.error("Error checking Envoy Gateway installation:", e);
     return false;
   }
 };
