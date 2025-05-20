@@ -6,11 +6,12 @@ This document outlines the detailed implementation plan for enhancing the Envoy 
 
 ## Iteration 1: Quick Start Button Enhancement
 
-### Task 1.1: Add Basic Quick Start Button (1-2 days)
-- [ ] Add a prominent "Quick Start" button to the main Envoy Gateway screen
-- [ ] Implement a simple dialog that appears when clicked
-- [ ] Add placeholder text explaining the purpose of Quick Start
+### Task 1.1: Add Basic Quick Start Button (1-2 days) ✅
+- [x] Add a prominent "Quick Start" button to the main Envoy Gateway screen
+- [x] Implement a simple dialog that appears when clicked
+- [x] Add placeholder text explaining the purpose of Quick Start
 - **Testable Outcome**: Button appears and dialog opens when clicked
+- **Completed**: May 20, 2023
 
 ### Task 1.2: Create Sample YAML Template Storage (1-2 days)
 - [ ] Create a simple storage mechanism for YAML templates
