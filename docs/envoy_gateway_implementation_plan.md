@@ -13,11 +13,12 @@ This document outlines the detailed implementation plan for enhancing the Envoy 
 - **Testable Outcome**: Button appears and dialog opens when clicked
 - **Completed**: May 20, 2023
 
-### Task 1.2: Create Sample YAML Template Storage (1-2 days)
-- [ ] Create a simple storage mechanism for YAML templates
-- [ ] Add a basic echo service template as the first example
-- [ ] Implement template loading functionality
+### Task 1.2: Create Sample YAML Template Storage (1-2 days) ✅
+- [x] Create a simple storage mechanism for YAML templates
+- [x] Add a basic echo service template as the first example
+- [x] Implement template loading functionality
 - **Testable Outcome**: Template can be loaded and displayed in the console
+- **Completed**: May 22, 2023
 
 ### Task 1.3: Implement Basic Template Deployment (2-3 days)
 - [ ] Add functionality to deploy the echo service template to Kubernetes
