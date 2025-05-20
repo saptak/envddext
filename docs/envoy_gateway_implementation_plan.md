@@ -2,183 +2,195 @@
 
 ## Overview
 
-This document outlines the detailed implementation plan for enhancing the Envoy Gateway Docker Desktop extension with guided workflows and templates for common use cases. The plan is organized into phases with atomic tasks to ensure incremental progress and testing.
+This document outlines the detailed implementation plan for enhancing the Envoy Gateway Docker Desktop extension with guided workflows and templates for common use cases. The plan is organized into iterative cycles, with each task delivering a testable improvement to functionality. This approach allows for continuous validation and feedback throughout the development process.
 
-## Phase 1: Foundation and Architecture
+## Iteration 1: Quick Start Button Enhancement
 
-### Task 1.1: Project Setup and Planning
-- [ ] Review existing codebase and architecture
-- [ ] Define component structure for new features
-- [ ] Create detailed UI wireframes for new workflows
-- [ ] Define data models for templates and tutorials
-- [ ] Set up development environment with test fixtures
+### Task 1.1: Add Basic Quick Start Button (1-2 days)
+- [ ] Add a prominent "Quick Start" button to the main Envoy Gateway screen
+- [ ] Implement a simple dialog that appears when clicked
+- [ ] Add placeholder text explaining the purpose of Quick Start
+- **Testable Outcome**: Button appears and dialog opens when clicked
 
-### Task 1.2: Core Infrastructure
-- [ ] Create template storage and management system
-- [ ] Implement resource deployment tracking mechanism
-- [ ] Develop resource validation utilities
-- [ ] Create YAML generation and parsing utilities
-- [ ] Implement error handling and reporting system
+### Task 1.2: Create Sample YAML Template Storage (1-2 days)
+- [ ] Create a simple storage mechanism for YAML templates
+- [ ] Add a basic echo service template as the first example
+- [ ] Implement template loading functionality
+- **Testable Outcome**: Template can be loaded and displayed in the console
 
-### Task 1.3: UI Framework Enhancements
-- [ ] Create reusable components for guided workflows
-- [ ] Implement step tracking and progress indicators
-- [ ] Develop resource visualization components
-- [ ] Create form generation system for configuration
-- [ ] Implement YAML preview and editing components
+### Task 1.3: Implement Basic Template Deployment (2-3 days)
+- [ ] Add functionality to deploy the echo service template to Kubernetes
+- [ ] Implement basic error handling for deployment failures
+- [ ] Add deployment status indicator
+- **Testable Outcome**: Echo service can be deployed to the cluster with a single click
 
-## Phase 2: Basic HTTP Routing Use Case
+## Iteration 2: HTTP Routing Example
 
-### Task 2.1: Backend Services
-- [ ] Create sample application container images
-  - [ ] Simple HTTP echo service
-  - [ ] Demo web application
-- [ ] Implement deployment scripts for sample applications
-- [ ] Create Kubernetes resource templates for services
-- [ ] Implement service health checking
+### Task 2.1: Create Echo Service Deployment (1-2 days)
+- [ ] Implement deployment of a simple HTTP echo service
+- [ ] Add service status monitoring
+- [ ] Create visual indicator of pod readiness
+- **Testable Outcome**: Echo service deploys and shows ready status
 
-### Task 2.2: Gateway Configuration
-- [ ] Create Gateway resource templates
-- [ ] Implement HTTPRoute resource templates
-- [ ] Develop configuration validation logic
-- [ ] Create deployment workflow for Gateway resources
+### Task 2.2: Implement Basic Gateway Creation (2 days)
+- [ ] Add functionality to create a basic Gateway resource
+- [ ] Implement status checking for Gateway resource
+- [ ] Create visual representation of Gateway status
+- **Testable Outcome**: Gateway resource is created and status is displayed
 
-### Task 2.3: UI Implementation
-- [ ] Implement HTTP routing tutorial workflow
-- [ ] Create visual representation of HTTP routing
-- [ ] Implement testing tools for routes
-- [ ] Develop success verification mechanisms
-- [ ] Create documentation for HTTP routing use case
+### Task 2.3: Add HTTPRoute Configuration (2 days)
+- [ ] Implement HTTPRoute creation for the echo service
+- [ ] Add validation for route configuration
+- [ ] Create visual indicator of route status
+- **Testable Outcome**: HTTPRoute is created and properly routes to the echo service
 
-## Phase 3: TLS Termination Use Case
+### Task 2.4: Add Testing Tools (1-2 days)
+- [ ] Implement a simple HTTP client in the UI
+- [ ] Add request/response display
+- [ ] Create copy-to-clipboard for curl commands
+- **Testable Outcome**: Users can test the route directly from the UI
 
-### Task 3.1: Certificate Management
-- [ ] Implement self-signed certificate generation
-- [ ] Create certificate storage and management
-- [ ] Develop Kubernetes Secret creation for certificates
-- [ ] Implement certificate validation utilities
+## Iteration 3: Enhanced UI and Visualization
 
-### Task 3.2: TLS Configuration
-- [ ] Create Gateway TLS configuration templates
-- [ ] Implement TLS validation logic
-- [ ] Develop TLS testing utilities
-- [ ] Create TLS status verification mechanisms
+### Task 3.1: Improve Resource Cards (1-2 days)
+- [ ] Enhance Gateway and Route cards with more details
+- [ ] Add expand/collapse functionality
+- [ ] Implement status badges with tooltips
+- **Testable Outcome**: Resource cards show detailed information in an organized way
 
-### Task 3.3: UI Implementation
-- [ ] Implement TLS configuration workflow
-- [ ] Create visual representation of TLS termination
-- [ ] Develop TLS testing interface
-- [ ] Create documentation for TLS termination use case
+### Task 3.2: Create Basic Resource Visualization (2-3 days)
+- [ ] Implement a simple diagram showing Gateway and Routes
+- [ ] Add visual connections between related resources
+- [ ] Create interactive elements for resource selection
+- **Testable Outcome**: Users can see relationships between Gateway and Routes visually
 
-## Phase 4: Traffic Splitting Use Case
+### Task 3.3: Add Resource Management Actions (2 days)
+- [ ] Implement delete functionality for resources
+- [ ] Add refresh capability for resource status
+- [ ] Create edit button placeholders
+- **Testable Outcome**: Users can manage existing resources with basic actions
 
-### Task 4.1: Multi-Version Services
-- [ ] Create versioned sample application images
-- [ ] Implement deployment scripts for multiple versions
-- [ ] Create Kubernetes resource templates for versioned services
-- [ ] Implement version identification mechanisms
+## Iteration 4: TLS Termination Example
 
-### Task 4.2: Traffic Split Configuration
-- [ ] Create HTTPRoute templates with weighted targets
-- [ ] Implement weight validation logic
-- [ ] Develop traffic distribution visualization
-- [ ] Create traffic split testing utilities
+### Task 4.1: Implement Certificate Generation (2 days)
+- [ ] Add self-signed certificate generation functionality
+- [ ] Create storage for certificate data
+- [ ] Implement Kubernetes Secret creation
+- **Testable Outcome**: Self-signed certificates are generated and stored as Secrets
 
-### Task 4.3: UI Implementation
-- [ ] Implement traffic splitting workflow
-- [ ] Create visual representation of traffic distribution
-- [ ] Develop traffic testing interface with results
-- [ ] Create documentation for traffic splitting use case
+### Task 4.2: Create TLS Gateway Configuration (2 days)
+- [ ] Implement TLS Gateway template
+- [ ] Add certificate selection dropdown
+- [ ] Create validation for TLS configuration
+- **Testable Outcome**: TLS Gateway is created with selected certificate
 
-## Phase 5: Rate Limiting Use Case
+### Task 4.3: Add HTTPS Testing Tools (1-2 days)
+- [ ] Enhance HTTP client with HTTPS support
+- [ ] Add certificate trust warnings and overrides
+- [ ] Implement response security indicators
+- **Testable Outcome**: Users can test HTTPS endpoints with certificate validation
 
-### Task 5.1: Rate Limit Configuration
+## Iteration 5: Traffic Splitting Example
+
+### Task 5.1: Deploy Multi-Version Application (2 days)
+- [ ] Implement deployment of two application versions
+- [ ] Add version labels and selectors
+- [ ] Create service for each version
+- **Testable Outcome**: Two versions of an application are deployed and accessible
+
+### Task 5.2: Implement Weight-Based Routing (2 days)
+- [ ] Create HTTPRoute with weighted backends
+- [ ] Add weight adjustment UI with sliders
+- [ ] Implement weight validation
+- **Testable Outcome**: Traffic is split between versions according to weights
+
+### Task 5.3: Add Traffic Simulation (2-3 days)
+- [ ] Implement traffic simulator sending multiple requests
+- [ ] Create results visualization showing distribution
+- [ ] Add statistics for request distribution
+- **Testable Outcome**: Users can simulate traffic and see the distribution between versions
+
+## Iteration 6: Configuration Forms and Wizards
+
+### Task 6.1: Create Resource Creation Wizard (2-3 days)
+- [ ] Implement multi-step wizard for resource creation
+- [ ] Add form validation for each step
+- [ ] Create progress indicator
+- **Testable Outcome**: Users can create resources through a guided wizard
+
+### Task 6.2: Implement YAML Editor (2 days)
+- [ ] Add YAML editor with syntax highlighting
+- [ ] Implement validation for Gateway API resources
+- [ ] Create toggle between form and YAML views
+- **Testable Outcome**: Users can edit YAML directly with validation
+
+### Task 6.3: Add Template Gallery (2 days)
+- [ ] Create gallery view of available templates
+- [ ] Add filtering and search functionality
+- [ ] Implement template preview
+- **Testable Outcome**: Users can browse and select from available templates
+
+## Iteration 7: Rate Limiting Example
+
+### Task 7.1: Implement Rate Limit Configuration (2-3 days)
 - [ ] Create rate limit policy templates
-- [ ] Implement rate limit configuration validation
-- [ ] Develop rate limit testing utilities
-- [ ] Create rate limit status verification mechanisms
+- [ ] Add configuration form for rate limits
+- [ ] Implement policy application to routes
+- **Testable Outcome**: Rate limit policies are applied to routes
 
-### Task 5.2: UI Implementation
-- [ ] Implement rate limiting configuration workflow
-- [ ] Create visual representation of rate limits
-- [ ] Develop rate limit testing interface
-- [ ] Create documentation for rate limiting use case
+### Task 7.2: Add Rate Limit Testing (2 days)
+- [ ] Implement load testing tool for rate limits
+- [ ] Create visual indicator of rate limit status
+- [ ] Add request counter and throttling display
+- **Testable Outcome**: Users can test rate limits and see when requests are throttled
 
-## Phase 6: JWT Authentication Use Case
+## Iteration 8: JWT Authentication Example
 
-### Task 6.1: JWT Configuration
-- [ ] Create JWT provider configuration templates
-- [ ] Implement JWT token generation for testing
-- [ ] Develop JWT validation utilities
-- [ ] Create JWT status verification mechanisms
+### Task 8.1: Implement JWT Configuration (2-3 days)
+- [ ] Create JWT security policy templates
+- [ ] Add JWT provider configuration form
+- [ ] Implement policy application to routes
+- **Testable Outcome**: JWT authentication is applied to routes
 
-### Task 6.2: UI Implementation
-- [ ] Implement JWT configuration workflow
-- [ ] Create visual representation of JWT authentication
-- [ ] Develop JWT testing interface
-- [ ] Create documentation for JWT authentication use case
+### Task 8.2: Add JWT Testing Tools (2 days)
+- [ ] Implement JWT token generator
+- [ ] Create token validation display
+- [ ] Add request authentication testing
+- **Testable Outcome**: Users can generate tokens and test JWT authentication
 
-## Phase 7: Resource Visualization and Management
+## Iteration 9: Documentation and Help
 
-### Task 7.1: Resource Dashboard
-- [ ] Enhance Gateway resource visualization
-- [ ] Implement HTTPRoute visualization with relationships
-- [ ] Create traffic flow visualization
-- [ ] Develop resource health indicators
-
-### Task 7.2: Resource Management
-- [ ] Implement resource editing capabilities
-- [ ] Create resource deletion workflows
-- [ ] Develop resource export functionality
-- [ ] Implement resource import capabilities
-
-## Phase 8: Documentation and Tutorials
-
-### Task 8.1: In-App Documentation
+### Task 9.1: Add Contextual Help (2 days)
+- [ ] Implement help tooltips for UI elements
 - [ ] Create concept explanations for Gateway API
-- [ ] Implement contextual help system
-- [ ] Develop reference documentation for resources
-- [ ] Create troubleshooting guides
+- [ ] Add links to official documentation
+- **Testable Outcome**: Users can access help information contextually
 
-### Task 8.2: Tutorials
-- [ ] Implement tutorial framework
-- [ ] Create step-by-step guides for each use case
-- [ ] Develop interactive elements for tutorials
-- [ ] Implement tutorial progress tracking
+### Task 9.2: Create Interactive Tutorials (3 days)
+- [ ] Implement step-by-step tutorial framework
+- [ ] Create first tutorial for basic HTTP routing
+- [ ] Add progress tracking for tutorials
+- **Testable Outcome**: Users can follow an interactive tutorial for basic routing
 
-## Phase 9: Testing and Quality Assurance
+## Iteration 10: Polish and Refinement
 
-### Task 9.1: Unit Testing
-- [ ] Create unit tests for all new components
-- [ ] Implement test fixtures for resource templates
-- [ ] Develop mocks for Kubernetes interactions
-- [ ] Create automated test suite
+### Task 10.1: Improve Error Handling (2 days)
+- [ ] Enhance error messages with troubleshooting tips
+- [ ] Implement recovery suggestions for common errors
+- [ ] Add diagnostic information collection
+- **Testable Outcome**: Users receive helpful error messages with recovery steps
 
-### Task 9.2: Integration Testing
-- [ ] Implement end-to-end tests for workflows
-- [ ] Create test scenarios for each use case
-- [ ] Develop performance tests
-- [ ] Implement cross-browser testing
+### Task 10.2: Optimize Performance (2 days)
+- [ ] Improve resource loading and caching
+- [ ] Optimize UI rendering for large resource sets
+- [ ] Implement background refresh for resource status
+- **Testable Outcome**: UI remains responsive with many resources
 
-### Task 9.3: User Testing
-- [ ] Create user testing plan
-- [ ] Implement feedback collection mechanism
-- [ ] Conduct user testing sessions
-- [ ] Analyze and prioritize feedback
-
-## Phase 10: Deployment and Release
-
-### Task 10.1: Packaging
-- [ ] Update extension metadata
-- [ ] Create release notes
-- [ ] Update documentation
-- [ ] Prepare marketing materials
-
-### Task 10.2: Release
-- [ ] Perform final QA testing
-- [ ] Create release package
-- [ ] Submit to Docker Desktop Extension Marketplace
-- [ ] Monitor initial adoption and feedback
+### Task 10.3: Prepare for Release (2 days)
+- [ ] Update extension metadata and documentation
+- [ ] Create release notes highlighting features
+- [ ] Perform final testing across platforms
+- **Testable Outcome**: Extension is ready for submission to marketplace
 
 ## Implementation Details
 
