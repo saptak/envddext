@@ -24,7 +24,7 @@ import {
 } from "@mui/material";
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 import { listEnvoyGateways, listEnvoyHTTPRoutes, checkEnvoyGatewayCRDs, installEnvoyGateway } from "./helper/kubernetes";
-import { getTemplatesMetadata, loadTemplate, applyTemplate, Template, TemplateMetadata } from "./services/templateService";
+import { getTemplatesMetadata, loadTemplate, applyTemplate, Template, TemplateMetadata, checkDeploymentStatus } from "./services/templateService";
 
 const ddClient = createDockerDesktopClient();
 
@@ -45,6 +45,13 @@ export function App() {
   const [isApplyingTemplate, setIsApplyingTemplate] = React.useState(false);
   const [templateError, setTemplateError] = React.useState<string | null>(null);
   const [templateSuccess, setTemplateSuccess] = React.useState<boolean>(false);
+
+  // Add new state variables
+  const [deploymentStatus, setDeploymentStatus] = React.useState<{
+    status: 'pending' | 'ready' | 'failed';
+    message?: string;
+  } | null>(null);
+  const [statusCheckInterval, setStatusCheckInterval] = React.useState<NodeJS.Timeout | null>(null);
 
   const fetchData = React.useCallback(async () => {
     setLoading(true);
@@ -134,33 +141,66 @@ export function App() {
     }
   };
 
-  const handleApplyTemplate = async () => {
-    if (!selectedTemplate) {
-      setTemplateError('No template selected');
-      return;
+  // Add status checking function
+  const checkTemplateDeploymentStatus = async () => {
+    if (!selectedTemplate) return;
+    
+    try {
+      const status = await checkDeploymentStatus(ddClient, selectedTemplate);
+      setDeploymentStatus(status);
+      
+      if (status.status === 'ready' || status.status === 'failed') {
+        if (statusCheckInterval) {
+          clearInterval(statusCheckInterval);
+          setStatusCheckInterval(null);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking deployment status:', error);
+      setDeploymentStatus({
+        status: 'failed',
+        message: 'Failed to check deployment status'
+      });
     }
+  };
 
+  // Update handleApplyTemplate
+  const handleApplyTemplate = async () => {
+    if (!selectedTemplate) return;
+    
     setIsApplyingTemplate(true);
     setTemplateError(null);
     setTemplateSuccess(false);
-
+    setDeploymentStatus(null);
+    
     try {
       const result = await applyTemplate(ddClient, selectedTemplate);
-
+      
       if (result.success) {
         setTemplateSuccess(true);
-        // Refresh the list of gateways and routes
-        await fetchData();
+        // Start checking deployment status
+        const interval = setInterval(checkTemplateDeploymentStatus, 2000);
+        setStatusCheckInterval(interval);
+        // Initial check
+        await checkTemplateDeploymentStatus();
       } else {
-        setTemplateError(result.error || 'Unknown error applying template');
+        setTemplateError(result.error || 'Failed to apply template');
       }
-    } catch (e: any) {
-      console.error('Error applying template:', e);
-      setTemplateError(typeof e === 'string' ? e : JSON.stringify(e, null, 2));
+    } catch (error: any) {
+      setTemplateError(typeof error === 'string' ? error : JSON.stringify(error, null, 2));
     } finally {
       setIsApplyingTemplate(false);
     }
   };
+
+  // Clean up interval on unmount
+  React.useEffect(() => {
+    return () => {
+      if (statusCheckInterval) {
+        clearInterval(statusCheckInterval);
+      }
+    };
+  }, [statusCheckInterval]);
 
   return (
     <Box sx={{ p: 4 }}>
@@ -339,7 +379,14 @@ export function App() {
                 <Button
                   variant="outlined"
                   size="small"
-                  onClick={() => setSelectedTemplate(null)}
+                  onClick={() => {
+                    setSelectedTemplate(null);
+                    if (statusCheckInterval) {
+                      clearInterval(statusCheckInterval);
+                      setStatusCheckInterval(null);
+                    }
+                    setDeploymentStatus(null);
+                  }}
                 >
                   Back to Templates
                 </Button>
@@ -348,6 +395,18 @@ export function App() {
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 {selectedTemplate.metadata.description}
               </Typography>
+
+              {deploymentStatus && (
+                <Alert 
+                  severity={
+                    deploymentStatus.status === 'ready' ? 'success' :
+                    deploymentStatus.status === 'failed' ? 'error' : 'info'
+                  }
+                  sx={{ mb: 2 }}
+                >
+                  {deploymentStatus.message}
+                </Alert>
+              )}
 
               <Typography variant="subtitle1" sx={{ mt: 3, mb: 1 }}>
                 Template YAML:

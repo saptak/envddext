@@ -207,3 +207,107 @@ EOF`
     };
   }
 };
+
+/**
+ * Check deployment status for a template
+ * @param ddClient Docker Desktop client
+ * @param template Template to check status for
+ */
+export const checkDeploymentStatus = async (
+  ddClient: v1.DockerDesktopClient,
+  template: Template
+): Promise<{ status: 'pending' | 'ready' | 'failed'; message?: string }> => {
+  try {
+    // Check namespace
+    const nsOutput = await ddClient.extension.host?.cli.exec("kubectl", [
+      "get",
+      "namespace",
+      "demo",
+      "--no-headers",
+      "--ignore-not-found"
+    ]);
+
+    if (!nsOutput?.stdout || nsOutput.stdout.trim() === "") {
+      return { status: 'pending', message: 'Namespace not created yet' };
+    }
+
+    // Check deployment
+    const deployOutput = await ddClient.extension.host?.cli.exec("kubectl", [
+      "get",
+      "deployment",
+      "-n",
+      "demo",
+      "echo-service",
+      "-o",
+      "json"
+    ]);
+
+    if (!deployOutput?.stdout) {
+      return { status: 'pending', message: 'Deployment not created yet' };
+    }
+
+    const deployment = JSON.parse(deployOutput.stdout);
+    const availableReplicas = deployment.status?.availableReplicas || 0;
+    const desiredReplicas = deployment.spec?.replicas || 0;
+
+    if (availableReplicas < desiredReplicas) {
+      return { 
+        status: 'pending', 
+        message: `Deployment in progress: ${availableReplicas}/${desiredReplicas} replicas ready` 
+      };
+    }
+
+    // Check service
+    const svcOutput = await ddClient.extension.host?.cli.exec("kubectl", [
+      "get",
+      "service",
+      "-n",
+      "demo",
+      "echo-service",
+      "--no-headers",
+      "--ignore-not-found"
+    ]);
+
+    if (!svcOutput?.stdout || svcOutput.stdout.trim() === "") {
+      return { status: 'pending', message: 'Service not created yet' };
+    }
+
+    // Check gateway
+    const gwOutput = await ddClient.extension.host?.cli.exec("kubectl", [
+      "get",
+      "gateway",
+      "-n",
+      "demo",
+      "demo-gateway",
+      "--no-headers",
+      "--ignore-not-found"
+    ]);
+
+    if (!gwOutput?.stdout || gwOutput.stdout.trim() === "") {
+      return { status: 'pending', message: 'Gateway not created yet' };
+    }
+
+    // Check HTTPRoute
+    const routeOutput = await ddClient.extension.host?.cli.exec("kubectl", [
+      "get",
+      "httproute",
+      "-n",
+      "demo",
+      "echo-route",
+      "--no-headers",
+      "--ignore-not-found"
+    ]);
+
+    if (!routeOutput?.stdout || routeOutput.stdout.trim() === "") {
+      return { status: 'pending', message: 'HTTPRoute not created yet' };
+    }
+
+    return { status: 'ready', message: 'All resources deployed successfully' };
+  } catch (error: any) {
+    console.error("Error checking deployment status:", error);
+    return { 
+      status: 'failed', 
+      message: typeof error === 'string' ? error : JSON.stringify(error, null, 2) 
+    };
+  }
+};
