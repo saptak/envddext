@@ -30,29 +30,30 @@ This document outlines the detailed implementation plan for enhancing the Envoy 
 
 ## Iteration 2: HTTP Routing Example
 
-### Task 2.1: Create Echo Service Deployment (1-2 days)
-- [ ] Implement deployment of a simple HTTP echo service
-- [ ] Add service status monitoring
-- [ ] Create visual indicator of pod readiness
-- **Testable Outcome**: Echo service deploys and shows ready status
+### Task 2.1: Enhance Echo Service Deployment Monitoring (1-2 days)
+- [x] ~~Implement deployment of a simple HTTP echo service~~ (Already implemented via templates)
+- [ ] Enhance service status monitoring with detailed pod information
+- [ ] Create improved visual indicators of pod readiness with real-time updates
+- [ ] Add troubleshooting guidance for common deployment issues
+- **Testable Outcome**: Echo service deployment shows detailed status with enhanced visual feedback
 
 ### Task 2.2: Implement Basic Gateway Creation (2 days)
-- [ ] Add functionality to create a basic Gateway resource
-- [ ] Implement status checking for Gateway resource
-- [ ] Create visual representation of Gateway status
-- **Testable Outcome**: Gateway resource is created and status is displayed
+- [ ] Add dedicated UI for creating and configuring Gateway resources
+- [ ] Implement status checking for Gateway resource with detailed feedback
+- [ ] Create visual representation of Gateway status and listener configuration
+- **Testable Outcome**: Users can create and monitor Gateway resources with detailed status information
 
 ### Task 2.3: Add HTTPRoute Configuration (2 days)
-- [ ] Implement HTTPRoute creation for the echo service
-- [ ] Add validation for route configuration
-- [ ] Create visual indicator of route status
-- **Testable Outcome**: HTTPRoute is created and properly routes to the echo service
+- [ ] Implement dedicated UI for HTTPRoute creation with rule configuration
+- [ ] Add validation for route configuration to prevent common mistakes
+- [ ] Create visual indicator of route status and connection to Gateway
+- **Testable Outcome**: Users can create HTTPRoutes with proper validation and see their connection to Gateways
 
 ### Task 2.4: Add Testing Tools (1-2 days)
-- [ ] Implement a simple HTTP client in the UI
-- [ ] Add request/response display
-- [ ] Create copy-to-clipboard for curl commands
-- **Testable Outcome**: Users can test the route directly from the UI
+- [ ] Implement a simple HTTP client in the UI for testing routes
+- [ ] Add request/response display with formatting for different content types
+- [ ] Create copy-to-clipboard for curl commands to test outside the UI
+- **Testable Outcome**: Users can test routes directly from the UI and see results
 
 ## Iteration 3: Enhanced UI and Visualization
 
