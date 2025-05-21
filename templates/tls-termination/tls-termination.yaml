@@ -1,0 +1,95 @@
+# TLS Termination Template
+# This template demonstrates TLS termination at the Gateway
+
+# Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo
+---
+# Echo Service Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echo-service
+  namespace: demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: echo-service
+  template:
+    metadata:
+      labels:
+        app: echo-service
+    spec:
+      containers:
+      - name: echo-service
+        image: ealen/echo-server:latest
+        ports:
+        - containerPort: 8080
+---
+# Echo Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo-service
+  namespace: demo
+spec:
+  selector:
+    app: echo-service
+  ports:
+  - port: 80
+    targetPort: 8080
+---
+# Self-signed certificate for demo purposes
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: demo-cert
+  namespace: demo
+spec:
+  dnsNames:
+  - example.com
+  secretName: demo-cert-tls
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+---
+# Gateway with TLS
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: demo-gateway
+  namespace: demo
+spec:
+  gatewayClassName: envoy-gateway
+  listeners:
+  - name: https
+    port: 443
+    protocol: HTTPS
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - name: demo-cert-tls
+    allowedRoutes:
+      namespaces:
+        from: Same
+---
+# HTTPRoute
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: echo-route
+  namespace: demo
+spec:
+  parentRefs:
+  - name: demo-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: echo-service
+      port: 80

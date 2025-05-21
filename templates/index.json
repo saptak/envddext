@@ -1,0 +1,26 @@
+[
+  {
+    "id": "basic-http-echo",
+    "name": "Basic HTTP Echo Service",
+    "description": "Deploy a simple echo service with HTTP routing through Envoy Gateway",
+    "category": "basic-http",
+    "difficulty": "beginner",
+    "yamlUrl": "https://raw.githubusercontent.com/saptak/envoygatewaytemplates/main/templates/basic-http/echo-service.yaml"
+  },
+  {
+    "id": "tls-termination",
+    "name": "TLS Termination",
+    "description": "Secure your services with HTTPS using TLS termination at the Gateway",
+    "category": "tls",
+    "difficulty": "intermediate",
+    "yamlUrl": "https://raw.githubusercontent.com/saptak/envoygatewaytemplates/main/templates/tls-termination/tls-termination.yaml"
+  },
+  {
+    "id": "traffic-splitting",
+    "name": "Traffic Splitting",
+    "description": "Route traffic to multiple versions of a service with weighted routing",
+    "category": "traffic-splitting",
+    "difficulty": "intermediate",
+    "yamlUrl": "https://raw.githubusercontent.com/saptak/envoygatewaytemplates/main/templates/traffic-splitting/traffic-splitting.yaml"
+  }
+]

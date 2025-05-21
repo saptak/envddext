@@ -24,8 +24,9 @@ This document outlines the detailed implementation plan for enhancing the Envoy 
 - [x] Add functionality to deploy the echo service template to Kubernetes
 - [x] Implement basic error handling for deployment failures
 - [x] Add deployment status indicator
+- [x] Add support for applying templates directly from GitHub URLs
 - **Testable Outcome**: Echo service can be deployed to the cluster with a single click
-- **Completed**: May 22, 2023
+- **Completed**: May 21, 2023
 
 ## Iteration 2: HTTP Routing Example
 

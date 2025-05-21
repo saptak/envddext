@@ -5,6 +5,7 @@ This extension allows you to manage and observe Envoy Gateway resources in your 
 - View Gateways and Routes
 - Quick setup for Envoy Gateway with guided workflows
 - Template library for common Gateway API configurations
+- Apply templates directly from GitHub repositories
 
 ## Features
 
@@ -19,6 +20,12 @@ This extension allows you to manage and observe Envoy Gateway resources in your 
 - Access guided workflows for common Envoy Gateway use cases
 - Deploy sample applications with pre-configured Gateway resources
 - Learn Envoy Gateway concepts through interactive examples
+
+### GitHub Templates
+
+- Apply Envoy Gateway templates directly from GitHub repositories
+- Use templates from the community or your own repositories
+- Streamlined workflow for applying common Gateway API configurations
 
 ## Build and Install
 

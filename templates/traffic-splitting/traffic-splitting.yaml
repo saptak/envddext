@@ -1,0 +1,128 @@
+# Traffic Splitting Template
+# This template demonstrates traffic splitting between two versions of a service
+
+# Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo
+---
+# Echo Service v1 Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echo-service-v1
+  namespace: demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: echo-service
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: echo-service
+        version: v1
+    spec:
+      containers:
+      - name: echo-service
+        image: ealen/echo-server:latest
+        env:
+        - name: VERSION
+          value: "v1"
+        ports:
+        - containerPort: 8080
+---
+# Echo Service v2 Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echo-service-v2
+  namespace: demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: echo-service
+      version: v2
+  template:
+    metadata:
+      labels:
+        app: echo-service
+        version: v2
+    spec:
+      containers:
+      - name: echo-service
+        image: ealen/echo-server:latest
+        env:
+        - name: VERSION
+          value: "v2"
+        ports:
+        - containerPort: 8080
+---
+# Echo Service v1
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo-service-v1
+  namespace: demo
+spec:
+  selector:
+    app: echo-service
+    version: v1
+  ports:
+  - port: 80
+    targetPort: 8080
+---
+# Echo Service v2
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo-service-v2
+  namespace: demo
+spec:
+  selector:
+    app: echo-service
+    version: v2
+  ports:
+  - port: 80
+    targetPort: 8080
+---
+# Gateway
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: demo-gateway
+  namespace: demo
+spec:
+  gatewayClassName: envoy-gateway
+  listeners:
+  - name: http
+    port: 80
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: Same
+---
+# HTTPRoute with traffic splitting
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: echo-route
+  namespace: demo
+spec:
+  parentRefs:
+  - name: demo-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: echo-service-v1
+      port: 80
+      weight: 80
+    - name: echo-service-v2
+      port: 80
+      weight: 20

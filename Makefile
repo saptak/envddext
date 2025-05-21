@@ -10,7 +10,7 @@ build-extension: ## Build service image to be deployed as a desktop extension
 	docker buildx build --tag=$(IMAGE):$(TAG) . --load
 
 install-extension: build-extension ## Install the extension
-	docker extension install $(IMAGE):$(TAG)
+	docker extension install $(IMAGE):$(TAG) --force
 
 update-extension: build-extension ## Update the extension
 	docker extension update $(IMAGE):$(TAG)

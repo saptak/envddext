@@ -144,11 +144,11 @@ export function App() {
   // Add status checking function
   const checkTemplateDeploymentStatus = async () => {
     if (!selectedTemplate) return;
-    
+
     try {
       const status = await checkDeploymentStatus(ddClient, selectedTemplate);
       setDeploymentStatus(status);
-      
+
       if (status.status === 'ready' || status.status === 'failed') {
         if (statusCheckInterval) {
           clearInterval(statusCheckInterval);
@@ -167,15 +167,15 @@ export function App() {
   // Update handleApplyTemplate
   const handleApplyTemplate = async () => {
     if (!selectedTemplate) return;
-    
+
     setIsApplyingTemplate(true);
     setTemplateError(null);
     setTemplateSuccess(false);
     setDeploymentStatus(null);
-    
+
     try {
       const result = await applyTemplate(ddClient, selectedTemplate);
-      
+
       if (result.success) {
         setTemplateSuccess(true);
         // Start checking deployment status
@@ -326,7 +326,32 @@ export function App() {
 
           {templateError && (
             <Alert severity="error" sx={{ mb: 2 }}>
-              {templateError}
+              <Typography variant="subtitle2" fontWeight="bold">Error:</Typography>
+              <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                {templateError}
+              </Typography>
+              {templateError.includes("Gateway API CRDs are not installed") && (
+                <Box sx={{ mt: 1 }}>
+                  <Typography variant="subtitle2">Troubleshooting:</Typography>
+                  <Typography variant="body2">
+                    1. Make sure Envoy Gateway is installed by clicking the "Install Envoy Gateway" button on the main page.
+                  </Typography>
+                  <Typography variant="body2">
+                    2. If the issue persists, try restarting Docker Desktop and Kubernetes.
+                  </Typography>
+                </Box>
+              )}
+              {templateError.includes("Failed to create GatewayClass") && (
+                <Box sx={{ mt: 1 }}>
+                  <Typography variant="subtitle2">Troubleshooting:</Typography>
+                  <Typography variant="body2">
+                    1. Check if Kubernetes is running properly.
+                  </Typography>
+                  <Typography variant="body2">
+                    2. Verify that Envoy Gateway is installed correctly.
+                  </Typography>
+                </Box>
+              )}
             </Alert>
           )}
 
@@ -397,14 +422,21 @@ export function App() {
               </Typography>
 
               {deploymentStatus && (
-                <Alert 
+                <Alert
                   severity={
                     deploymentStatus.status === 'ready' ? 'success' :
                     deploymentStatus.status === 'failed' ? 'error' : 'info'
                   }
                   sx={{ mb: 2 }}
                 >
-                  {deploymentStatus.message}
+                  <Typography variant="subtitle2" fontWeight="bold">
+                    {deploymentStatus.status === 'ready' ? 'Deployment Status: Ready' :
+                     deploymentStatus.status === 'failed' ? 'Deployment Status: Failed' :
+                     'Deployment Status: In Progress'}
+                  </Typography>
+                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                    {deploymentStatus.message}
+                  </Typography>
                 </Alert>
               )}
 
