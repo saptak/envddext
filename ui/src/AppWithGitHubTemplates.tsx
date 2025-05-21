@@ -207,6 +207,9 @@ export function App() {
         setStatusCheckInterval(interval);
         // Initial check
         await checkTemplateDeploymentStatus();
+
+        // Refresh the UI with the latest gateways and routes
+        await fetchData();
       } else {
         setTemplateError(result.error || 'Failed to apply template');
       }
@@ -235,6 +238,9 @@ export function App() {
         setStatusCheckInterval(interval);
         // Initial check
         await checkTemplateDeploymentStatus();
+
+        // Refresh the UI with the latest gateways and routes
+        await fetchData();
       } else {
         setTemplateError(result.error || 'Failed to apply template from URL');
       }
@@ -298,13 +304,23 @@ export function App() {
         <>
           {/* Main Content */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleQuickStartOpen}
-            >
-              Quick Start
-            </Button>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleQuickStartOpen}
+              >
+                Quick Start
+              </Button>
+              <Button
+                variant="outlined"
+                color="secondary"
+                onClick={fetchData}
+                disabled={loading}
+              >
+                {loading ? "Refreshing..." : "Refresh Resources"}
+              </Button>
+            </Box>
           </Box>
 
           {/* Gateways Section */}
