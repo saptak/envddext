@@ -27,6 +27,38 @@ This extension allows you to manage and observe Envoy Gateway resources in your 
 - Use templates from the community or your own repositories
 - Streamlined workflow for applying common Gateway API configurations
 
+## Current Status
+
+This extension is currently in active development. The following features are implemented:
+
+### ✅ Completed Features
+- Basic Envoy Gateway installation and status checking
+- Gateway and HTTPRoute resource listing
+- Template-based deployment system with GitHub integration
+- Quick start dialog with common templates
+- Apply templates from GitHub URLs
+- Real-time deployment status monitoring
+- Automatic UI refresh after template application
+- **Enhanced Deployment Monitoring** (Task 2.1 ✅):
+  - Detailed pod status monitoring with container information
+  - Real-time status updates with configurable refresh intervals
+  - Automatic issue detection and troubleshooting guidance
+  - Visual indicators for pod readiness and deployment health
+  - Tabbed UI interface for better organization
+  - Service endpoint monitoring
+
+### 🚧 In Progress
+- Gateway and HTTPRoute creation forms (Task 2.2)
+- HTTP client for testing routes (Task 2.4)
+
+### 📋 Planned Features
+- TLS termination configuration
+- Traffic splitting examples
+- Rate limiting configuration
+- JWT authentication setup
+- Interactive tutorials and documentation
+- Resource visualization and management tools
+
 ## Build and Install
 
 ```bash
