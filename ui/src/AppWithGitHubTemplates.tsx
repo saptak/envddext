@@ -20,7 +20,9 @@ import {
   CardActions,
   Grid,
   Snackbar,
-  Alert
+  Alert,
+  Tab,
+  Tabs
 } from "@mui/material";
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 import { listEnvoyGateways, listEnvoyHTTPRoutes, checkEnvoyGatewayCRDs, installEnvoyGateway } from "./helper/kubernetes";
@@ -33,6 +35,7 @@ import {
   TemplateMetadata,
   checkDeploymentStatus
 } from "./services/githubTemplateService";
+import { DeploymentStatusMonitor } from "./components/DeploymentStatusMonitor";
 
 const ddClient = createDockerDesktopClient();
 
@@ -62,6 +65,21 @@ export function App() {
     message?: string;
   } | null>(null);
   const [statusCheckInterval, setStatusCheckInterval] = React.useState<NodeJS.Timeout | null>(null);
+
+  // Add tab state and deployed services tracking
+  const [currentTab, setCurrentTab] = React.useState<number>(0);
+  const [deployedServices, setDeployedServices] = React.useState<{
+    namespace: string;
+    deploymentName: string;
+    serviceName: string;
+  }[]>([
+    // Default echo service from basic-http template
+    {
+      namespace: 'demo',
+      deploymentName: 'echo-service',
+      serviceName: 'echo-service'
+    }
+  ]);
 
   const fetchData = React.useCallback(async () => {
     setLoading(true);
@@ -141,6 +159,11 @@ export function App() {
     setQuickStartDialogOpen(false);
   };
 
+  // Handle tab change
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setCurrentTab(newValue);
+  };
+
   const handleTemplateSelect = async (templateId: string) => {
     setTemplateError(null);
     setTemplateSuccess(false);
@@ -210,6 +233,28 @@ export function App() {
 
         // Refresh the UI with the latest gateways and routes
         await fetchData();
+
+        // Track deployed services based on template ID
+        if (selectedTemplate.metadata.id === 'basic-http-echo') {
+          // Check if service is already tracked
+          const exists = deployedServices.some(
+            service => service.namespace === 'demo' && service.deploymentName === 'echo-service'
+          );
+
+          if (!exists) {
+            setDeployedServices(prev => [
+              ...prev,
+              {
+                namespace: 'demo',
+                deploymentName: 'echo-service',
+                serviceName: 'echo-service'
+              }
+            ]);
+          }
+
+          // Switch to the Deployment Status tab
+          setCurrentTab(1);
+        }
       } else {
         setTemplateError(result.error || 'Failed to apply template');
       }
@@ -241,6 +286,29 @@ export function App() {
 
         // Refresh the UI with the latest gateways and routes
         await fetchData();
+
+        // Track deployed services based on URL
+        // Check if it's a basic-http template
+        if (url.includes('basic-http') || url.includes('echo-service')) {
+          // Check if service is already tracked
+          const exists = deployedServices.some(
+            service => service.namespace === 'demo' && service.deploymentName === 'echo-service'
+          );
+
+          if (!exists) {
+            setDeployedServices(prev => [
+              ...prev,
+              {
+                namespace: 'demo',
+                deploymentName: 'echo-service',
+                serviceName: 'echo-service'
+              }
+            ]);
+          }
+
+          // Switch to the Deployment Status tab
+          setCurrentTab(1);
+        }
       } else {
         setTemplateError(result.error || 'Failed to apply template from URL');
       }
@@ -323,39 +391,98 @@ export function App() {
             </Box>
           </Box>
 
-          {/* Gateways Section */}
-          <Paper sx={{ p: 2, mb: 3 }}>
-            <Typography variant="h6">Gateways</Typography>
-            <Divider sx={{ my: 1 }} />
-            {gateways.length === 0 ? (
-              <Typography variant="body2" color="text.secondary">
-                No gateways found
-              </Typography>
-            ) : (
-              gateways.map((gw: any) => (
-                <Typography key={gw.metadata.uid} variant="body2">
-                  {gw.metadata.name} (ns: {gw.metadata.namespace})
-                </Typography>
-              ))
-            )}
-          </Paper>
+          {/* Tabs for different views */}
+          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+            <Tabs value={currentTab} onChange={handleTabChange} aria-label="envoy gateway tabs">
+              <Tab label="Resources" id="tab-0" aria-controls="tabpanel-0" />
+              <Tab label="Deployment Status" id="tab-1" aria-controls="tabpanel-1" />
+            </Tabs>
+          </Box>
 
-          {/* Routes Section */}
-          <Paper sx={{ p: 2, mb: 3 }}>
-            <Typography variant="h6">Routes</Typography>
-            <Divider sx={{ my: 1 }} />
-            {routes.length === 0 ? (
-              <Typography variant="body2" color="text.secondary">
-                No routes found
-              </Typography>
-            ) : (
-              routes.map((rt: any) => (
-                <Typography key={rt.metadata.uid} variant="body2">
-                  {rt.metadata.name} (ns: {rt.metadata.namespace})
-                </Typography>
-              ))
+          {/* Resources Tab */}
+          <Box
+            role="tabpanel"
+            hidden={currentTab !== 0}
+            id="tabpanel-0"
+            aria-labelledby="tab-0"
+          >
+            {currentTab === 0 && (
+              <>
+                {/* Gateways Section */}
+                <Paper sx={{ p: 2, mb: 3 }}>
+                  <Typography variant="h6">Gateways</Typography>
+                  <Divider sx={{ my: 1 }} />
+                  {gateways.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary">
+                      No gateways found
+                    </Typography>
+                  ) : (
+                    gateways.map((gw: any) => (
+                      <Typography key={gw.metadata.uid} variant="body2">
+                        {gw.metadata.name} (ns: {gw.metadata.namespace})
+                      </Typography>
+                    ))
+                  )}
+                </Paper>
+
+                {/* Routes Section */}
+                <Paper sx={{ p: 2, mb: 3 }}>
+                  <Typography variant="h6">Routes</Typography>
+                  <Divider sx={{ my: 1 }} />
+                  {routes.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary">
+                      No routes found
+                    </Typography>
+                  ) : (
+                    routes.map((rt: any) => (
+                      <Typography key={rt.metadata.uid} variant="body2">
+                        {rt.metadata.name} (ns: {rt.metadata.namespace})
+                      </Typography>
+                    ))
+                  )}
+                </Paper>
+              </>
             )}
-          </Paper>
+          </Box>
+
+          {/* Deployment Status Tab */}
+          <Box
+            role="tabpanel"
+            hidden={currentTab !== 1}
+            id="tabpanel-1"
+            aria-labelledby="tab-1"
+          >
+            {currentTab === 1 && (
+              <>
+                <Typography variant="h6" gutterBottom>
+                  Deployment Status
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  Monitor the status of your deployed services. This view provides detailed information about pods, containers, and troubleshooting guidance.
+                </Typography>
+
+                {deployedServices.map((service, index) => (
+                  <DeploymentStatusMonitor
+                    key={index}
+                    ddClient={ddClient}
+                    namespace={service.namespace}
+                    deploymentName={service.deploymentName}
+                    serviceName={service.serviceName}
+                    autoRefresh={true}
+                    refreshInterval={5000}
+                  />
+                ))}
+
+                {deployedServices.length === 0 && (
+                  <Paper sx={{ p: 2, textAlign: 'center' }}>
+                    <Typography variant="body1" color="text.secondary">
+                      No deployments found. Apply a template to create deployments.
+                    </Typography>
+                  </Paper>
+                )}
+              </>
+            )}
+          </Box>
         </>
       )}
 

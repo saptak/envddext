@@ -184,6 +184,254 @@ export const installEnvoyGateway = async (ddClient: v1.DockerDesktopClient, vers
   }
 };
 
+/**
+ * Get detailed status of a deployment
+ * @param ddClient Docker Desktop client
+ * @param namespace Namespace of the deployment
+ * @param name Name of the deployment
+ * @returns Detailed deployment status information
+ */
+export const getDetailedDeploymentStatus = async (
+  ddClient: v1.DockerDesktopClient,
+  namespace: string,
+  name: string
+): Promise<{
+  status: 'ready' | 'pending' | 'failed' | 'not_found';
+  readyReplicas: number;
+  desiredReplicas: number;
+  message?: string;
+  deployment?: any;
+  age?: string;
+  conditions?: any[];
+}> => {
+  try {
+    // Get deployment details
+    const deployOutput = await ddClient.extension.host?.cli.exec("kubectl", [
+      "get",
+      "deployment",
+      "-n",
+      namespace,
+      name,
+      "-o",
+      "json",
+      "--ignore-not-found"
+    ]);
+
+    if (!deployOutput?.stdout || deployOutput.stdout.trim() === "") {
+      return {
+        status: 'not_found',
+        readyReplicas: 0,
+        desiredReplicas: 0,
+        message: `Deployment '${name}' not found in namespace '${namespace}'`
+      };
+    }
+
+    const deployment = JSON.parse(deployOutput.stdout);
+    const readyReplicas = deployment.status?.readyReplicas || 0;
+    const desiredReplicas = deployment.spec?.replicas || 0;
+    const conditions = deployment.status?.conditions || [];
+
+    // Calculate age
+    const creationTimestamp = new Date(deployment.metadata.creationTimestamp);
+    const now = new Date();
+    const ageMs = now.getTime() - creationTimestamp.getTime();
+    const ageMinutes = Math.floor(ageMs / (1000 * 60));
+    const ageHours = Math.floor(ageMinutes / 60);
+    const ageDays = Math.floor(ageHours / 24);
+
+    let age = '';
+    if (ageDays > 0) {
+      age = `${ageDays}d`;
+    } else if (ageHours > 0) {
+      age = `${ageHours}h`;
+    } else {
+      age = `${ageMinutes}m`;
+    }
+
+    // Determine status
+    let status: 'ready' | 'pending' | 'failed';
+    let message = '';
+
+    if (readyReplicas < desiredReplicas) {
+      status = 'pending';
+      message = `${readyReplicas}/${desiredReplicas} replicas ready`;
+    } else {
+      // Check conditions for any issues
+      const failedCondition = conditions.find((c: any) => c.status !== 'True' && c.type !== 'Progressing');
+      if (failedCondition) {
+        status = 'failed';
+        message = `${failedCondition.reason}: ${failedCondition.message}`;
+      } else {
+        status = 'ready';
+        message = `All ${readyReplicas} replicas are ready`;
+      }
+    }
+
+    return {
+      status,
+      readyReplicas,
+      desiredReplicas,
+      message,
+      deployment,
+      age,
+      conditions
+    };
+  } catch (error: any) {
+    console.error("Error getting detailed deployment status:", error);
+    return {
+      status: 'failed',
+      readyReplicas: 0,
+      desiredReplicas: 0,
+      message: typeof error === 'string' ? error : JSON.stringify(error, null, 2)
+    };
+  }
+};
+
+/**
+ * Get detailed information about pods
+ * @param ddClient Docker Desktop client
+ * @param namespace Namespace of the pods
+ * @param selector Label selector for the pods
+ * @returns Array of pod details with events
+ */
+export const getPodDetails = async (
+  ddClient: v1.DockerDesktopClient,
+  namespace: string,
+  selector: string
+): Promise<any[]> => {
+  try {
+    // Get pods
+    const podsOutput = await ddClient.extension.host?.cli.exec("kubectl", [
+      "get",
+      "pods",
+      "-n",
+      namespace,
+      "-l",
+      selector,
+      "-o",
+      "json"
+    ]);
+
+    if (!podsOutput?.stdout || podsOutput.stdout.trim() === "") {
+      return [];
+    }
+
+    const podsJson = JSON.parse(podsOutput.stdout);
+    const pods = podsJson.items || [];
+
+    // Get events for each pod
+    for (const pod of pods) {
+      const podName = pod.metadata.name;
+      const eventsOutput = await ddClient.extension.host?.cli.exec("kubectl", [
+        "get",
+        "events",
+        "--field-selector",
+        `involvedObject.name=${podName}`,
+        "-n",
+        namespace,
+        "-o",
+        "json"
+      ]);
+
+      if (eventsOutput?.stdout && eventsOutput.stdout.trim() !== "") {
+        const eventsJson = JSON.parse(eventsOutput.stdout);
+        pod.events = eventsJson.items || [];
+      } else {
+        pod.events = [];
+      }
+    }
+
+    return pods;
+  } catch (error: any) {
+    console.error("Error getting pod details:", error);
+    return [];
+  }
+};
+
+/**
+ * Get service endpoints
+ * @param ddClient Docker Desktop client
+ * @param namespace Namespace of the service
+ * @param name Name of the service
+ * @returns Service endpoint information
+ */
+export const getServiceEndpoints = async (
+  ddClient: v1.DockerDesktopClient,
+  namespace: string,
+  name: string
+): Promise<{
+  found: boolean;
+  endpoints?: string[];
+  ports?: any[];
+  message?: string;
+}> => {
+  try {
+    // Get service details
+    const svcOutput = await ddClient.extension.host?.cli.exec("kubectl", [
+      "get",
+      "service",
+      "-n",
+      namespace,
+      name,
+      "-o",
+      "json",
+      "--ignore-not-found"
+    ]);
+
+    if (!svcOutput?.stdout || svcOutput.stdout.trim() === "") {
+      return {
+        found: false,
+        message: `Service '${name}' not found in namespace '${namespace}'`
+      };
+    }
+
+    const service = JSON.parse(svcOutput.stdout);
+    const ports = service.spec?.ports || [];
+
+    // Get endpoints
+    const endpointsOutput = await ddClient.extension.host?.cli.exec("kubectl", [
+      "get",
+      "endpoints",
+      "-n",
+      namespace,
+      name,
+      "-o",
+      "json",
+      "--ignore-not-found"
+    ]);
+
+    let endpoints: string[] = [];
+
+    if (endpointsOutput?.stdout && endpointsOutput.stdout.trim() !== "") {
+      const endpointsJson = JSON.parse(endpointsOutput.stdout);
+      const subsets = endpointsJson.subsets || [];
+
+      for (const subset of subsets) {
+        const addresses = subset.addresses || [];
+        const ports = subset.ports || [];
+
+        for (const address of addresses) {
+          for (const port of ports) {
+            endpoints.push(`${address.ip}:${port.port}`);
+          }
+        }
+      }
+    }
+
+    return {
+      found: true,
+      endpoints,
+      ports
+    };
+  } catch (error: any) {
+    console.error("Error getting service endpoints:", error);
+    return {
+      found: false,
+      message: typeof error === 'string' ? error : JSON.stringify(error, null, 2)
+    };
+  }
+};
+
 export const checkEnvoyGatewayCRDs = async (ddClient: v1.DockerDesktopClient): Promise<boolean> => {
   try {
     // First, check if the namespace exists
