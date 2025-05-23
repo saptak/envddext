@@ -110,70 +110,7 @@ export const loadTemplate = async (id: string): Promise<Template | null> => {
   }
 };
 
-/**
- * Apply a template to the Kubernetes cluster directly from GitHub URL
- * @param ddClient Docker Desktop client
- * @param template Template to apply
- */
-export const applyTemplate = async (
-  ddClient: v1.DockerDesktopClient,
-  template: Template
-): Promise<{ success: boolean; error?: string }> => {
-  try {
-    // First, ensure the GatewayClass exists
-    const gcResult = await ensureGatewayClass(ddClient);
-    if (!gcResult.success) {
-      return gcResult;
-    }
 
-    // Apply the template directly from the YAML content
-    console.log(`Applying template from YAML content`);
-
-    // Create a temporary file in the extension container with a fixed name to avoid path issues
-    const tempFile = `/tmp/template.yaml`;
-
-    console.log(`Creating temporary file at ${tempFile}`);
-
-    // Write the YAML to the temporary file
-    await ddClient.extension.host?.cli.exec("sh", [
-      "-c",
-      `echo '${template.yamlContent.replace(/'/g, "'\\''")}' > ${tempFile}`
-    ]);
-
-    console.log(`Applying resource from ${tempFile}`);
-
-    // Apply the resource from the temporary file
-    const applyResult = await ddClient.extension.host?.cli.exec("kubectl", [
-      "apply", "-f", tempFile
-    ]);
-
-    console.log(`Cleaning up temporary file ${tempFile}`);
-
-    // Clean up the temporary file
-    await ddClient.extension.host?.cli.exec("rm", [tempFile]);
-
-    console.log(`kubectl apply result:`, applyResult);
-
-    // Check for errors
-    if (applyResult?.stderr &&
-        !applyResult.stderr.includes('configured') &&
-        !applyResult.stderr.includes(' unchanged') &&
-        !applyResult.stderr.includes(' created')) {
-      return {
-        success: false,
-        error: applyResult.stderr
-      };
-    }
-
-    return { success: true };
-  } catch (error: any) {
-    console.error("Error applying template:", error);
-    return {
-      success: false,
-      error: typeof error === 'string' ? error : JSON.stringify(error, null, 2)
-    };
-  }
-};
 
 /**
  * Apply a template directly from a GitHub URL
