@@ -1,75 +1,137 @@
 # Envoy Gateway Docker Desktop Extension
 
-This extension allows you to manage and observe Envoy Gateway resources in your local Kubernetes cluster directly from Docker Desktop.
+A comprehensive Docker Desktop extension for managing Envoy Gateway resources with an intuitive tabbed interface, GitHub-based templates, and enhanced monitoring capabilities.
 
-- View Gateways and Routes
-- Quick setup for Envoy Gateway with guided workflows
-- Template library for common Gateway API configurations
-- Apply templates directly from GitHub repositories
+## Key Features
+
+- **Tabbed Interface**: Organized UI with Overview, Templates, and Gateway Management tabs
+- **GitHub Templates Integration**: Apply templates directly from GitHub repositories
+- **Enhanced Monitoring**: Real-time status tracking with detailed deployment information
+- **Gateway Management**: Create and configure Gateway resources with form-based UI
+- **Template Library**: Access curated Envoy Gateway configurations for common use cases
 
 ## Features
 
-### Envoy Gateway Management
+### 🎯 Overview Tab
+- Real-time cluster status monitoring
+- Gateway and HTTPRoute resource overview
+- Deployment health indicators
+- Quick access to common actions
 
-- Install and manage Envoy Gateway in your Kubernetes cluster
-- View Gateway and HTTPRoute resources
-- Monitor the status of your Envoy Gateway installation
+### 📋 Templates Tab
+- Browse templates from GitHub repository
+- One-click template application
+- Template metadata and descriptions
+- Support for multiple use cases (basic HTTP, TLS termination, traffic splitting)
 
-### Quick Start Wizard
+### ⚙️ Gateway Management Tab
+- Create Gateway resources with guided forms
+- Configure listeners, protocols, and ports
+- Real-time status monitoring
+- Visual feedback for resource creation
 
-- Access guided workflows for common Envoy Gateway use cases
-- Deploy sample applications with pre-configured Gateway resources
-- Learn Envoy Gateway concepts through interactive examples
-
-### GitHub Templates
-
-- Apply Envoy Gateway templates directly from GitHub repositories
-- Use templates from the community or your own repositories
-- Streamlined workflow for applying common Gateway API configurations
+### 🔗 GitHub Integration
+- Templates stored at [github.com/saptak/envoygatewaytemplates](https://github.com/saptak/envoygatewaytemplates)
+- Direct HTTP URL application to kubectl
+- Automatic template discovery and categorization
+- Community-driven template library
 
 ## Current Status
 
-This extension is currently in active development. The following features are implemented:
+**Latest Update: May 22, 2025** - Major UI enhancement with tabbed interface and GitHub templates integration completed!
 
-### ✅ Completed Features
+### ✅ Completed Features (Iteration 1-2)
+
+#### Core Infrastructure
 - Basic Envoy Gateway installation and status checking
-- Gateway and HTTPRoute resource listing
-- Template-based deployment system with GitHub integration
-- Quick start dialog with common templates
-- Apply templates from GitHub URLs
-- Real-time deployment status monitoring
-- Automatic UI refresh after template application
-- **Enhanced Deployment Monitoring** (Task 2.1 ✅):
-  - Detailed pod status monitoring with container information
-  - Real-time status updates with configurable refresh intervals
-  - Automatic issue detection and troubleshooting guidance
-  - Visual indicators for pod readiness and deployment health
-  - Tabbed UI interface for better organization
-  - Service endpoint monitoring
+- Gateway and HTTPRoute resource listing and monitoring
+- Kubernetes cluster integration with comprehensive error handling
 
-### 🚧 In Progress
-- Gateway and HTTPRoute creation forms (Task 2.2)
-- HTTP client for testing routes (Task 2.4)
+#### Enhanced UI (Iteration 2 ✅)
+- **Tabbed Interface**: Overview, Templates, and Gateway Management tabs
+- **Responsive Design**: Material-UI components with consistent styling
+- **Real-time Updates**: Automatic refresh and status monitoring
 
-### 📋 Planned Features
-- TLS termination configuration
-- Traffic splitting examples
-- Rate limiting configuration
-- JWT authentication setup
-- Interactive tutorials and documentation
-- Resource visualization and management tools
+#### GitHub Templates Integration (Iteration 2 ✅)
+- **Template Repository**: Integration with [github.com/saptak/envoygatewaytemplates](https://github.com/saptak/envoygatewaytemplates)
+- **Direct Application**: Apply templates via HTTP URLs to kubectl
+- **Metadata-driven**: Template categorization and descriptions
+- **Template Library**: Basic HTTP, TLS termination, traffic splitting examples
+
+#### Gateway Management (Iteration 2 ✅)
+- **Creation Forms**: Guided Gateway resource creation
+- **Validation**: Form validation with real-time feedback
+- **Status Monitoring**: Visual indicators for Gateway health
+- **Configuration Options**: Protocol, port, and listener configuration
+
+#### Enhanced Monitoring (Iteration 2 ✅)
+- **Deployment Tracking**: Real-time pod and service status
+- **Issue Detection**: Automatic troubleshooting guidance
+- **Visual Indicators**: Pod readiness and deployment health
+- **Service Endpoints**: Monitor service accessibility
+
+### 🚧 Next Iterations (Planned)
+
+#### Iteration 3: HTTP Routing and Testing Tools
+- HTTPRoute creation with rule configuration
+- Built-in HTTP client for testing routes
+- Request/response display and curl command generation
+
+#### Iteration 4: Enhanced UI and Visualization
+- Resource cards with detailed information
+- Visual diagrams showing Gateway and Route relationships
+- Resource management actions (delete, refresh, edit)
+
+### 📋 Future Features
+- TLS termination configuration and certificate management
+- Traffic splitting with weight-based routing
+- Rate limiting policies and testing tools
+- JWT authentication setup and token management
+- Interactive tutorials and contextual help
+- Performance optimization and marketplace preparation
 
 ## Build and Install
+
+### Quick Install (Recommended)
+
+Use the automated build script that handles the complete build and installation process:
+
+```bash
+# Build and install with GitHub templates support
+./build-and-install-github-templates.sh
+```
+
+This script will:
+- Uninstall any existing extension
+- Build the extension with GitHub templates integration
+- Install the new version
+- Restore original files
+
+### Manual Build
 
 ```bash
 # Build the extension
 make build-extension
 
 # Install the extension
-docker extension install saptak/envoy-gateway-extension:latest --force
+docker extension install envoyproxy/envoy-gateway-extension:latest --force
 ```
 
-This will use the image name `saptak/envoy-gateway-extension:latest`.
+### Development Build
+
+For development with hot reloading:
+
+```bash
+# Install dependencies
+cd ui && npm install
+
+# Start development server
+npm start
+
+# In another terminal, build and install
+make build-extension
+docker extension install envoyproxy/envoy-gateway-extension:latest --force
+```
 
 ## Development
 

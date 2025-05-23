@@ -36,6 +36,7 @@ import {
   checkDeploymentStatus
 } from "./services/githubTemplateService";
 import { DeploymentStatusMonitor } from "./components/DeploymentStatusMonitor";
+import { GatewayManagement } from "./components/GatewayManagement";
 
 const ddClient = createDockerDesktopClient();
 
@@ -253,7 +254,7 @@ export function App() {
           }
 
           // Switch to the Deployment Status tab
-          setCurrentTab(1);
+          setCurrentTab(2);
         }
       } else {
         setTemplateError(result.error || 'Failed to apply template');
@@ -307,7 +308,7 @@ export function App() {
           }
 
           // Switch to the Deployment Status tab
-          setCurrentTab(1);
+          setCurrentTab(2);
         }
       } else {
         setTemplateError(result.error || 'Failed to apply template from URL');
@@ -395,7 +396,8 @@ export function App() {
           <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
             <Tabs value={currentTab} onChange={handleTabChange} aria-label="envoy gateway tabs">
               <Tab label="Resources" id="tab-0" aria-controls="tabpanel-0" />
-              <Tab label="Deployment Status" id="tab-1" aria-controls="tabpanel-1" />
+              <Tab label="Gateway Management" id="tab-1" aria-controls="tabpanel-1" />
+              <Tab label="Deployment Status" id="tab-2" aria-controls="tabpanel-2" />
             </Tabs>
           </Box>
 
@@ -445,7 +447,7 @@ export function App() {
             )}
           </Box>
 
-          {/* Deployment Status Tab */}
+          {/* Gateway Management Tab */}
           <Box
             role="tabpanel"
             hidden={currentTab !== 1}
@@ -453,6 +455,23 @@ export function App() {
             aria-labelledby="tab-1"
           >
             {currentTab === 1 && (
+              <GatewayManagement
+                onGatewayCreated={(gateway) => {
+                  // Refresh the gateways list when a new gateway is created
+                  fetchData();
+                }}
+              />
+            )}
+          </Box>
+
+          {/* Deployment Status Tab */}
+          <Box
+            role="tabpanel"
+            hidden={currentTab !== 2}
+            id="tabpanel-2"
+            aria-labelledby="tab-2"
+          >
+            {currentTab === 2 && (
               <>
                 <Typography variant="h6" gutterBottom>
                   Deployment Status
