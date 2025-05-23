@@ -5,37 +5,80 @@ All notable changes to the Envoy Gateway Docker Desktop Extension will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [3.1.0] - 2025-05-22
 
-### Added
-- HTTPRoute creation and configuration UI
-- Built-in HTTP client for testing routes
-- Resource visualization and management tools
+### Added - UI/UX Theming Enhancement
+- **Complete Dark Theme Integration**: All form components now properly integrate with Docker Desktop's dark theme
+- **HTTPRoute Creation Form Theming**: Fixed all TextField, Select, FormControl, and Autocomplete components with proper styling
+- **Paper Component Background Fix**: Resolved light background issues in form sections that were causing readability problems
+- **Professional Visual Design**: Consistent styling with proper contrast ratios and enhanced readability
+- **Enhanced User Experience**: All form fields now feature proper light borders, white text, and appropriate hover/focus states
 
-## [0.3.0] - 2025-05-22
+### Fixed
+- **Form Readability Issues**: Resolved dark text on light background problems in HTTPRoute creation forms
+- **Paper Component Styling**: Changed from `bgcolor: 'grey.50'` to proper dark theme colors with transparent backgrounds
+- **Form Field Theming**: Applied comprehensive dark theme styling to all input components
 
-### Added
-- **Complete UI Redesign**: Tabbed interface with Overview, Templates, and Gateway Management tabs
-- **GitHub Templates Integration**: Direct integration with [github.com/saptak/envoygatewaytemplates](https://github.com/saptak/envoygatewaytemplates)
-- **Gateway Management UI**: Form-based Gateway creation with validation and real-time status monitoring
-- **Enhanced Template System**: Metadata-driven template organization and categorization
-- **Build Automation**: `build-and-install-github-templates.sh` script for streamlined development
-- **AppWithGitHubTemplates**: New main component with enhanced functionality
-- **Gateway Creation Forms**: Guided Gateway resource creation with protocol and port configuration
-- **Real-time Status Monitoring**: Visual indicators for Gateway health and deployment status
+### Technical Details
+- Applied consistent theming pattern with `rgba(255, 255, 255, 0.23)` borders and `rgba(255, 255, 255, 0.05)` backgrounds
+- Enhanced Paper components with subtle borders and proper transparency
+- Implemented proper focus and hover states for all form elements
+
+## [3.0.0] - 2025-05-22
+
+### Added - HTTPRoute Management (Iteration 3)
+- **Complete HTTPRoute Creation UI**: Comprehensive form-based HTTPRoute creation with full validation
+- **Multiple Routing Rules Support**: Configure multiple routing rules with path matching, headers, and query parameters
+- **Backend Service Configuration**: Service selection with weight-based traffic splitting capabilities
+- **Timeout Configuration**: Request timeout and backend timeout settings
+- **Real-time Validation**: Form validation with detailed error messages and user guidance
+- **Gateway Integration**: Seamless integration with existing Gateway resources
+
+## [2.4.0] - 2025-05-22
+
+### Added - Gateway Management (Iteration 2.4)
+- **Gateway Creation Forms**: Guided Gateway resource creation with validation
+- **Real-time Status Monitoring**: Visual indicators for Gateway health and status
+- **Configuration Options**: Protocol, port, and listener configuration
+
+## [2.3.0] - 2025-05-22
+
+### Added - GitHub Templates Integration (Iteration 2.3)
+- **GitHub Repository Integration**: Direct integration with github.com/saptak/envoygatewaytemplates
+- **HTTP URL Template Application**: Apply templates directly via HTTP URLs to kubectl
+- **Metadata-driven Organization**: Template categorization and descriptions
+- **Template Library**: Basic HTTP, TLS termination, and traffic splitting examples
+
+## [2.2.0] - 2025-05-22
+
+### Added - Tabbed UI Interface (Iteration 2.2)
+- **Tabbed Interface**: Overview, Templates, and Gateway Management tabs
+- **Responsive Navigation**: Seamless navigation between functional areas
+- **Consistent Styling**: Material-UI components with unified design
+
+## [2.1.0] - 2025-05-22
+
+### Added - Enhanced Monitoring (Iteration 2.1)
+- Enhanced deployment monitoring with detailed pod status information
+- Real-time status updates with configurable refresh intervals
+- Automatic issue detection and troubleshooting guidance
+- Visual indicators for pod readiness and deployment health
+- Tabbed UI interface for better organization (Resources and Deployment Status tabs)
+- Service endpoint monitoring and display
+- Comprehensive pod monitoring with container status and events
+- DeploymentStatusMonitor component with expandable details
+- PodStatusIndicator component with container and event information
+- DeploymentTroubleshooter component with automatic issue detection
+- Enhanced Kubernetes helper functions for detailed status monitoring
 
 ### Changed
-- Complete UI restructure from single-page to tabbed interface
-- Template application now uses direct HTTP URLs to kubectl instead of local file storage
-- Enhanced error handling and user feedback throughout the application
-- Improved visual design with Material-UI components and consistent styling
+- Improved UI organization with tabbed interface
+- Enhanced template application flow with automatic service tracking
+- Better error handling and user feedback
 
-### Technical Improvements
-- Created `githubTemplateService.ts` for GitHub repository integration
-- Enhanced deployment monitoring with `DeploymentStatusMonitor` and `PodStatusIndicator` components
-- Implemented `GatewayCreationForm` with validation and status tracking
-- Added comprehensive Kubernetes helper functions for resource management
-- Automatic issue detection and troubleshooting guidance
+### Fixed
+- TypeScript compilation issues with proper type annotations
+- Template ID validation for service tracking
 
 ## [0.2.0] - 2024-05-21
 

@@ -182,3 +182,6 @@ export const SUPPORTED_PROTOCOLS = ['HTTP', 'HTTPS', 'TCP', 'UDP', 'TLS'] as con
 export const SUPPORTED_TLS_MODES = ['Terminate', 'Passthrough'] as const;
 export const ALLOWED_ROUTES_FROM_OPTIONS = ['All', 'Same', 'Selector'] as const;
 export const SUPPORTED_ROUTE_KINDS = ['HTTPRoute', 'GRPCRoute', 'TCPRoute', 'UDPRoute', 'TLSRoute'] as const;
+
+// HTTPRoute related exports
+export type { HTTPRoute, HTTPRouteFormData, HTTPRouteValidationResult } from './httproute';

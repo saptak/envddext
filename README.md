@@ -38,9 +38,9 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 
 ## Current Status
 
-**Latest Update: May 22, 2025** - Major UI enhancement with tabbed interface and GitHub templates integration completed!
+**Latest Update: May 22, 2025** - Complete UI/UX theming enhancement and HTTPRoute management completed!
 
-### ✅ Completed Features (Iteration 1-2)
+### ✅ Completed Features (Iteration 1-3)
 
 #### Core Infrastructure
 - Basic Envoy Gateway installation and status checking
@@ -70,10 +70,23 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 - **Visual Indicators**: Pod readiness and deployment health
 - **Service Endpoints**: Monitor service accessibility
 
+#### HTTPRoute Management (Iteration 3 ✅)
+- **Complete Form-based Creation**: Comprehensive HTTPRoute creation with validation
+- **Multiple Routing Rules**: Support for path matching, headers, and query parameters
+- **Backend Configuration**: Service selection with weight-based traffic splitting
+- **Timeout Configuration**: Request and backend timeout settings
+- **Dark Theme Integration**: Complete UI/UX theming for Docker Desktop compatibility
+- **Real-time Validation**: Form validation with detailed error messages
+
+#### UI/UX Theming Enhancement (Latest ✅)
+- **Complete Dark Theme**: All form components properly themed for Docker Desktop
+- **Professional Design**: Consistent styling with proper contrast and readability
+- **Enhanced User Experience**: Light borders, white text, and appropriate hover/focus states
+- **Paper Component Fix**: Resolved background issues in form sections
+
 ### 🚧 Next Iterations (Planned)
 
-#### Iteration 3: HTTP Routing and Testing Tools
-- HTTPRoute creation with rule configuration
+#### Iteration 3: HTTP Testing Tools (Remaining)
 - Built-in HTTP client for testing routes
 - Request/response display and curl command generation
 

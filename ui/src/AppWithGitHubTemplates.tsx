@@ -11,6 +11,10 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
   Card,
   CardContent,
   CardActions,
@@ -32,6 +36,7 @@ import {
 } from "./services/githubTemplateService";
 import { DeploymentStatusMonitor } from "./components/DeploymentStatusMonitor";
 import { GatewayManagement } from "./components/GatewayManagement";
+import { HTTPRouteManagement } from "./components/HTTPRouteManagement";
 
 const ddClient = createDockerDesktopClient();
 
@@ -206,7 +211,60 @@ export function App() {
     }
   };
 
+  // Update handleApplyTemplate
+  const handleApplyTemplate = async () => {
+    if (!selectedTemplate) return;
 
+    setIsApplyingTemplate(true);
+    setTemplateError(null);
+    setTemplateSuccess(false);
+    setDeploymentStatus(null);
+
+    try {
+      // Apply the template using the GitHub template service
+      const result = await applyTemplateFromUrl(ddClient, selectedTemplate.metadata.yamlUrl);
+
+      if (result.success) {
+        setTemplateSuccess(true);
+        // Start checking deployment status
+        const interval = setInterval(checkTemplateDeploymentStatus, 2000);
+        setStatusCheckInterval(interval);
+        // Initial check
+        await checkTemplateDeploymentStatus();
+
+        // Refresh the UI with the latest gateways and routes
+        await fetchData();
+
+        // Track deployed services based on template ID
+        if (selectedTemplate.metadata.id === 'basic-http-echo') {
+          // Check if service is already tracked
+          const exists = deployedServices.some(
+            service => service.namespace === 'demo' && service.deploymentName === 'echo-service'
+          );
+
+          if (!exists) {
+            setDeployedServices(prev => [
+              ...prev,
+              {
+                namespace: 'demo',
+                deploymentName: 'echo-service',
+                serviceName: 'echo-service'
+              }
+            ]);
+          }
+
+          // Switch to the Deployment Status tab
+          setCurrentTab(2);
+        }
+      } else {
+        setTemplateError(result.error || 'Failed to apply template');
+      }
+    } catch (error: any) {
+      setTemplateError(typeof error === 'string' ? error : JSON.stringify(error, null, 2));
+    } finally {
+      setIsApplyingTemplate(false);
+    }
+  };
 
   // Add function to apply template directly from URL
   const handleApplyTemplateFromUrl = async (url: string) => {
@@ -339,7 +397,8 @@ export function App() {
             <Tabs value={currentTab} onChange={handleTabChange} aria-label="envoy gateway tabs">
               <Tab label="Resources" id="tab-0" aria-controls="tabpanel-0" />
               <Tab label="Gateway Management" id="tab-1" aria-controls="tabpanel-1" />
-              <Tab label="Deployment Status" id="tab-2" aria-controls="tabpanel-2" />
+              <Tab label="HTTPRoute Management" id="tab-2" aria-controls="tabpanel-2" />
+              <Tab label="Deployment Status" id="tab-3" aria-controls="tabpanel-3" />
             </Tabs>
           </Box>
 
@@ -406,7 +465,7 @@ export function App() {
             )}
           </Box>
 
-          {/* Deployment Status Tab */}
+          {/* HTTPRoute Management Tab */}
           <Box
             role="tabpanel"
             hidden={currentTab !== 2}
@@ -414,6 +473,23 @@ export function App() {
             aria-labelledby="tab-2"
           >
             {currentTab === 2 && (
+              <HTTPRouteManagement
+                onHTTPRouteCreated={(_httpRoute) => {
+                  // Refresh the routes list when a new HTTPRoute is created
+                  fetchData();
+                }}
+              />
+            )}
+          </Box>
+
+          {/* Deployment Status Tab */}
+          <Box
+            role="tabpanel"
+            hidden={currentTab !== 3}
+            id="tabpanel-3"
+            aria-labelledby="tab-3"
+          >
+            {currentTab === 3 && (
               <>
                 <Typography variant="h6" gutterBottom>
                   Deployment Status
@@ -626,11 +702,21 @@ export function App() {
                 <Button
                   variant="contained"
                   color="primary"
+                  onClick={handleApplyTemplate}
+                  disabled={isApplyingTemplate}
+                  sx={{ mt: 2 }}
+                >
+                  {isApplyingTemplate ? "Applying..." : "Apply Template"}
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  color="secondary"
                   onClick={() => handleApplyTemplateFromUrl(selectedTemplate.metadata.yamlUrl)}
                   disabled={isApplyingTemplate}
                   sx={{ mt: 2 }}
                 >
-                  Apply Template
+                  Apply Directly from GitHub
                 </Button>
               </Box>
             </>
