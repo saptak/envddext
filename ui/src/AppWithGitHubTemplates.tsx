@@ -11,10 +11,6 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
   Card,
   CardContent,
   CardActions,
@@ -29,7 +25,6 @@ import { listEnvoyGateways, listEnvoyHTTPRoutes, checkEnvoyGatewayCRDs, installE
 import {
   fetchTemplatesMetadata,
   loadTemplate,
-  applyTemplate,
   applyTemplateFromUrl,
   Template,
   TemplateMetadata,
@@ -211,60 +206,7 @@ export function App() {
     }
   };
 
-  // Update handleApplyTemplate
-  const handleApplyTemplate = async () => {
-    if (!selectedTemplate) return;
 
-    setIsApplyingTemplate(true);
-    setTemplateError(null);
-    setTemplateSuccess(false);
-    setDeploymentStatus(null);
-
-    try {
-      // Apply the template using the GitHub template service
-      const result = await applyTemplate(ddClient, selectedTemplate);
-
-      if (result.success) {
-        setTemplateSuccess(true);
-        // Start checking deployment status
-        const interval = setInterval(checkTemplateDeploymentStatus, 2000);
-        setStatusCheckInterval(interval);
-        // Initial check
-        await checkTemplateDeploymentStatus();
-
-        // Refresh the UI with the latest gateways and routes
-        await fetchData();
-
-        // Track deployed services based on template ID
-        if (selectedTemplate.metadata.id === 'basic-http-echo') {
-          // Check if service is already tracked
-          const exists = deployedServices.some(
-            service => service.namespace === 'demo' && service.deploymentName === 'echo-service'
-          );
-
-          if (!exists) {
-            setDeployedServices(prev => [
-              ...prev,
-              {
-                namespace: 'demo',
-                deploymentName: 'echo-service',
-                serviceName: 'echo-service'
-              }
-            ]);
-          }
-
-          // Switch to the Deployment Status tab
-          setCurrentTab(2);
-        }
-      } else {
-        setTemplateError(result.error || 'Failed to apply template');
-      }
-    } catch (error: any) {
-      setTemplateError(typeof error === 'string' ? error : JSON.stringify(error, null, 2));
-    } finally {
-      setIsApplyingTemplate(false);
-    }
-  };
 
   // Add function to apply template directly from URL
   const handleApplyTemplateFromUrl = async (url: string) => {
@@ -456,7 +398,7 @@ export function App() {
           >
             {currentTab === 1 && (
               <GatewayManagement
-                onGatewayCreated={(gateway) => {
+                onGatewayCreated={(_gateway) => {
                   // Refresh the gateways list when a new gateway is created
                   fetchData();
                 }}
@@ -684,21 +626,11 @@ export function App() {
                 <Button
                   variant="contained"
                   color="primary"
-                  onClick={handleApplyTemplate}
-                  disabled={isApplyingTemplate}
-                  sx={{ mt: 2 }}
-                >
-                  {isApplyingTemplate ? "Applying..." : "Apply Template"}
-                </Button>
-
-                <Button
-                  variant="outlined"
-                  color="secondary"
                   onClick={() => handleApplyTemplateFromUrl(selectedTemplate.metadata.yamlUrl)}
                   disabled={isApplyingTemplate}
                   sx={{ mt: 2 }}
                 >
-                  Apply Directly from GitHub
+                  Apply Template
                 </Button>
               </Box>
             </>
