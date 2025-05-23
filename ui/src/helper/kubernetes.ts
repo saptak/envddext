@@ -1,4 +1,5 @@
 import { v1 } from "@docker/extension-api-client-types";
+import { Gateway, GatewayFormData, GatewayStatusInfo, GatewayClass } from "../types/gateway";
 
 export const DockerDesktop = "docker-desktop";
 export const CurrentExtensionContext = "currentExtensionContext";
@@ -498,5 +499,326 @@ export const checkEnvoyGatewayCRDs = async (ddClient: v1.DockerDesktopClient): P
   } catch (e) {
     console.error("Error checking Envoy Gateway installation:", e);
     return false;
+  }
+};
+
+/**
+ * List available GatewayClasses
+ * @param ddClient Docker Desktop client
+ * @returns Array of GatewayClass objects
+ */
+export const listGatewayClasses = async (ddClient: v1.DockerDesktopClient): Promise<GatewayClass[]> => {
+  try {
+    const output = await ddClient.extension.host?.cli.exec("kubectl", [
+      "get",
+      "gatewayclasses.gateway.networking.k8s.io",
+      "-o",
+      "json"
+    ]);
+
+    if (output?.stderr && !output.stderr.includes("not found")) {
+      console.error("Error listing GatewayClasses:", output.stderr);
+      return [];
+    }
+
+    if (!output?.stdout || output.stdout.trim() === "") {
+      return [];
+    }
+
+    const result = JSON.parse(output.stdout);
+    return result.items || [];
+  } catch (error: any) {
+    console.error("Error listing GatewayClasses:", error);
+    return [];
+  }
+};
+
+/**
+ * Create a Gateway resource
+ * @param ddClient Docker Desktop client
+ * @param gatewayData Gateway form data
+ * @returns Success/error result
+ */
+export const createGateway = async (
+  ddClient: v1.DockerDesktopClient,
+  gatewayData: GatewayFormData
+): Promise<{ success: boolean; error?: string; gateway?: Gateway }> => {
+  try {
+    // Build the Gateway object
+    const gateway: Gateway = {
+      apiVersion: 'gateway.networking.k8s.io/v1',
+      kind: 'Gateway',
+      metadata: {
+        name: gatewayData.name,
+        namespace: gatewayData.namespace,
+        ...(gatewayData.labels && Object.keys(gatewayData.labels).length > 0 && { labels: gatewayData.labels }),
+        ...(gatewayData.annotations && Object.keys(gatewayData.annotations).length > 0 && { annotations: gatewayData.annotations })
+      },
+      spec: {
+        gatewayClassName: gatewayData.gatewayClassName,
+        listeners: gatewayData.listeners.map(listener => ({
+          name: listener.name,
+          port: listener.port,
+          protocol: listener.protocol,
+          ...(listener.hostname && { hostname: listener.hostname }),
+          ...(listener.protocol === 'HTTPS' && listener.tlsMode && {
+            tls: {
+              mode: listener.tlsMode,
+              ...(listener.certificateName && {
+                certificateRefs: [{
+                  name: listener.certificateName,
+                  ...(listener.certificateNamespace && { namespace: listener.certificateNamespace })
+                }]
+              })
+            }
+          }),
+          allowedRoutes: {
+            namespaces: {
+              from: listener.allowedRoutesFrom
+            },
+            kinds: listener.allowedRouteKinds.map(kind => ({
+              kind,
+              ...(kind !== 'HTTPRoute' && { group: 'gateway.networking.k8s.io' })
+            }))
+          }
+        }))
+      }
+    };
+
+    // Convert to YAML and apply
+    const yamlContent = JSON.stringify(gateway, null, 2);
+
+    // Create temporary file
+    const tempFile = `/tmp/gateway-${gatewayData.name}-${Date.now()}.json`;
+
+    // Write the JSON to the temporary file
+    await ddClient.extension.host?.cli.exec("sh", [
+      "-c",
+      `echo '${yamlContent.replace(/'/g, "'\\''")}' > ${tempFile}`
+    ]);
+
+    // Apply the Gateway using kubectl
+    const applyOutput = await ddClient.extension.host?.cli.exec("kubectl", [
+      "apply",
+      "-f",
+      tempFile
+    ]);
+
+    // Clean up temporary file
+    await ddClient.extension.host?.cli.exec("rm", [tempFile]);
+
+    if (applyOutput?.stderr && applyOutput.stderr.includes('Error:')) {
+      return {
+        success: false,
+        error: applyOutput.stderr
+      };
+    }
+
+    return {
+      success: true,
+      gateway
+    };
+  } catch (error: any) {
+    console.error("Error creating Gateway:", error);
+    return {
+      success: false,
+      error: typeof error === 'string' ? error : JSON.stringify(error, null, 2)
+    };
+  }
+};
+
+/**
+ * Get detailed Gateway status information
+ * @param ddClient Docker Desktop client
+ * @param namespace Namespace of the Gateway
+ * @param name Name of the Gateway
+ * @returns Detailed Gateway status information
+ */
+export const getGatewayStatus = async (
+  ddClient: v1.DockerDesktopClient,
+  namespace: string,
+  name: string
+): Promise<GatewayStatusInfo> => {
+  try {
+    // Get Gateway details
+    const gatewayOutput = await ddClient.extension.host?.cli.exec("kubectl", [
+      "get",
+      "gateway",
+      "-n",
+      namespace,
+      name,
+      "-o",
+      "json",
+      "--ignore-not-found"
+    ]);
+
+    if (!gatewayOutput?.stdout || gatewayOutput.stdout.trim() === "") {
+      return {
+        name,
+        namespace,
+        status: 'unknown',
+        message: `Gateway '${name}' not found in namespace '${namespace}'`
+      };
+    }
+
+    const gateway: Gateway = JSON.parse(gatewayOutput.stdout);
+    const conditions = gateway.status?.conditions || [];
+    const listeners = gateway.status?.listeners || [];
+    const addresses = gateway.status?.addresses || [];
+
+    // Calculate age
+    let age = '';
+    if (gateway.metadata.creationTimestamp) {
+      const creationTime = new Date(gateway.metadata.creationTimestamp);
+      const now = new Date();
+      const ageMs = now.getTime() - creationTime.getTime();
+      const ageMinutes = Math.floor(ageMs / (1000 * 60));
+      const ageHours = Math.floor(ageMinutes / 60);
+      const ageDays = Math.floor(ageHours / 24);
+
+      if (ageDays > 0) {
+        age = `${ageDays}d`;
+      } else if (ageHours > 0) {
+        age = `${ageHours}h`;
+      } else {
+        age = `${ageMinutes}m`;
+      }
+    }
+
+    // Determine overall status
+    let status: 'ready' | 'pending' | 'failed' | 'unknown' = 'unknown';
+    let message = '';
+
+    // Check for Programmed condition
+    const programmedCondition = conditions.find(c => c.type === 'Programmed');
+    if (programmedCondition) {
+      if (programmedCondition.status === 'True') {
+        status = 'ready';
+        message = 'Gateway is programmed and ready';
+      } else if (programmedCondition.status === 'False') {
+        status = 'failed';
+        message = `Gateway programming failed: ${programmedCondition.message}`;
+      } else {
+        status = 'pending';
+        message = `Gateway programming pending: ${programmedCondition.message}`;
+      }
+    } else {
+      status = 'pending';
+      message = 'Gateway status unknown - waiting for controller';
+    }
+
+    // Process listener status
+    const listenerStatus = listeners.map(listener => {
+      const listenerConditions = listener.conditions || [];
+      const programmedCondition = listenerConditions.find(c => c.type === 'Programmed');
+
+      let listenerStatus: 'ready' | 'pending' | 'failed' = 'pending';
+      let listenerMessage = '';
+
+      if (programmedCondition) {
+        if (programmedCondition.status === 'True') {
+          listenerStatus = 'ready';
+          listenerMessage = 'Listener is ready';
+        } else {
+          listenerStatus = 'failed';
+          listenerMessage = programmedCondition.message;
+        }
+      }
+
+      return {
+        name: listener.name,
+        status: listenerStatus,
+        attachedRoutes: listener.attachedRoutes,
+        message: listenerMessage
+      };
+    });
+
+    return {
+      name,
+      namespace,
+      status,
+      message,
+      addresses: addresses.map(addr => addr.value),
+      listeners: listenerStatus,
+      conditions,
+      age
+    };
+  } catch (error: any) {
+    console.error("Error getting Gateway status:", error);
+    return {
+      name,
+      namespace,
+      status: 'failed',
+      message: typeof error === 'string' ? error : JSON.stringify(error, null, 2)
+    };
+  }
+};
+
+/**
+ * Delete a Gateway resource
+ * @param ddClient Docker Desktop client
+ * @param namespace Namespace of the Gateway
+ * @param name Name of the Gateway
+ * @returns Success/error result
+ */
+export const deleteGateway = async (
+  ddClient: v1.DockerDesktopClient,
+  namespace: string,
+  name: string
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const deleteOutput = await ddClient.extension.host?.cli.exec("kubectl", [
+      "delete",
+      "gateway",
+      "-n",
+      namespace,
+      name,
+      "--ignore-not-found"
+    ]);
+
+    if (deleteOutput?.stderr && deleteOutput.stderr.includes('Error:')) {
+      return {
+        success: false,
+        error: deleteOutput.stderr
+      };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error deleting Gateway:", error);
+    return {
+      success: false,
+      error: typeof error === 'string' ? error : JSON.stringify(error, null, 2)
+    };
+  }
+};
+
+/**
+ * List available namespaces
+ * @param ddClient Docker Desktop client
+ * @returns Array of namespace names
+ */
+export const listNamespaceNames = async (ddClient: v1.DockerDesktopClient): Promise<string[]> => {
+  try {
+    const output = await ddClient.extension.host?.cli.exec("kubectl", [
+      "get",
+      "namespaces",
+      "-o",
+      "jsonpath={.items[*].metadata.name}"
+    ]);
+
+    if (output?.stderr) {
+      console.error("Error listing namespaces:", output.stderr);
+      return ['default'];
+    }
+
+    if (!output?.stdout || output.stdout.trim() === "") {
+      return ['default'];
+    }
+
+    return output.stdout.trim().split(/\s+/).filter(ns => ns.length > 0);
+  } catch (error: any) {
+    console.error("Error listing namespaces:", error);
+    return ['default'];
   }
 };
