@@ -36,7 +36,8 @@ import {
 } from "./services/githubTemplateService";
 import { DeploymentStatusMonitor } from "./components/DeploymentStatusMonitor";
 import { GatewayManagement } from "./components/GatewayManagement";
-import { HTTPRouteManagement } from "./components/HTTPRouteManagement";
+import { HTTPClient } from "./components/HTTPClient";
+import { ProxyManager } from "./components/ProxyManager";
 
 const ddClient = createDockerDesktopClient();
 
@@ -397,8 +398,9 @@ export function App() {
             <Tabs value={currentTab} onChange={handleTabChange} aria-label="envoy gateway tabs">
               <Tab label="Resources" id="tab-0" aria-controls="tabpanel-0" />
               <Tab label="Gateway Management" id="tab-1" aria-controls="tabpanel-1" />
-              <Tab label="HTTPRoute Management" id="tab-2" aria-controls="tabpanel-2" />
-              <Tab label="Deployment Status" id="tab-3" aria-controls="tabpanel-3" />
+              <Tab label="Deployment Status" id="tab-2" aria-controls="tabpanel-2" />
+              <Tab label="HTTP Testing" id="tab-3" aria-controls="tabpanel-3" />
+              <Tab label="Proxy Manager" id="tab-4" aria-controls="tabpanel-4" />
             </Tabs>
           </Box>
 
@@ -457,25 +459,8 @@ export function App() {
           >
             {currentTab === 1 && (
               <GatewayManagement
-                onGatewayCreated={(_gateway) => {
+                onGatewayCreated={(gateway) => {
                   // Refresh the gateways list when a new gateway is created
-                  fetchData();
-                }}
-              />
-            )}
-          </Box>
-
-          {/* HTTPRoute Management Tab */}
-          <Box
-            role="tabpanel"
-            hidden={currentTab !== 2}
-            id="tabpanel-2"
-            aria-labelledby="tab-2"
-          >
-            {currentTab === 2 && (
-              <HTTPRouteManagement
-                onHTTPRouteCreated={(_httpRoute) => {
-                  // Refresh the routes list when a new HTTPRoute is created
                   fetchData();
                 }}
               />
@@ -485,11 +470,11 @@ export function App() {
           {/* Deployment Status Tab */}
           <Box
             role="tabpanel"
-            hidden={currentTab !== 3}
-            id="tabpanel-3"
-            aria-labelledby="tab-3"
+            hidden={currentTab !== 2}
+            id="tabpanel-2"
+            aria-labelledby="tab-2"
           >
-            {currentTab === 3 && (
+            {currentTab === 2 && (
               <>
                 <Typography variant="h6" gutterBottom>
                   Deployment Status
@@ -517,6 +502,46 @@ export function App() {
                     </Typography>
                   </Paper>
                 )}
+              </>
+            )}
+          </Box>
+
+          {/* HTTP Testing Tab */}
+          <Box
+            role="tabpanel"
+            hidden={currentTab !== 3}
+            id="tabpanel-3"
+            aria-labelledby="tab-3"
+          >
+            {currentTab === 3 && (
+              <>
+                <Typography variant="h6" gutterBottom>
+                  HTTP Testing
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  Test your deployed Envoy Gateway services with HTTP requests. Use this tool to verify your routes and gateways are working correctly.
+                </Typography>
+                <HTTPClient />
+              </>
+            )}
+          </Box>
+
+          {/* Proxy Manager Tab */}
+          <Box
+            role="tabpanel"
+            hidden={currentTab !== 4}
+            id="tabpanel-4"
+            aria-labelledby="tab-4"
+          >
+            {currentTab === 4 && (
+              <>
+                <Typography variant="h6" gutterBottom>
+                  Proxy Manager
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  Manage kubectl proxy connections to access Kubernetes services directly. Enable proxy to test internal services and APIs.
+                </Typography>
+                <ProxyManager />
               </>
             )}
           </Box>

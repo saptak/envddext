@@ -30,9 +30,5 @@ docker build -t envoyproxy/envoy-gateway-extension:latest .
 log "Installing the extension with GitHub templates support..."
 docker extension install envoyproxy/envoy-gateway-extension:latest --force
 
-# Restore original index.tsx
-log "Restoring original index.tsx..."
-git checkout -- ui/src/index.tsx
-
 log "Done! The Envoy Gateway extension with GitHub templates support is now installed."
 log "Please open Docker Desktop to use the extension."

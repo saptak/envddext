@@ -1,11 +1,13 @@
 # Envoy Gateway Docker Desktop Extension
 
-A comprehensive Docker Desktop extension for managing Envoy Gateway resources with an intuitive tabbed interface, GitHub-based templates, and enhanced monitoring capabilities.
+A comprehensive Docker Desktop extension for managing Envoy Gateway resources with an intuitive tabbed interface, GitHub-based templates, HTTP testing tools, and enhanced monitoring capabilities.
 
 ## Key Features
 
-- **Tabbed Interface**: Organized UI with Overview, Templates, and Gateway Management tabs
+- **Tabbed Interface**: Organized UI with Overview, Templates, Gateway Management, HTTP Testing, and Proxy Manager tabs
 - **GitHub Templates Integration**: Apply templates directly from GitHub repositories
+- **HTTP Testing Tools**: Built-in HTTP client for testing routes with request/response display
+- **Kubectl Proxy Manager**: Integrated proxy management for accessing Kubernetes services
 - **Enhanced Monitoring**: Real-time status tracking with detailed deployment information
 - **Gateway Management**: Create and configure Gateway resources with form-based UI
 - **Template Library**: Access curated Envoy Gateway configurations for common use cases
@@ -30,6 +32,22 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 - Real-time status monitoring
 - Visual feedback for resource creation
 
+### 🧪 HTTP Testing Tab
+- Built-in HTTP client for testing deployed routes
+- Support for all HTTP methods (GET, POST, PUT, DELETE, etc.)
+- Request/response display with syntax highlighting
+- cURL command generation and copy functionality
+- Request history and replay capabilities
+- Custom headers and request body support
+
+### 🔧 Proxy Manager Tab
+- Integrated kubectl proxy management
+- One-click proxy start/stop functionality
+- Service URL generator for easy access
+- Quick access to common service endpoints
+- Real-time proxy status monitoring
+- Direct integration with HTTP testing tools
+
 ### 🔗 GitHub Integration
 - Templates stored at [github.com/saptak/envoygatewaytemplates](https://github.com/saptak/envoygatewaytemplates)
 - Direct HTTP URL application to kubectl
@@ -38,9 +56,9 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 
 ## Current Status
 
-**Latest Update: May 22, 2025** - Complete UI/UX theming enhancement and HTTPRoute management completed!
+**Latest Update: May 25, 2025** - HTTP Testing Tools and Kubectl Proxy Manager completed!
 
-### ✅ Completed Features (Iteration 1-3)
+### ✅ Completed Features (Iteration 1-4)
 
 #### Core Infrastructure
 - Basic Envoy Gateway installation and status checking
@@ -78,19 +96,30 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 - **Dark Theme Integration**: Complete UI/UX theming for Docker Desktop compatibility
 - **Real-time Validation**: Form validation with detailed error messages
 
-#### UI/UX Theming Enhancement (Latest ✅)
+#### UI/UX Theming Enhancement (Iteration 3 ✅)
 - **Complete Dark Theme**: All form components properly themed for Docker Desktop
 - **Professional Design**: Consistent styling with proper contrast and readability
 - **Enhanced User Experience**: Light borders, white text, and appropriate hover/focus states
 - **Paper Component Fix**: Resolved background issues in form sections
 
+#### HTTP Testing Tools (Iteration 4 ✅)
+- **Built-in HTTP Client**: Comprehensive HTTP testing interface with support for all methods
+- **Request/Response Display**: Syntax-highlighted request and response viewing
+- **cURL Command Generation**: Automatic cURL command generation and copy functionality
+- **Request History**: Save and replay previous requests for easy testing
+- **Custom Headers**: Support for custom headers and request body configuration
+- **Tabbed Interface**: Organized tabs for Request, Response, History, and cURL commands
+
+#### Kubectl Proxy Manager (Iteration 4 ✅)
+- **Integrated Proxy Management**: Start/stop kubectl proxy directly from the UI
+- **Service URL Generator**: Generate proxy URLs for Kubernetes services
+- **Quick Access Endpoints**: Pre-configured common service endpoints
+- **Real-time Status**: Live proxy status monitoring and connectivity testing
+- **HTTP Client Integration**: Direct integration with HTTP testing tools
+
 ### 🚧 Next Iterations (Planned)
 
-#### Iteration 3: HTTP Testing Tools (Remaining)
-- Built-in HTTP client for testing routes
-- Request/response display and curl command generation
-
-#### Iteration 4: Enhanced UI and Visualization
+#### Iteration 5: Enhanced UI and Visualization
 - Resource cards with detailed information
 - Visual diagrams showing Gateway and Route relationships
 - Resource management actions (delete, refresh, edit)

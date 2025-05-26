@@ -111,7 +111,6 @@ export const loadTemplate = async (id: string): Promise<Template | null> => {
 };
 
 
-
 /**
  * Apply a template directly from a GitHub URL
  * @param ddClient Docker Desktop client
