@@ -28,6 +28,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import BugReportIcon from '@mui/icons-material/BugReport';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import PendingIcon from '@mui/icons-material/Pending';
@@ -37,6 +38,8 @@ import StorageIcon from '@mui/icons-material/Storage';
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 import { getHTTPRouteStatus, deleteHTTPRoute } from '../helper/kubernetes';
 import { HTTPRouteStatusInfo } from '../types/httproute';
+import { RouteTestingDialog } from './RouteTestingDialog';
+import { RouteTestingContext } from '../types/httpClient';
 
 const ddClient = createDockerDesktopClient();
 
@@ -63,10 +66,11 @@ export const HTTPRouteStatusMonitor: React.FC<HTTPRouteStatusMonitorProps> = ({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [testingDialogOpen, setTestingDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchStatus();
-    
+
     if (autoRefresh) {
       const interval = setInterval(fetchStatus, refreshInterval);
       return () => clearInterval(interval);
@@ -89,7 +93,7 @@ export const HTTPRouteStatusMonitor: React.FC<HTTPRouteStatusMonitorProps> = ({
     try {
       setDeleting(true);
       const result = await deleteHTTPRoute(ddClient, namespace, routeName);
-      
+
       if (!result.success) {
         setError(result.error || 'Failed to delete HTTPRoute');
         return;
@@ -175,6 +179,18 @@ export const HTTPRouteStatusMonitor: React.FC<HTTPRouteStatusMonitorProps> = ({
                   color={getStatusColor(status.status)}
                   size="small"
                 />
+                <Tooltip title="Test Route">
+                  <IconButton
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setTestingDialogOpen(true);
+                    }}
+                    size="small"
+                    color="primary"
+                  >
+                    <BugReportIcon />
+                  </IconButton>
+                </Tooltip>
                 <Tooltip title="Refresh Status">
                   <IconButton
                     onClick={(e) => {
@@ -353,6 +369,18 @@ export const HTTPRouteStatusMonitor: React.FC<HTTPRouteStatusMonitorProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Route Testing Dialog */}
+      <RouteTestingDialog
+        open={testingDialogOpen}
+        onClose={() => setTestingDialogOpen(false)}
+        routeContext={{
+          routeName,
+          namespace,
+          gatewayName: status?.parentGateways?.[0]?.name,
+          gatewayNamespace: status?.parentGateways?.[0]?.namespace
+        }}
+      />
     </>
   );
 };
