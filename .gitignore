@@ -60,3 +60,9 @@ typings/
 # Kubernetes
 kubeconfig
 *.kubeconfig
+
+# AI Assistant System Prompt Files
+CLAUDE.md
+.cursorrules
+.cursor/
+.github/copilot-instructions.md
