@@ -1,6 +1,7 @@
 import { v1 } from "@docker/extension-api-client-types";
 import { Gateway, GatewayFormData, GatewayStatusInfo, GatewayClass } from "../types/gateway";
 import { HTTPRoute, HTTPRouteFormData, HTTPRouteStatusInfo, HTTPRouteValidationResult, ValidationError } from '../types/httproute';
+import yaml from 'js-yaml';
 
 export const DockerDesktop = "docker-desktop";
 export const CurrentExtensionContext = "currentExtensionContext";
@@ -586,32 +587,83 @@ export const createGateway = async (
       }
     };
 
-    // Convert to YAML and apply
-    const yamlContent = JSON.stringify(gateway, null, 2);
+    // Convert to proper YAML format
+    const yamlContent = yaml.dump(gateway);
 
-    // Create temporary file
-    const tempFile = `/tmp/gateway-${gatewayData.name}-${Date.now()}.json`;
-
-    // Write the JSON to the temporary file
-    await ddClient.extension.host?.cli.exec("sh", [
-      "-c",
-      `echo '${yamlContent.replace(/'/g, "'\\''")}' > ${tempFile}`
-    ]);
-
-    // Apply the Gateway using kubectl
-    const applyOutput = await ddClient.extension.host?.cli.exec("kubectl", [
-      "apply",
-      "-f",
-      tempFile
-    ]);
-
-    // Clean up temporary file
-    await ddClient.extension.host?.cli.exec("rm", [tempFile]);
-
-    if (applyOutput?.stderr && applyOutput.stderr.includes('Error:')) {
+    // Try using kubectl without any file dependencies
+    // Create the resource directly using kubectl create with YAML
+    
+    // First try kubectl help to test basic accessibility
+    const helpOutput = await ddClient.extension.host?.cli.exec("kubectl", ["--help"]);
+    // kubectl help returns undefined/0 on success, non-zero on failure
+    if (helpOutput?.code && helpOutput.code !== 0) {
       return {
         success: false,
-        error: applyOutput.stderr
+        error: `kubectl binary not accessible: code=${helpOutput?.code}, stderr=${helpOutput?.stderr}, stdout=${helpOutput?.stdout}`
+      };
+    }
+
+    // Try kubectl version
+    const versionOutput = await ddClient.extension.host?.cli.exec("kubectl", ["version", "--client"]);
+    if (versionOutput?.code && versionOutput.code !== 0) {
+      return {
+        success: false,
+        error: `kubectl version failed: code=${versionOutput?.code}, stderr=${versionOutput?.stderr}, stdout=${versionOutput?.stdout}`
+      };
+    }
+
+    // Now try to create a namespace (simpler operation) to test kubectl functionality
+    const testOutput = await ddClient.extension.host?.cli.exec("kubectl", [
+      "get", "namespaces", "--no-headers", "-o", "name"
+    ]);
+    
+    if (testOutput?.code && testOutput.code !== 0) {
+      return {
+        success: false,
+        error: `kubectl connection test failed: ${testOutput?.stderr || testOutput?.stdout || 'No cluster access'}`
+      };
+    }
+
+    // kubectl is working! But Docker Desktop extensions have file system limitations
+    // Show user the exact command to run manually
+    
+    try {
+      // WORKAROUND: Since Docker Desktop extensions can't write temp files or use data URLs,
+      // we need the user to manually create the gateway. Show them the exact kubectl command.
+      
+      const kubectlCommand = `kubectl apply -f - << 'EOF'
+${yamlContent}
+EOF`;
+
+      return {
+        success: false,
+        error: `Docker Desktop extension limitations prevent direct Gateway creation. Please run this command in your terminal:
+
+${kubectlCommand}
+
+Alternatively, save the following YAML to a file and apply it:
+
+${yamlContent}`
+      };
+      
+    } catch (error: any) {
+      return {
+        success: false,
+        error: `Error generating Gateway YAML: ${error.message}`
+      };
+    }
+
+    // This code is unreachable due to the return above, so commenting out
+    /*
+    // Check for errors using exit code and stderr content
+    if (applyOutput?.code !== 0 || 
+        (applyOutput?.stderr && 
+         !applyOutput.stderr.includes('configured') &&
+         !applyOutput.stderr.includes('unchanged') &&
+         !applyOutput.stderr.includes('created'))) {
+      return {
+        success: false,
+        error: applyOutput?.stderr || applyOutput?.stdout || 'kubectl apply failed'
       };
     }
 
@@ -619,6 +671,7 @@ export const createGateway = async (
       success: true,
       gateway
     };
+    */
   } catch (error: any) {
     console.error("Error creating Gateway:", error);
     return {

@@ -27,7 +27,7 @@ spec:
       - name: echo-service
         image: ealen/echo-server:latest
         ports:
-        - containerPort: 8080
+        - containerPort: 80
 ---
 # Echo Service
 apiVersion: v1
@@ -40,7 +40,7 @@ spec:
     app: echo-service
   ports:
   - port: 80
-    targetPort: 8080
+    targetPort: 80
 ---
 # Gateway
 apiVersion: gateway.networking.k8s.io/v1
