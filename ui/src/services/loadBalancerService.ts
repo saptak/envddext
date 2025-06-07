@@ -8,6 +8,12 @@ export interface LoadBalancerStatus {
     name: string;
     addresses: string[];
   }>;
+  servicesWithIPs?: Array<{
+    name: string;
+    namespace: string;
+    externalIP: string;
+    ports: string; // e.g., "80/TCP, 443/TCP"
+  }>;
   error?: string;
   // Add other relevant fields from MetalLB status or other providers
 }
@@ -35,59 +41,65 @@ export class LoadBalancerService {
         "LoadBalancerService: ===== STARTING LOADBALANCER DETECTION =====",
       );
 
-      // Check for MetalLB first using host CLI for reliability
       const metallbNamespaceExists = await this.quickCheckMetalLBNamespace();
       console.log(
-        "LoadBalancerService: MetalLB namespace exists (host CLI check):",
+        "LoadBalancerService: MetalLB namespace 'metallb-system' exists (host CLI check):",
         metallbNamespaceExists,
       );
 
       if (metallbNamespaceExists) {
-        // If MetalLB namespace exists, perform a detailed check
         const metallbStatus = await this.checkMetalLBStatus();
         console.log(
-          "LoadBalancerService: Detailed MetalLB status:",
+          "LoadBalancerService: Detailed MetalLB status check result:",
           metallbStatus,
         );
-        // If MetalLB is identified as the provider (even if not fully configured but namespace exists),
-        // we prioritize its status.
+        // If checkMetalLBStatus identifies MetalLB as the provider, its detailed status is returned.
+        // This status (metallbStatus.isConfigured) should be true only if MetalLB is fully operational (controller + IP Pools).
         if (metallbStatus.provider === "metallb") {
           return metallbStatus;
         }
-      }
-
-      // If no MetalLB namespace, or if detailed check didn't confirm MetalLB provider,
-      // check for generally working LoadBalancer services (could be cloud or other).
-      // This also acts as a fallback to see if MetalLB is working despite namespace check quirks.
-      console.log(
-        "LoadBalancerService: Checking for any working LoadBalancer services (e.g., cloud or functional MetalLB without recognized namespace)...",
-      );
-      const servicesStatus = await this.checkLoadBalancerServices();
-      console.log(
-        "LoadBalancerService: General LoadBalancer services check result:",
-        servicesStatus,
-      );
-
-      if (servicesStatus.isConfigured) {
-        // If services have external IPs, something is working.
-        // If MetalLB wasn't definitively identified, mark provider as 'unknown'.
+        // If metallbNamespaceExists but provider is not 'metallb' from the detailed check (e.g. error in checkMetalLBStatus itself)
+        // Treat as MetalLB present but not okay.
+        console.log(
+          "LoadBalancerService: MetalLB namespace exists, but detailed check didn't confirm functional MetalLB provider.",
+        );
         return {
-          isConfigured: true,
-          provider: metallbNamespaceExists ? "metallb" : "unknown", // If namespace was seen, still attribute to metallb
-          error: servicesStatus.error, // Propagate any errors from service check
+          isConfigured: false,
+          provider: "metallb", // Identified by namespace, but not fully functional
+          error:
+            metallbStatus.error ||
+            "MetalLB components found, but status check was inconclusive or indicated issues. Review MetalLB setup.",
+        };
+      } else {
+        // MetalLB namespace NOT found.
+        console.log(
+          "LoadBalancerService: MetalLB namespace 'metallb-system' not found.",
+        );
+        // Check for other LoadBalancer services for contextual information, but don't assume configuration.
+        const servicesStatus = await this.checkLoadBalancerServices();
+        console.log(
+          "LoadBalancerService: General LoadBalancer services check result (when MetalLB namespace absent):",
+          servicesStatus,
+        );
+
+        let errorMsg =
+          "MetalLB namespace 'metallb-system' not found. MetalLB must be installed and configured in this namespace for the extension to manage it.";
+        if (
+          servicesStatus.isConfigured &&
+          servicesStatus.servicesWithIPs &&
+          servicesStatus.servicesWithIPs.length > 0
+        ) {
+          errorMsg += ` Found ${servicesStatus.servicesWithIPs.length} existing service(s) with external IPs, but an active controller for new assignments (like MetalLB) was not confirmed.`;
+        } else if (servicesStatus.error) {
+          errorMsg += ` Additionally, error checking general services: ${servicesStatus.error}`;
+        }
+
+        return {
+          isConfigured: false, // Explicitly false as the primary local LB provider (MetalLB) is not found.
+          provider: "unknown",
+          error: errorMsg,
         };
       }
-
-      // If neither MetalLB specific components nor general LB services with IPs are found:
-      console.log(
-        "LoadBalancerService: No functional LoadBalancer controller detected (neither specific MetalLB nor services with IPs).",
-      );
-      return {
-        isConfigured: false,
-        error: metallbNamespaceExists
-          ? "MetalLB namespace exists, but controller or IP pools might be missing or not functional."
-          : "No LoadBalancer controller (like MetalLB) or active LoadBalancer services found.",
-      };
     } catch (error: any) {
       console.error(
         "LoadBalancerService: Critical error in checkLoadBalancerStatus:",
@@ -95,7 +107,8 @@ export class LoadBalancerService {
       );
       return {
         isConfigured: false,
-        error: `Critical error checking LoadBalancer status: ${error.message || error}`,
+        provider: "unknown",
+        error: `Critical error checking LoadBalancer status: ${error.message || JSON.stringify(error)}`,
       };
     }
   }
@@ -583,9 +596,22 @@ export class LoadBalancerService {
         console.log(
           "LoadBalancerService: LoadBalancer is working! Returning configured status",
         );
+        // Map the found services to the structure expected by servicesWithIPs
+        const formattedServicesWithIPs = servicesWithIPs.map((svc: any) => ({
+          name: svc.metadata?.name || "Unknown",
+          namespace: svc.metadata?.namespace || "Unknown",
+          externalIP:
+            svc.status?.loadBalancer?.ingress?.[0]?.ip ||
+            svc.status?.loadBalancer?.ingress?.[0]?.hostname ||
+            "Not Assigned",
+          ports: (svc.spec?.ports || [])
+            .map((p: any) => `${p.port}/${p.protocol || "TCP"}`)
+            .join(", "),
+        }));
         return {
           isConfigured: true,
           provider: "unknown", // Can't determine specific provider from this check alone
+          servicesWithIPs: formattedServicesWithIPs, // Attach the formatted list
         };
       }
 
@@ -739,29 +765,83 @@ spec:
       )) as any; // Type casting for simplicity, consider defining backend response type
 
       if (!poolResponse?.success) {
-        const output = poolResponse?.data || "";
-        const error = poolResponse?.error || "";
+        const rawDataFromResponse = poolResponse?.data;
+        const rawErrorFromResponse = poolResponse?.error;
+
+        let actualBackendError = "";
+        let actualBackendDataInfo = "";
+
+        if (
+          typeof rawDataFromResponse === "object" &&
+          rawDataFromResponse !== null
+        ) {
+          if (typeof (rawDataFromResponse as any).error === "string") {
+            actualBackendError = (rawDataFromResponse as any).error;
+          }
+          if (typeof (rawDataFromResponse as any).data === "string") {
+            actualBackendDataInfo = (rawDataFromResponse as any).data;
+          } else if (actualBackendDataInfo === "") {
+            // If .data.data wasn't a string and we don't have other data info yet
+            actualBackendDataInfo = JSON.stringify(rawDataFromResponse); // Use stringified full object as data info
+          }
+        } else if (typeof rawDataFromResponse === "string") {
+          actualBackendDataInfo = rawDataFromResponse;
+        }
+
+        if (typeof rawErrorFromResponse === "string" && rawErrorFromResponse) {
+          if (actualBackendError) {
+            actualBackendError += ` ; Also, direct error from response: ${rawErrorFromResponse}`;
+          } else {
+            actualBackendError = rawErrorFromResponse;
+          }
+        }
+
+        // Fallback stringification if still empty
+        if (actualBackendDataInfo === "" && rawDataFromResponse) {
+          actualBackendDataInfo = String(rawDataFromResponse);
+        }
+        if (actualBackendError === "" && rawErrorFromResponse) {
+          actualBackendError = String(rawErrorFromResponse);
+        }
+
         const isSuccessfulOperation =
-          output.includes("unchanged") ||
-          output.includes("configured") ||
-          output.includes("created") ||
-          output.includes("applied") ||
-          (error && error.toLowerCase().includes("already exists")) ||
-          (output && output.toLowerCase().includes("already exists"));
+          (actualBackendDataInfo &&
+            actualBackendDataInfo.includes("unchanged")) ||
+          (actualBackendDataInfo &&
+            actualBackendDataInfo.includes("configured")) ||
+          (actualBackendDataInfo &&
+            actualBackendDataInfo.includes("created")) ||
+          (actualBackendDataInfo &&
+            actualBackendDataInfo.includes("applied")) ||
+          (actualBackendError &&
+            actualBackendError.toLowerCase().includes("already exists")) ||
+          (actualBackendDataInfo &&
+            actualBackendDataInfo.toLowerCase().includes("already exists"));
 
         if (!isSuccessfulOperation) {
-          const errorMsg = `Failed to create IP address pool via backend /apply-yaml. Output: [${output}], Error: [${error}]`;
-          console.error("LoadBalancerService:", errorMsg);
-          return {
-            success: false,
-            error: errorMsg,
-          };
+          let userFriendlyDetails = `BackendMsg: [${actualBackendError || "No specific error message from backend."}], BackendData: [${actualBackendDataInfo || "No data from backend."}]`;
+          if (
+            (actualBackendDataInfo.startsWith("[object Object]") ||
+              actualBackendDataInfo === "{}") &&
+            (actualBackendError === "" || actualBackendError === "[]")
+          ) {
+            userFriendlyDetails =
+              "The backend encountered an issue interpreting the operation's result. The operation may have succeeded. Please check status after closing.";
+          }
+          const errorMsg = `Failed to create IP address pool via backend /apply-yaml. ${userFriendlyDetails}`;
+          console.error(
+            "LoadBalancerService:",
+            errorMsg,
+            "Raw Pool Response:",
+            poolResponse,
+          );
+          return { success: false, error: errorMsg };
         }
         console.log(
-          "LoadBalancerService: IP address pool operation via backend /apply-yaml completed (possibly with 'already exists' or 'unchanged'). Output:",
-          output,
-          "Error:",
-          error,
+          "LoadBalancerService: IP address pool operation via backend /apply-yaml reported success or acceptable non-failure. BackendMsg:",
+          actualBackendError,
+          "BackendData:",
+          actualBackendDataInfo,
         );
       } else {
         console.log(
@@ -790,29 +870,81 @@ spec:
       )) as any; // Type casting
 
       if (!l2Response?.success) {
-        const output = l2Response?.data || "";
-        const error = l2Response?.error || "";
+        const rawDataFromResponse = l2Response?.data;
+        const rawErrorFromResponse = l2Response?.error;
+
+        let actualBackendError = "";
+        let actualBackendDataInfo = "";
+
+        if (
+          typeof rawDataFromResponse === "object" &&
+          rawDataFromResponse !== null
+        ) {
+          if (typeof (rawDataFromResponse as any).error === "string") {
+            actualBackendError = (rawDataFromResponse as any).error;
+          }
+          if (typeof (rawDataFromResponse as any).data === "string") {
+            actualBackendDataInfo = (rawDataFromResponse as any).data;
+          } else if (actualBackendDataInfo === "") {
+            actualBackendDataInfo = JSON.stringify(rawDataFromResponse);
+          }
+        } else if (typeof rawDataFromResponse === "string") {
+          actualBackendDataInfo = rawDataFromResponse;
+        }
+
+        if (typeof rawErrorFromResponse === "string" && rawErrorFromResponse) {
+          if (actualBackendError) {
+            actualBackendError += ` ; Also, direct error from response: ${rawErrorFromResponse}`;
+          } else {
+            actualBackendError = rawErrorFromResponse;
+          }
+        }
+
+        if (actualBackendDataInfo === "" && rawDataFromResponse) {
+          actualBackendDataInfo = String(rawDataFromResponse);
+        }
+        if (actualBackendError === "" && rawErrorFromResponse) {
+          actualBackendError = String(rawErrorFromResponse);
+        }
+
         const isSuccessfulOperation =
-          output.includes("unchanged") ||
-          output.includes("configured") ||
-          output.includes("created") ||
-          output.includes("applied") ||
-          (error && error.toLowerCase().includes("already exists")) ||
-          (output && output.toLowerCase().includes("already exists"));
+          (actualBackendDataInfo &&
+            actualBackendDataInfo.includes("unchanged")) ||
+          (actualBackendDataInfo &&
+            actualBackendDataInfo.includes("configured")) ||
+          (actualBackendDataInfo &&
+            actualBackendDataInfo.includes("created")) ||
+          (actualBackendDataInfo &&
+            actualBackendDataInfo.includes("applied")) ||
+          (actualBackendError &&
+            actualBackendError.toLowerCase().includes("already exists")) ||
+          (actualBackendDataInfo &&
+            actualBackendDataInfo.toLowerCase().includes("already exists"));
 
         if (!isSuccessfulOperation) {
-          const errorMsg = `Failed to create L2 advertisement via backend /apply-yaml. Output: [${output}], Error: [${error}]`;
-          console.error("LoadBalancerService:", errorMsg);
-          return {
-            success: false,
-            error: errorMsg,
-          };
+          let userFriendlyDetails = `BackendMsg: [${actualBackendError || "No specific error message from backend."}], BackendData: [${actualBackendDataInfo || "No data from backend."}]`;
+          if (
+            (actualBackendDataInfo.startsWith("[object Object]") ||
+              actualBackendDataInfo === "{}") &&
+            (actualBackendError === "" || actualBackendError === "[]")
+          ) {
+            userFriendlyDetails =
+              "The backend encountered an issue interpreting the operation's result. The operation may have succeeded. Please check status after closing.";
+          }
+          const errorMsg = `Failed to create L2 advertisement via backend /apply-yaml. ${userFriendlyDetails}`;
+          console.error(
+            "LoadBalancerService:",
+            errorMsg,
+            "Raw L2 Response:",
+            l2Response,
+          );
+          return { success: false, error: errorMsg };
         }
         console.log(
-          "LoadBalancerService: L2 advertisement operation via backend /apply-yaml completed (possibly with 'already exists' or 'unchanged'). Output:",
-          output,
-          "Error:",
-          error,
+          "LoadBalancerService: L2 advertisement operation via backend /apply-yaml reported success or acceptable non-failure. BackendMsg:",
+          actualBackendError,
+          "BackendData:",
+          actualBackendDataInfo,
         );
       } else {
         console.log(

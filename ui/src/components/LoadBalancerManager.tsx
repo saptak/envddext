@@ -55,6 +55,7 @@ export const LoadBalancerManager: React.FC<LoadBalancerManagerProps> = ({
   const [loading, setLoading] = useState(true);
   const [configuring, setConfiguring] = useState(false);
   const [showConfigDialog, setShowConfigDialog] = useState(false);
+  const [configError, setConfigError] = useState<string | null>(null); // To store config-specific errors
   const [config, setConfig] = useState<LoadBalancerConfiguration>({
     provider: "metallb",
     ipRange: "172.18.200.1-172.18.200.100",
@@ -85,31 +86,40 @@ export const LoadBalancerManager: React.FC<LoadBalancerManagerProps> = ({
   };
 
   const handleConfigure = async () => {
+    setConfigError(null); // Clear previous config error
+    setConfiguring(true);
     try {
-      setConfiguring(true);
       const result = await loadBalancerService.configureMetalLB(config);
 
       if (result.success) {
-        // Wait a moment and check status again
+        setShowConfigDialog(false); // Close dialog on success
+        setConfigError(null);
+        // Wait a moment and check status again on the main page
         setTimeout(() => {
           checkStatus();
         }, 2000);
-        setShowConfigDialog(false);
       } else {
         console.error("Failed to configure LoadBalancer:", result.error);
-        // Update status with error
-        setStatus((prev) => ({
-          ...prev,
-          isConfigured: false,
-          error: result.error,
+        setConfigError(result.error || "Failed to configure LoadBalancer.");
+        // Optionally, update main page status too, or let it refresh naturally
+        setStatus((prevStatus) => ({
+          ...(prevStatus || { isConfigured: false }), // Ensure prevStatus is not null
+          isConfigured: false, // Reflect failed config on main status
+          error: result.error || "Configuration attempt failed.", // Main page error
         }));
       }
     } catch (error: any) {
       console.error("Error configuring LoadBalancer:", error);
-      setStatus((prev) => ({
-        ...prev,
+      const message =
+        typeof error === "string"
+          ? error
+          : error.message ||
+            "An unexpected error occurred during configuration.";
+      setConfigError(message);
+      setStatus((prevStatus) => ({
+        ...(prevStatus || { isConfigured: false }),
         isConfigured: false,
-        error: typeof error === "string" ? error : error.message,
+        error: message,
       }));
     } finally {
       setConfiguring(false);
@@ -215,7 +225,7 @@ export const LoadBalancerManager: React.FC<LoadBalancerManagerProps> = ({
             </Alert>
           )}
 
-          {!status?.isConfigured && !status?.error && (
+          {!status?.isConfigured && (
             <Alert severity="warning" sx={{ mb: 2 }}>
               <AlertTitle>LoadBalancer Not Configured</AlertTitle>
               No LoadBalancer controller detected. Gateways will not receive
@@ -225,7 +235,10 @@ export const LoadBalancerManager: React.FC<LoadBalancerManagerProps> = ({
                   <Button
                     variant="contained"
                     size="small"
-                    onClick={() => setShowConfigDialog(true)}
+                    onClick={() => {
+                      setConfigError(null); // Reset dialog-specific error when opening
+                      setShowConfigDialog(true);
+                    }}
                     disabled={configuring}
                     startIcon={
                       configuring ? (
@@ -388,6 +401,13 @@ export const LoadBalancerManager: React.FC<LoadBalancerManagerProps> = ({
                 </Typography>
                 <LinearProgress />
               </Box>
+            )}
+
+            {configError && !configuring && (
+              <Alert severity="error" sx={{ mt: 2 }}>
+                <AlertTitle>Configuration Error</AlertTitle>
+                {configError}
+              </Alert>
             )}
           </Box>
         </DialogContent>
