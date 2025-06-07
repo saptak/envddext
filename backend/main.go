@@ -23,9 +23,9 @@ type Server struct {
 }
 
 type GatewayFormData struct {
-	Name             string   `json:"name"`
-	Namespace        string   `json:"namespace"`
-	GatewayClassName string   `json:"gatewayClassName"`
+	Name             string     `json:"name"`
+	Namespace        string     `json:"namespace"`
+	GatewayClassName string     `json:"gatewayClassName"`
 	Listeners        []Listener `json:"listeners"`
 }
 
@@ -38,7 +38,7 @@ type Listener struct {
 }
 
 type TLS struct {
-	Mode            string   `json:"mode"`
+	Mode            string    `json:"mode"`
 	CertificateRefs []CertRef `json:"certificateRefs,omitempty"`
 }
 
@@ -47,16 +47,16 @@ type CertRef struct {
 }
 
 type HTTPRouteFormData struct {
-	Name        string      `json:"name"`
-	Namespace   string      `json:"namespace"`
-	GatewayName string      `json:"gatewayName"`
-	Hostnames   []string    `json:"hostnames"`
-	Rules       []HTTPRule  `json:"rules"`
+	Name        string     `json:"name"`
+	Namespace   string     `json:"namespace"`
+	GatewayName string     `json:"gatewayName"`
+	Hostnames   []string   `json:"hostnames"`
+	Rules       []HTTPRule `json:"rules"`
 }
 
 type HTTPRule struct {
-	Matches    []HTTPMatch    `json:"matches"`
-	BackendRefs []BackendRef  `json:"backendRefs"`
+	Matches     []HTTPMatch  `json:"matches"`
+	BackendRefs []BackendRef `json:"backendRefs"`
 }
 
 type HTTPMatch struct {
@@ -255,7 +255,7 @@ func (s *Server) handleTestProxy(w http.ResponseWriter, r *http.Request) {
 	// Test connectivity by making a request to the proxy
 	cmd := exec.Command("curl", "-s", "-m", "5", fmt.Sprintf("http://localhost:%d/api/v1", port))
 	output, err := cmd.CombinedOutput()
-	
+
 	testResult := map[string]interface{}{
 		"proxyRunning": true,
 		"port":         port,
@@ -327,11 +327,13 @@ func (s *Server) handleApplyYAML(w http.ResponseWriter, r *http.Request) {
 func (s *Server) applyYAMLContent(yamlContent string) error {
 	// Ensure we have a working kubeconfig
 	if err := s.ensureKubeconfig(); err != nil {
-		log.Printf("Warning: Could not setup kubeconfig: %v", err)
+		// CRITICAL CHANGE: Return error immediately if kubeconfig setup fails
+		log.Printf("Error during ensureKubeconfig: %v. Aborting applyYAMLContent.", err)
+		return fmt.Errorf("kubeconfig setup failed: %v", err)
 	}
 
 	tempFile := filepath.Join("/tmp", fmt.Sprintf("apply-yaml-%d.yaml", time.Now().Unix()))
-	
+
 	if err := ioutil.WriteFile(tempFile, []byte(yamlContent), 0644); err != nil {
 		return fmt.Errorf("failed to write temporary file: %v", err)
 	}
@@ -359,17 +361,17 @@ func (s *Server) handleKubectl(w http.ResponseWriter, r *http.Request) {
 	// For Docker Desktop extension, use kubectl without server override
 	// Let kubectl use the mounted kubeconfig as-is
 	cmd := exec.Command("kubectl", req.Args...)
-	
+
 	// Set environment to use the mounted kubeconfig
 	cmd.Env = append(os.Environ(), "KUBECONFIG=/host_users/saptak/.kube/config")
-	
+
 	output, err := cmd.CombinedOutput()
-	
+
 	// If kubectl fails, try to provide more helpful error context
 	if err != nil {
 		log.Printf("kubectl command failed: %v, output: %s", err, string(output))
 	}
-	
+
 	response := APIResponse{
 		Success: err == nil,
 		Data:    string(output),
@@ -377,7 +379,7 @@ func (s *Server) handleKubectl(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		response.Error = err.Error()
 	}
-	
+
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -488,21 +490,21 @@ func (s *Server) convertHTTPRules(rules []HTTPRule) []map[string]interface{} {
 func (s *Server) ensureKubeconfig() error {
 	// For Docker Desktop extensions running in containers, we need to update
 	// the kubeconfig to use the accessible server endpoint
-	
+
 	// Read the current kubeconfig
 	kubeconfigPath := os.Getenv("KUBECONFIG")
 	if kubeconfigPath == "" {
-		kubeconfigPath = "/host_users/saptak/.kube/config"
+		return fmt.Errorf("KUBECONFIG environment variable is not set. Please ensure it's configured for the backend service.")
 	}
-	
+	//
 	configBytes, err := ioutil.ReadFile(kubeconfigPath)
 	if err != nil {
 		return fmt.Errorf("failed to read kubeconfig: %v", err)
 	}
-	
+
 	// Replace localhost/127.0.0.1 with kubernetes.docker.internal for container access
 	configStr := string(configBytes)
-	
+
 	// Find the current server URL and replace it with accessible endpoint
 	if strings.Contains(configStr, "127.0.0.1:") {
 		// Extract port from the server URL
@@ -515,29 +517,31 @@ func (s *Server) ensureKubeconfig() error {
 			}
 		}
 		configStr = strings.Join(lines, "\n")
-		
+
 		// Write the modified config to a temporary location for container use
 		tempConfigPath := "/tmp/kubeconfig"
 		if err := ioutil.WriteFile(tempConfigPath, []byte(configStr), 0644); err != nil {
 			return fmt.Errorf("failed to write temporary kubeconfig: %v", err)
 		}
-		
+
 		// Set the environment variable for kubectl to use the modified config
 		os.Setenv("KUBECONFIG", tempConfigPath)
 		log.Printf("Updated kubeconfig to use kubernetes.docker.internal for container access")
 	}
-	
+
 	return nil
 }
 
 func (s *Server) applyYAML(yamlContent, resourceType string) error {
 	// Ensure we have a working kubeconfig
 	if err := s.ensureKubeconfig(); err != nil {
-		log.Printf("Warning: Could not setup kubeconfig: %v", err)
+		// CRITICAL CHANGE: Return error immediately if kubeconfig setup fails
+		log.Printf("Error during ensureKubeconfig: %v. Aborting applyYAML.", err)
+		return fmt.Errorf("kubeconfig setup failed: %v", err)
 	}
 
 	tempFile := filepath.Join("/tmp", fmt.Sprintf("%s-%d.yaml", resourceType, time.Now().Unix()))
-	
+
 	if err := ioutil.WriteFile(tempFile, []byte(yamlContent), 0644); err != nil {
 		return fmt.Errorf("failed to write temporary file: %v", err)
 	}
@@ -546,13 +550,13 @@ func (s *Server) applyYAML(yamlContent, resourceType string) error {
 	// Try server-side apply first, then fall back to client-side apply
 	cmd := exec.Command("kubectl", "apply", "-f", tempFile, "--server-side", "--validate=false", "--force-conflicts", "--insecure-skip-tls-verify")
 	output, err := cmd.CombinedOutput()
-	
+
 	if err != nil {
 		log.Printf("Server-side apply failed, trying client-side: %v", err)
 		// Fallback to client-side apply with validation disabled
 		cmd = exec.Command("kubectl", "apply", "-f", tempFile, "--validate=false", "--force", "--insecure-skip-tls-verify")
 		output, err = cmd.CombinedOutput()
-		
+
 		if err != nil {
 			// If both methods fail, provide helpful error message
 			errorMsg := string(output)
@@ -568,14 +572,14 @@ func (s *Server) applyYAML(yamlContent, resourceType string) error {
 
 func (s *Server) getProxyStatus(port int) ProxyStatus {
 	// Check if port is responding (kubectl proxy returns various codes but we just need connectivity)
-	cmd := exec.Command("curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", 
+	cmd := exec.Command("curl", "-s", "-o", "/dev/null", "-w", "%{http_code}",
 		fmt.Sprintf("http://localhost:%d/api/v1", port))
 	output, err := cmd.Output()
-	
+
 	// Accept any HTTP response code as "running" - even errors mean the proxy is responding
 	responseCode := strings.TrimSpace(string(output))
 	isRunning := err == nil && responseCode != "" && responseCode != "000"
-	
+
 	status := ProxyStatus{
 		IsRunning: isRunning,
 		Port:      port,
@@ -600,32 +604,32 @@ func (s *Server) sendError(w http.ResponseWriter, message string, statusCode int
 
 func main() {
 	server := NewServer()
-	
+
 	socketPath := "/run/guest-services/envoy-gateway-backend.sock"
-	
+
 	// Ensure the directory exists
 	socketDir := filepath.Dir(socketPath)
 	if err := os.MkdirAll(socketDir, 0755); err != nil {
 		log.Printf("Warning: Could not create socket directory: %v", err)
 	}
-	
+
 	// Remove existing socket file
 	os.Remove(socketPath)
-	
+
 	log.Printf("Starting Envoy Gateway backend service on socket: %s", socketPath)
-	
+
 	// Create a Unix socket listener
 	listener, err := net.Listen("unix", socketPath)
 	if err != nil {
 		log.Fatal("Failed to create Unix socket listener:", err)
 	}
 	defer listener.Close()
-	
+
 	// Set socket permissions
 	if err := os.Chmod(socketPath, 0666); err != nil {
 		log.Printf("Warning: Could not set socket permissions: %v", err)
 	}
-	
+
 	if err := http.Serve(listener, server.router); err != nil {
 		log.Fatal("Failed to start server:", err)
 	}

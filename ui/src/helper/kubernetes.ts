@@ -1,7 +1,18 @@
 import { v1 } from "@docker/extension-api-client-types";
-import { Gateway, GatewayFormData, GatewayStatusInfo, GatewayClass } from "../types/gateway";
-import { HTTPRoute, HTTPRouteFormData, HTTPRouteStatusInfo, HTTPRouteValidationResult, ValidationError } from '../types/httproute';
-import yaml from 'js-yaml';
+import {
+  Gateway,
+  GatewayFormData,
+  GatewayStatusInfo,
+  GatewayClass,
+} from "../types/gateway";
+import {
+  HTTPRoute,
+  HTTPRouteFormData,
+  HTTPRouteStatusInfo,
+  HTTPRouteValidationResult,
+  ValidationError,
+} from "../types/httproute";
+import yaml from "js-yaml";
 
 // Backend API response type
 interface APIResponse<T = any> {
@@ -14,22 +25,56 @@ interface APIResponse<T = any> {
 const callBackendAPI = async <T = any>(
   ddClient: v1.DockerDesktopClient,
   endpoint: string,
-  method: 'GET' | 'POST' = 'GET',
-  data?: any
+  method: "GET" | "POST" = "GET",
+  data?: any,
 ): Promise<APIResponse<T>> => {
   try {
     let response;
-    if (method === 'POST') {
+    if (method === "POST") {
       response = await ddClient.extension.vm?.service?.post(endpoint, data);
     } else {
       response = await ddClient.extension.vm?.service?.get(endpoint);
     }
     return response as APIResponse<T>;
-  } catch (error: any) {
-    console.error(`Backend API call failed (${method} ${endpoint}):`, error);
+  } catch (err: any) {
+    // Renamed to 'err'
+    console.error(`Backend API call failed (${method} ${endpoint}):`, err);
+    let extractedErrorMessage: string | undefined;
+
+    if (
+      err &&
+      err.response &&
+      err.response.data &&
+      typeof err.response.data.error === "string"
+    ) {
+      extractedErrorMessage = err.response.data.error;
+    } else if (err && err.data && typeof err.data.error === "string") {
+      // Check for DockerDesktopClient error format
+      extractedErrorMessage = err.data.error;
+    } else if (err && typeof err.error === "string") {
+      // If the error field is directly on the caught object
+      extractedErrorMessage = err.error;
+    } else if (typeof err === "string") {
+      extractedErrorMessage = err;
+    } else if (err && err.message && typeof err.message === "string") {
+      extractedErrorMessage = err.message; // Fallback to generic error message from standard Error object
+    }
+
+    // If a specific message was extracted, use it.
+    // Otherwise, try to stringify the error, or convert to string as a last resort.
+    const finalError =
+      extractedErrorMessage ||
+      (typeof err === "object" && err !== null
+        ? JSON.stringify(err, Object.getOwnPropertyNames(err))
+        : String(err));
+
     return {
       success: false,
-      error: typeof error === 'string' ? error : JSON.stringify(error, null, 2)
+      // Provide a more generic fallback if stringification results in an empty object or unhelpful string
+      error:
+        finalError && finalError !== "{}" && finalError !== "null"
+          ? finalError
+          : `Failed during ${method} ${endpoint}: An unexpected error occurred. Check console for details.`,
     };
   }
 };
@@ -39,10 +84,10 @@ export const CurrentExtensionContext = "currentExtensionContext";
 export const IsK8sEnabled = "isK8sEnabled";
 
 export const listHostContexts = async (ddClient: v1.DockerDesktopClient) => {
-  const response = await callBackendAPI<string>(ddClient, '/kubectl', 'POST', {
-    args: ["config", "view", "-o", "jsonpath='{.contexts}'"]
+  const response = await callBackendAPI<string>(ddClient, "/kubectl", "POST", {
+    args: ["config", "view", "-o", "jsonpath='{.contexts}'"],
   });
-  
+
   if (response.success) {
     return response.data;
   } else {
@@ -52,7 +97,7 @@ export const listHostContexts = async (ddClient: v1.DockerDesktopClient) => {
 };
 
 export const setDockerDesktopContext = async (
-  ddClient: v1.DockerDesktopClient
+  ddClient: v1.DockerDesktopClient,
 ) => {
   const output = await ddClient.extension.host?.cli.exec("kubectl", [
     "config",
@@ -67,7 +112,7 @@ export const setDockerDesktopContext = async (
 };
 
 export const getCurrentHostContext = async (
-  ddClient: v1.DockerDesktopClient
+  ddClient: v1.DockerDesktopClient,
 ) => {
   const output = await ddClient.extension.host?.cli.exec("kubectl", [
     "config",
@@ -124,7 +169,7 @@ export const listEnvoyGateways = async (ddClient: v1.DockerDesktopClient) => {
     "gateways.gateway.networking.k8s.io",
     "-A",
     "-o",
-    "json"
+    "json",
   ]);
   if (output?.stderr && !output.stderr.includes("not found")) {
     return { error: output.stderr };
@@ -132,7 +177,7 @@ export const listEnvoyGateways = async (ddClient: v1.DockerDesktopClient) => {
   try {
     return JSON.parse(output?.stdout || '{"items":[]}');
   } catch (e) {
-    return { error: 'Failed to parse gateways JSON' };
+    return { error: "Failed to parse gateways JSON" };
   }
 };
 
@@ -142,7 +187,7 @@ export const listEnvoyHTTPRoutes = async (ddClient: v1.DockerDesktopClient) => {
     "httproutes.gateway.networking.k8s.io",
     "-A",
     "-o",
-    "json"
+    "json",
   ]);
   if (output?.stderr && !output.stderr.includes("not found")) {
     return { error: output.stderr };
@@ -150,23 +195,31 @@ export const listEnvoyHTTPRoutes = async (ddClient: v1.DockerDesktopClient) => {
   try {
     return JSON.parse(output?.stdout || '{"items":[]}');
   } catch (e) {
-    return { error: 'Failed to parse httproutes JSON' };
+    return { error: "Failed to parse httproutes JSON" };
   }
 };
 
-export const installEnvoyGateway = async (ddClient: v1.DockerDesktopClient, version: string = "latest") => {
+export const installEnvoyGateway = async (
+  ddClient: v1.DockerDesktopClient,
+  version: string = "latest",
+) => {
   try {
     // First, try to uninstall any existing Envoy Gateway installation
     try {
-      console.log("Attempting to uninstall any existing Envoy Gateway installation...");
+      console.log(
+        "Attempting to uninstall any existing Envoy Gateway installation...",
+      );
       const uninstallOutput = await ddClient.extension.host?.cli.exec("helm", [
         "uninstall",
-        "envoy-gateway"
+        "envoy-gateway",
       ]);
       console.log("Helm uninstall output:", uninstallOutput);
     } catch (uninstallError) {
       // Ignore uninstall errors - the release might not exist
-      console.log("Uninstall error (likely release not found, which is fine):", uninstallError);
+      console.log(
+        "Uninstall error (likely release not found, which is fine):",
+        uninstallError,
+      );
     }
 
     // Install Envoy Gateway directly from OCI registry
@@ -181,18 +234,21 @@ export const installEnvoyGateway = async (ddClient: v1.DockerDesktopClient, vers
       "envoy-gateway-system",
       "--create-namespace",
       "--wait",
-      "--debug"
+      "--debug",
     ]);
     console.log("Helm install output:", installOutput);
 
-    if (installOutput?.stderr && installOutput.stderr.includes('Error: ') &&
-        !installOutput.stderr.includes('already exists')) {
+    if (
+      installOutput?.stderr &&
+      installOutput.stderr.includes("Error: ") &&
+      !installOutput.stderr.includes("already exists")
+    ) {
       return { error: installOutput.stderr };
     }
 
     // Wait for a few seconds to allow CRDs to be properly registered
     console.log("Waiting for CRDs to be properly registered...");
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    await new Promise((resolve) => setTimeout(resolve, 5000));
 
     // Verify CRDs are installed
     let crdCheck = await checkEnvoyGatewayCRDs(ddClient);
@@ -200,7 +256,7 @@ export const installEnvoyGateway = async (ddClient: v1.DockerDesktopClient, vers
     // If first check fails, wait a bit longer and try again
     if (!crdCheck) {
       console.log("First CRD check failed, waiting longer...");
-      await new Promise(resolve => setTimeout(resolve, 10000));
+      await new Promise((resolve) => setTimeout(resolve, 10000));
       crdCheck = await checkEnvoyGatewayCRDs(ddClient);
     }
 
@@ -211,7 +267,7 @@ export const installEnvoyGateway = async (ddClient: v1.DockerDesktopClient, vers
     return { success: true };
   } catch (e: any) {
     console.error("Error during Envoy Gateway installation:", e);
-    return { error: typeof e === 'string' ? e : JSON.stringify(e, null, 2) };
+    return { error: typeof e === "string" ? e : JSON.stringify(e, null, 2) };
   }
 };
 
@@ -225,9 +281,9 @@ export const installEnvoyGateway = async (ddClient: v1.DockerDesktopClient, vers
 export const getDetailedDeploymentStatus = async (
   ddClient: v1.DockerDesktopClient,
   namespace: string,
-  name: string
+  name: string,
 ): Promise<{
-  status: 'ready' | 'pending' | 'failed' | 'not_found';
+  status: "ready" | "pending" | "failed" | "not_found";
   readyReplicas: number;
   desiredReplicas: number;
   message?: string;
@@ -245,15 +301,15 @@ export const getDetailedDeploymentStatus = async (
       name,
       "-o",
       "json",
-      "--ignore-not-found"
+      "--ignore-not-found",
     ]);
 
     if (!deployOutput?.stdout || deployOutput.stdout.trim() === "") {
       return {
-        status: 'not_found',
+        status: "not_found",
         readyReplicas: 0,
         desiredReplicas: 0,
-        message: `Deployment '${name}' not found in namespace '${namespace}'`
+        message: `Deployment '${name}' not found in namespace '${namespace}'`,
       };
     }
 
@@ -270,7 +326,7 @@ export const getDetailedDeploymentStatus = async (
     const ageHours = Math.floor(ageMinutes / 60);
     const ageDays = Math.floor(ageHours / 24);
 
-    let age = '';
+    let age = "";
     if (ageDays > 0) {
       age = `${ageDays}d`;
     } else if (ageHours > 0) {
@@ -280,20 +336,22 @@ export const getDetailedDeploymentStatus = async (
     }
 
     // Determine status
-    let status: 'ready' | 'pending' | 'failed';
-    let message = '';
+    let status: "ready" | "pending" | "failed";
+    let message = "";
 
     if (readyReplicas < desiredReplicas) {
-      status = 'pending';
+      status = "pending";
       message = `${readyReplicas}/${desiredReplicas} replicas ready`;
     } else {
       // Check conditions for any issues
-      const failedCondition = conditions.find((c: any) => c.status !== 'True' && c.type !== 'Progressing');
+      const failedCondition = conditions.find(
+        (c: any) => c.status !== "True" && c.type !== "Progressing",
+      );
       if (failedCondition) {
-        status = 'failed';
+        status = "failed";
         message = `${failedCondition.reason}: ${failedCondition.message}`;
       } else {
-        status = 'ready';
+        status = "ready";
         message = `All ${readyReplicas} replicas are ready`;
       }
     }
@@ -305,15 +363,16 @@ export const getDetailedDeploymentStatus = async (
       message,
       deployment,
       age,
-      conditions
+      conditions,
     };
   } catch (error: any) {
     console.error("Error getting detailed deployment status:", error);
     return {
-      status: 'failed',
+      status: "failed",
       readyReplicas: 0,
       desiredReplicas: 0,
-      message: typeof error === 'string' ? error : JSON.stringify(error, null, 2)
+      message:
+        typeof error === "string" ? error : JSON.stringify(error, null, 2),
     };
   }
 };
@@ -328,7 +387,7 @@ export const getDetailedDeploymentStatus = async (
 export const getPodDetails = async (
   ddClient: v1.DockerDesktopClient,
   namespace: string,
-  selector: string
+  selector: string,
 ): Promise<any[]> => {
   try {
     // Get pods
@@ -340,7 +399,7 @@ export const getPodDetails = async (
       "-l",
       selector,
       "-o",
-      "json"
+      "json",
     ]);
 
     if (!podsOutput?.stdout || podsOutput.stdout.trim() === "") {
@@ -361,7 +420,7 @@ export const getPodDetails = async (
         "-n",
         namespace,
         "-o",
-        "json"
+        "json",
       ]);
 
       if (eventsOutput?.stdout && eventsOutput.stdout.trim() !== "") {
@@ -389,7 +448,7 @@ export const getPodDetails = async (
 export const getServiceEndpoints = async (
   ddClient: v1.DockerDesktopClient,
   namespace: string,
-  name: string
+  name: string,
 ): Promise<{
   found: boolean;
   endpoints?: string[];
@@ -406,13 +465,13 @@ export const getServiceEndpoints = async (
       name,
       "-o",
       "json",
-      "--ignore-not-found"
+      "--ignore-not-found",
     ]);
 
     if (!svcOutput?.stdout || svcOutput.stdout.trim() === "") {
       return {
         found: false,
-        message: `Service '${name}' not found in namespace '${namespace}'`
+        message: `Service '${name}' not found in namespace '${namespace}'`,
       };
     }
 
@@ -428,7 +487,7 @@ export const getServiceEndpoints = async (
       name,
       "-o",
       "json",
-      "--ignore-not-found"
+      "--ignore-not-found",
     ]);
 
     let endpoints: string[] = [];
@@ -452,18 +511,21 @@ export const getServiceEndpoints = async (
     return {
       found: true,
       endpoints,
-      ports
+      ports,
     };
   } catch (error: any) {
     console.error("Error getting service endpoints:", error);
     return {
       found: false,
-      message: typeof error === 'string' ? error : JSON.stringify(error, null, 2)
+      message:
+        typeof error === "string" ? error : JSON.stringify(error, null, 2),
     };
   }
 };
 
-export const checkEnvoyGatewayCRDs = async (ddClient: v1.DockerDesktopClient): Promise<boolean> => {
+export const checkEnvoyGatewayCRDs = async (
+  ddClient: v1.DockerDesktopClient,
+): Promise<boolean> => {
   try {
     // First, check if the namespace exists
     const nsOutput = await ddClient.extension.host?.cli.exec("kubectl", [
@@ -471,7 +533,7 @@ export const checkEnvoyGatewayCRDs = async (ddClient: v1.DockerDesktopClient): P
       "namespace",
       "envoy-gateway-system",
       "--no-headers",
-      "--ignore-not-found"
+      "--ignore-not-found",
     ]);
 
     if (!nsOutput?.stdout || nsOutput.stdout.trim() === "") {
@@ -487,7 +549,7 @@ export const checkEnvoyGatewayCRDs = async (ddClient: v1.DockerDesktopClient): P
       "envoy-gateway-system",
       "envoy-gateway",
       "--no-headers",
-      "--ignore-not-found"
+      "--ignore-not-found",
     ]);
 
     if (!deployOutput?.stdout || deployOutput.stdout.trim() === "") {
@@ -502,7 +564,7 @@ export const checkEnvoyGatewayCRDs = async (ddClient: v1.DockerDesktopClient): P
       "gateways.gateway.networking.k8s.io",
       "httproutes.gateway.networking.k8s.io",
       "--no-headers",
-      "--ignore-not-found"
+      "--ignore-not-found",
     ]);
 
     if (!crdOutput?.stdout || crdOutput.stdout.trim() === "") {
@@ -516,7 +578,7 @@ export const checkEnvoyGatewayCRDs = async (ddClient: v1.DockerDesktopClient): P
       "crd",
       "envoyproxies.gateway.envoyproxy.io",
       "--no-headers",
-      "--ignore-not-found"
+      "--ignore-not-found",
     ]);
 
     if (!egCrdOutput?.stdout || egCrdOutput.stdout.trim() === "") {
@@ -537,13 +599,15 @@ export const checkEnvoyGatewayCRDs = async (ddClient: v1.DockerDesktopClient): P
  * @param ddClient Docker Desktop client
  * @returns Array of GatewayClass objects
  */
-export const listGatewayClasses = async (ddClient: v1.DockerDesktopClient): Promise<GatewayClass[]> => {
+export const listGatewayClasses = async (
+  ddClient: v1.DockerDesktopClient,
+): Promise<GatewayClass[]> => {
   try {
     const output = await ddClient.extension.host?.cli.exec("kubectl", [
       "get",
       "gatewayclasses.gateway.networking.k8s.io",
       "-o",
-      "json"
+      "json",
     ]);
 
     if (output?.stderr && !output.stderr.includes("not found")) {
@@ -571,10 +635,15 @@ export const listGatewayClasses = async (ddClient: v1.DockerDesktopClient): Prom
  */
 export const createGateway = async (
   ddClient: v1.DockerDesktopClient,
-  gatewayData: GatewayFormData
+  gatewayData: GatewayFormData,
 ): Promise<{ success: boolean; error?: string; gateway?: Gateway }> => {
-  const response = await callBackendAPI<string>(ddClient, '/create-gateway', 'POST', gatewayData);
-  
+  const response = await callBackendAPI<string>(
+    ddClient,
+    "/create-gateway",
+    "POST",
+    gatewayData,
+  );
+
   if (response.success) {
     return { success: true };
   } else {
@@ -592,7 +661,7 @@ export const createGateway = async (
 export const getGatewayStatus = async (
   ddClient: v1.DockerDesktopClient,
   namespace: string,
-  name: string
+  name: string,
 ): Promise<GatewayStatusInfo> => {
   try {
     // Get Gateway details
@@ -604,15 +673,15 @@ export const getGatewayStatus = async (
       name,
       "-o",
       "json",
-      "--ignore-not-found"
+      "--ignore-not-found",
     ]);
 
     if (!gatewayOutput?.stdout || gatewayOutput.stdout.trim() === "") {
       return {
         name,
         namespace,
-        status: 'unknown',
-        message: `Gateway '${name}' not found in namespace '${namespace}'`
+        status: "unknown",
+        message: `Gateway '${name}' not found in namespace '${namespace}'`,
       };
     }
 
@@ -622,7 +691,7 @@ export const getGatewayStatus = async (
     const addresses = gateway.status?.addresses || [];
 
     // Calculate age
-    let age = '';
+    let age = "";
     if (gateway.metadata.creationTimestamp) {
       const creationTime = new Date(gateway.metadata.creationTimestamp);
       const now = new Date();
@@ -641,41 +710,43 @@ export const getGatewayStatus = async (
     }
 
     // Determine overall status
-    let status: 'ready' | 'pending' | 'failed' | 'unknown' = 'unknown';
-    let message = '';
+    let status: "ready" | "pending" | "failed" | "unknown" = "unknown";
+    let message = "";
 
     // Check for Programmed condition
-    const programmedCondition = conditions.find(c => c.type === 'Programmed');
+    const programmedCondition = conditions.find((c) => c.type === "Programmed");
     if (programmedCondition) {
-      if (programmedCondition.status === 'True') {
-        status = 'ready';
-        message = 'Gateway is programmed and ready';
-      } else if (programmedCondition.status === 'False') {
-        status = 'failed';
+      if (programmedCondition.status === "True") {
+        status = "ready";
+        message = "Gateway is programmed and ready";
+      } else if (programmedCondition.status === "False") {
+        status = "failed";
         message = `Gateway programming failed: ${programmedCondition.message}`;
       } else {
-        status = 'pending';
+        status = "pending";
         message = `Gateway programming pending: ${programmedCondition.message}`;
       }
     } else {
-      status = 'pending';
-      message = 'Gateway status unknown - waiting for controller';
+      status = "pending";
+      message = "Gateway status unknown - waiting for controller";
     }
 
     // Process listener status
-    const listenerStatus = listeners.map(listener => {
+    const listenerStatus = listeners.map((listener) => {
       const listenerConditions = listener.conditions || [];
-      const programmedCondition = listenerConditions.find(c => c.type === 'Programmed');
+      const programmedCondition = listenerConditions.find(
+        (c) => c.type === "Programmed",
+      );
 
-      let listenerStatus: 'ready' | 'pending' | 'failed' = 'pending';
-      let listenerMessage = '';
+      let listenerStatus: "ready" | "pending" | "failed" = "pending";
+      let listenerMessage = "";
 
       if (programmedCondition) {
-        if (programmedCondition.status === 'True') {
-          listenerStatus = 'ready';
-          listenerMessage = 'Listener is ready';
+        if (programmedCondition.status === "True") {
+          listenerStatus = "ready";
+          listenerMessage = "Listener is ready";
         } else {
-          listenerStatus = 'failed';
+          listenerStatus = "failed";
           listenerMessage = programmedCondition.message;
         }
       }
@@ -684,7 +755,7 @@ export const getGatewayStatus = async (
         name: listener.name,
         status: listenerStatus,
         attachedRoutes: listener.attachedRoutes,
-        message: listenerMessage
+        message: listenerMessage,
       };
     });
 
@@ -693,18 +764,19 @@ export const getGatewayStatus = async (
       namespace,
       status,
       message,
-      addresses: addresses.map(addr => addr.value),
+      addresses: addresses.map((addr) => addr.value),
       listeners: listenerStatus,
       conditions,
-      age
+      age,
     };
   } catch (error: any) {
     console.error("Error getting Gateway status:", error);
     return {
       name,
       namespace,
-      status: 'failed',
-      message: typeof error === 'string' ? error : JSON.stringify(error, null, 2)
+      status: "failed",
+      message:
+        typeof error === "string" ? error : JSON.stringify(error, null, 2),
     };
   }
 };
@@ -719,7 +791,7 @@ export const getGatewayStatus = async (
 export const deleteGateway = async (
   ddClient: v1.DockerDesktopClient,
   namespace: string,
-  name: string
+  name: string,
 ): Promise<{ success: boolean; error?: string }> => {
   try {
     const deleteOutput = await ddClient.extension.host?.cli.exec("kubectl", [
@@ -728,13 +800,13 @@ export const deleteGateway = async (
       "-n",
       namespace,
       name,
-      "--ignore-not-found"
+      "--ignore-not-found",
     ]);
 
-    if (deleteOutput?.stderr && deleteOutput.stderr.includes('Error:')) {
+    if (deleteOutput?.stderr && deleteOutput.stderr.includes("Error:")) {
       return {
         success: false,
-        error: deleteOutput.stderr
+        error: deleteOutput.stderr,
       };
     }
 
@@ -743,7 +815,7 @@ export const deleteGateway = async (
     console.error("Error deleting Gateway:", error);
     return {
       success: false,
-      error: typeof error === 'string' ? error : JSON.stringify(error, null, 2)
+      error: typeof error === "string" ? error : JSON.stringify(error, null, 2),
     };
   }
 };
@@ -753,28 +825,33 @@ export const deleteGateway = async (
  * @param ddClient Docker Desktop client
  * @returns Array of namespace names
  */
-export const listNamespaceNames = async (ddClient: v1.DockerDesktopClient): Promise<string[]> => {
+export const listNamespaceNames = async (
+  ddClient: v1.DockerDesktopClient,
+): Promise<string[]> => {
   try {
     const output = await ddClient.extension.host?.cli.exec("kubectl", [
       "get",
       "namespaces",
       "-o",
-      "jsonpath={.items[*].metadata.name}"
+      "jsonpath={.items[*].metadata.name}",
     ]);
 
     if (output?.stderr) {
       console.error("Error listing namespaces:", output.stderr);
-      return ['default'];
+      return ["default"];
     }
 
     if (!output?.stdout || output.stdout.trim() === "") {
-      return ['default'];
+      return ["default"];
     }
 
-    return output.stdout.trim().split(/\s+/).filter(ns => ns.length > 0);
+    return output.stdout
+      .trim()
+      .split(/\s+/)
+      .filter((ns) => ns.length > 0);
   } catch (error: any) {
     console.error("Error listing namespaces:", error);
-    return ['default'];
+    return ["default"];
   }
 };
 
@@ -790,19 +867,24 @@ export const listNamespaceNames = async (ddClient: v1.DockerDesktopClient): Prom
  */
 export const createHTTPRoute = async (
   ddClient: v1.DockerDesktopClient,
-  routeData: HTTPRouteFormData
+  routeData: HTTPRouteFormData,
 ): Promise<{ success: boolean; error?: string; httpRoute?: HTTPRoute }> => {
   // Validate the form data first
   const validation = validateHTTPRouteConfiguration(routeData);
   if (!validation.isValid) {
     return {
       success: false,
-      error: `Validation failed: ${validation.errors.map(e => e.message).join(', ')}`
+      error: `Validation failed: ${validation.errors.map((e) => e.message).join(", ")}`,
     };
   }
 
-  const response = await callBackendAPI<string>(ddClient, '/create-httproute', 'POST', routeData);
-  
+  const response = await callBackendAPI<string>(
+    ddClient,
+    "/create-httproute",
+    "POST",
+    routeData,
+  );
+
   if (response.success) {
     return { success: true };
   } else {
@@ -818,15 +900,10 @@ export const createHTTPRoute = async (
  */
 export const listHTTPRoutes = async (
   ddClient: v1.DockerDesktopClient,
-  namespace?: string
+  namespace?: string,
 ): Promise<{ items: HTTPRoute[]; error?: string }> => {
   try {
-    const args = [
-      "get",
-      "httproutes.gateway.networking.k8s.io",
-      "-o",
-      "json"
-    ];
+    const args = ["get", "httproutes.gateway.networking.k8s.io", "-o", "json"];
 
     if (namespace) {
       args.splice(2, 0, "-n", namespace);
@@ -844,13 +921,13 @@ export const listHTTPRoutes = async (
       const result = JSON.parse(output?.stdout || '{"items":[]}');
       return { items: result.items || [] };
     } catch (e) {
-      return { items: [], error: 'Failed to parse HTTPRoutes JSON' };
+      return { items: [], error: "Failed to parse HTTPRoutes JSON" };
     }
   } catch (error: any) {
     console.error("Error listing HTTPRoutes:", error);
     return {
       items: [],
-      error: typeof error === 'string' ? error : JSON.stringify(error, null, 2)
+      error: typeof error === "string" ? error : JSON.stringify(error, null, 2),
     };
   }
 };
@@ -865,7 +942,7 @@ export const listHTTPRoutes = async (
 export const getHTTPRouteStatus = async (
   ddClient: v1.DockerDesktopClient,
   namespace: string,
-  name: string
+  name: string,
 ): Promise<HTTPRouteStatusInfo> => {
   try {
     // Get HTTPRoute details
@@ -877,15 +954,15 @@ export const getHTTPRouteStatus = async (
       name,
       "-o",
       "json",
-      "--ignore-not-found"
+      "--ignore-not-found",
     ]);
 
     if (!routeOutput?.stdout || routeOutput.stdout.trim() === "") {
       return {
         name,
         namespace,
-        status: 'unknown',
-        message: `HTTPRoute '${name}' not found in namespace '${namespace}'`
+        status: "unknown",
+        message: `HTTPRoute '${name}' not found in namespace '${namespace}'`,
       };
     }
 
@@ -893,7 +970,7 @@ export const getHTTPRouteStatus = async (
     const conditions = httpRoute.status?.parents?.[0]?.conditions || [];
 
     // Calculate age
-    let age = '';
+    let age = "";
     if (httpRoute.metadata.creationTimestamp) {
       const creationTime = new Date(httpRoute.metadata.creationTimestamp);
       const now = new Date();
@@ -912,54 +989,65 @@ export const getHTTPRouteStatus = async (
     }
 
     // Determine overall status
-    let status: 'ready' | 'pending' | 'failed' | 'unknown' = 'unknown';
-    let message = '';
+    let status: "ready" | "pending" | "failed" | "unknown" = "unknown";
+    let message = "";
 
     // Check for Accepted condition
-    const acceptedCondition = conditions.find(c => c.type === 'Accepted');
+    const acceptedCondition = conditions.find((c) => c.type === "Accepted");
     if (acceptedCondition) {
-      if (acceptedCondition.status === 'True') {
-        status = 'ready';
-        message = 'HTTPRoute is accepted and ready';
-      } else if (acceptedCondition.status === 'False') {
-        status = 'failed';
+      if (acceptedCondition.status === "True") {
+        status = "ready";
+        message = "HTTPRoute is accepted and ready";
+      } else if (acceptedCondition.status === "False") {
+        status = "failed";
         message = `HTTPRoute not accepted: ${acceptedCondition.message}`;
       } else {
-        status = 'pending';
+        status = "pending";
         message = `HTTPRoute acceptance pending: ${acceptedCondition.message}`;
       }
     } else {
-      status = 'pending';
-      message = 'HTTPRoute status unknown - waiting for controller';
+      status = "pending";
+      message = "HTTPRoute status unknown - waiting for controller";
     }
 
     // Process parent Gateway status
-    const parentGateways = httpRoute.status?.parents?.map(parent => ({
-      name: parent.parentRef.name,
-      namespace: parent.parentRef.namespace || namespace,
-      status: parent.conditions.find(c => c.type === 'Accepted')?.status === 'True' ? 'accepted' as const :
-              parent.conditions.find(c => c.type === 'Accepted')?.status === 'False' ? 'failed' as const : 'pending' as const,
-      message: parent.conditions.find(c => c.type === 'Accepted')?.message
-    })) || [];
+    const parentGateways =
+      httpRoute.status?.parents?.map((parent) => ({
+        name: parent.parentRef.name,
+        namespace: parent.parentRef.namespace || namespace,
+        status:
+          parent.conditions.find((c) => c.type === "Accepted")?.status ===
+          "True"
+            ? ("accepted" as const)
+            : parent.conditions.find((c) => c.type === "Accepted")?.status ===
+                "False"
+              ? ("failed" as const)
+              : ("pending" as const),
+        message: parent.conditions.find((c) => c.type === "Accepted")?.message,
+      })) || [];
 
     // Check backend services status
     const backendServices: Array<{
       name: string;
       namespace: string;
-      status: 'available' | 'unavailable' | 'unknown';
+      status: "available" | "unavailable" | "unknown";
       endpoints?: number;
     }> = [];
 
     for (const rule of httpRoute.spec.rules || []) {
       for (const backend of rule.backendRefs || []) {
         const serviceNamespace = backend.namespace || namespace;
-        const serviceStatus = await getServiceEndpoints(ddClient, serviceNamespace, backend.name);
+        const serviceStatus = await getServiceEndpoints(
+          ddClient,
+          serviceNamespace,
+          backend.name,
+        );
 
         backendServices.push({
           name: backend.name,
           namespace: serviceNamespace,
-          status: serviceStatus.found ? 'available' : 'unavailable',
-          endpoints: serviceStatus.endpoints?.length || 0
+          status: serviceStatus.found ? "available" : "unavailable",
+          endpoints: serviceStatus.endpoints?.length || 0,
         });
       }
     }
@@ -972,15 +1060,16 @@ export const getHTTPRouteStatus = async (
       parentGateways,
       backendServices,
       conditions,
-      age
+      age,
     };
   } catch (error: any) {
     console.error("Error getting HTTPRoute status:", error);
     return {
       name,
       namespace,
-      status: 'failed',
-      message: typeof error === 'string' ? error : JSON.stringify(error, null, 2)
+      status: "failed",
+      message:
+        typeof error === "string" ? error : JSON.stringify(error, null, 2),
     };
   }
 };
@@ -995,7 +1084,7 @@ export const getHTTPRouteStatus = async (
 export const deleteHTTPRoute = async (
   ddClient: v1.DockerDesktopClient,
   namespace: string,
-  name: string
+  name: string,
 ): Promise<{ success: boolean; error?: string }> => {
   try {
     const deleteOutput = await ddClient.extension.host?.cli.exec("kubectl", [
@@ -1004,13 +1093,13 @@ export const deleteHTTPRoute = async (
       "-n",
       namespace,
       name,
-      "--ignore-not-found"
+      "--ignore-not-found",
     ]);
 
-    if (deleteOutput?.stderr && deleteOutput.stderr.includes('Error:')) {
+    if (deleteOutput?.stderr && deleteOutput.stderr.includes("Error:")) {
       return {
         success: false,
-        error: deleteOutput.stderr
+        error: deleteOutput.stderr,
       };
     }
 
@@ -1019,7 +1108,7 @@ export const deleteHTTPRoute = async (
     console.error("Error deleting HTTPRoute:", error);
     return {
       success: false,
-      error: typeof error === 'string' ? error : JSON.stringify(error, null, 2)
+      error: typeof error === "string" ? error : JSON.stringify(error, null, 2),
     };
   }
 };
@@ -1029,96 +1118,157 @@ export const deleteHTTPRoute = async (
  * @param routeData HTTPRoute form data
  * @returns Validation result with errors
  */
-export const validateHTTPRouteConfiguration = (routeData: HTTPRouteFormData): HTTPRouteValidationResult => {
+export const validateHTTPRouteConfiguration = (
+  routeData: HTTPRouteFormData,
+): HTTPRouteValidationResult => {
   const errors: ValidationError[] = [];
 
   // Validate basic fields
   if (!routeData.name.trim()) {
-    errors.push({ field: 'name', message: 'HTTPRoute name is required' });
+    errors.push({ field: "name", message: "HTTPRoute name is required" });
   } else if (!/^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/.test(routeData.name)) {
-    errors.push({ field: 'name', message: 'HTTPRoute name must be a valid DNS subdomain' });
+    errors.push({
+      field: "name",
+      message: "HTTPRoute name must be a valid DNS subdomain",
+    });
   }
 
   if (!routeData.namespace.trim()) {
-    errors.push({ field: 'namespace', message: 'Namespace is required' });
+    errors.push({ field: "namespace", message: "Namespace is required" });
   }
 
   if (!routeData.parentGateway.trim()) {
-    errors.push({ field: 'parentGateway', message: 'Parent Gateway is required' });
+    errors.push({
+      field: "parentGateway",
+      message: "Parent Gateway is required",
+    });
   }
 
   // Validate hostnames
   routeData.hostnames.forEach((hostname, index) => {
-    if (hostname && !/^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$/.test(hostname)) {
-      errors.push({ field: `hostnames[${index}]`, message: 'Invalid hostname format' });
+    if (
+      hostname &&
+      !/^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$/.test(
+        hostname,
+      )
+    ) {
+      errors.push({
+        field: `hostnames[${index}]`,
+        message: "Invalid hostname format",
+      });
     }
   });
 
   // Validate rules
   if (routeData.rules.length === 0) {
-    errors.push({ field: 'rules', message: 'At least one rule is required' });
+    errors.push({ field: "rules", message: "At least one rule is required" });
   }
 
   routeData.rules.forEach((rule, ruleIndex) => {
     // Validate matches
     if (rule.matches.length === 0) {
-      errors.push({ field: `rules[${ruleIndex}].matches`, message: 'At least one match is required per rule' });
+      errors.push({
+        field: `rules[${ruleIndex}].matches`,
+        message: "At least one match is required per rule",
+      });
     }
 
     rule.matches.forEach((match, matchIndex) => {
       if (!match.pathValue.trim()) {
-        errors.push({ field: `rules[${ruleIndex}].matches[${matchIndex}].pathValue`, message: 'Path value is required' });
-      } else if (!match.pathValue.startsWith('/')) {
-        errors.push({ field: `rules[${ruleIndex}].matches[${matchIndex}].pathValue`, message: 'Path must start with /' });
+        errors.push({
+          field: `rules[${ruleIndex}].matches[${matchIndex}].pathValue`,
+          message: "Path value is required",
+        });
+      } else if (!match.pathValue.startsWith("/")) {
+        errors.push({
+          field: `rules[${ruleIndex}].matches[${matchIndex}].pathValue`,
+          message: "Path must start with /",
+        });
       }
 
       // Validate headers
       match.headers.forEach((header, headerIndex) => {
         if (!header.name.trim()) {
-          errors.push({ field: `rules[${ruleIndex}].matches[${matchIndex}].headers[${headerIndex}].name`, message: 'Header name is required' });
+          errors.push({
+            field: `rules[${ruleIndex}].matches[${matchIndex}].headers[${headerIndex}].name`,
+            message: "Header name is required",
+          });
         }
         if (!header.value.trim()) {
-          errors.push({ field: `rules[${ruleIndex}].matches[${matchIndex}].headers[${headerIndex}].value`, message: 'Header value is required' });
+          errors.push({
+            field: `rules[${ruleIndex}].matches[${matchIndex}].headers[${headerIndex}].value`,
+            message: "Header value is required",
+          });
         }
       });
 
       // Validate query parameters
       match.queryParams.forEach((param, paramIndex) => {
         if (!param.name.trim()) {
-          errors.push({ field: `rules[${ruleIndex}].matches[${matchIndex}].queryParams[${paramIndex}].name`, message: 'Query parameter name is required' });
+          errors.push({
+            field: `rules[${ruleIndex}].matches[${matchIndex}].queryParams[${paramIndex}].name`,
+            message: "Query parameter name is required",
+          });
         }
         if (!param.value.trim()) {
-          errors.push({ field: `rules[${ruleIndex}].matches[${matchIndex}].queryParams[${paramIndex}].value`, message: 'Query parameter value is required' });
+          errors.push({
+            field: `rules[${ruleIndex}].matches[${matchIndex}].queryParams[${paramIndex}].value`,
+            message: "Query parameter value is required",
+          });
         }
       });
     });
 
     // Validate backend refs
     if (rule.backendRefs.length === 0) {
-      errors.push({ field: `rules[${ruleIndex}].backendRefs`, message: 'At least one backend reference is required per rule' });
+      errors.push({
+        field: `rules[${ruleIndex}].backendRefs`,
+        message: "At least one backend reference is required per rule",
+      });
     }
 
     rule.backendRefs.forEach((backend, backendIndex) => {
       if (!backend.name.trim()) {
-        errors.push({ field: `rules[${ruleIndex}].backendRefs[${backendIndex}].name`, message: 'Backend service name is required' });
+        errors.push({
+          field: `rules[${ruleIndex}].backendRefs[${backendIndex}].name`,
+          message: "Backend service name is required",
+        });
       }
 
       if (backend.port <= 0 || backend.port > 65535) {
-        errors.push({ field: `rules[${ruleIndex}].backendRefs[${backendIndex}].port`, message: 'Port must be between 1 and 65535' });
+        errors.push({
+          field: `rules[${ruleIndex}].backendRefs[${backendIndex}].port`,
+          message: "Port must be between 1 and 65535",
+        });
       }
 
       if (backend.weight < 0 || backend.weight > 1000000) {
-        errors.push({ field: `rules[${ruleIndex}].backendRefs[${backendIndex}].weight`, message: 'Weight must be between 0 and 1000000' });
+        errors.push({
+          field: `rules[${ruleIndex}].backendRefs[${backendIndex}].weight`,
+          message: "Weight must be between 0 and 1000000",
+        });
       }
     });
 
     // Validate timeouts
-    if (rule.requestTimeout && !/^\d+(\.\d+)?(ms|s|m|h)$/.test(rule.requestTimeout)) {
-      errors.push({ field: `rules[${ruleIndex}].requestTimeout`, message: 'Invalid timeout format (use: 30s, 5m, 1h, etc.)' });
+    if (
+      rule.requestTimeout &&
+      !/^\d+(\.\d+)?(ms|s|m|h)$/.test(rule.requestTimeout)
+    ) {
+      errors.push({
+        field: `rules[${ruleIndex}].requestTimeout`,
+        message: "Invalid timeout format (use: 30s, 5m, 1h, etc.)",
+      });
     }
 
-    if (rule.backendRequestTimeout && !/^\d+(\.\d+)?(ms|s|m|h)$/.test(rule.backendRequestTimeout)) {
-      errors.push({ field: `rules[${ruleIndex}].backendRequestTimeout`, message: 'Invalid timeout format (use: 30s, 5m, 1h, etc.)' });
+    if (
+      rule.backendRequestTimeout &&
+      !/^\d+(\.\d+)?(ms|s|m|h)$/.test(rule.backendRequestTimeout)
+    ) {
+      errors.push({
+        field: `rules[${ruleIndex}].backendRequestTimeout`,
+        message: "Invalid timeout format (use: 30s, 5m, 1h, etc.)",
+      });
     }
 
     // Validate that backendRequest timeout is not greater than request timeout
@@ -1126,10 +1276,15 @@ export const validateHTTPRouteConfiguration = (routeData: HTTPRouteFormData): HT
       const requestTimeoutMs = parseDuration(rule.requestTimeout);
       const backendTimeoutMs = parseDuration(rule.backendRequestTimeout);
 
-      if (requestTimeoutMs > 0 && backendTimeoutMs > 0 && backendTimeoutMs > requestTimeoutMs) {
+      if (
+        requestTimeoutMs > 0 &&
+        backendTimeoutMs > 0 &&
+        backendTimeoutMs > requestTimeoutMs
+      ) {
         errors.push({
           field: `rules[${ruleIndex}].backendRequestTimeout`,
-          message: 'Backend request timeout cannot be greater than request timeout'
+          message:
+            "Backend request timeout cannot be greater than request timeout",
         });
       }
     }
@@ -1137,7 +1292,7 @@ export const validateHTTPRouteConfiguration = (routeData: HTTPRouteFormData): HT
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 };
 
@@ -1154,11 +1309,16 @@ const parseDuration = (duration: string): number => {
   const unit = match[2];
 
   switch (unit) {
-    case 'ms': return value;
-    case 's': return value * 1000;
-    case 'm': return value * 60 * 1000;
-    case 'h': return value * 60 * 60 * 1000;
-    default: return -1;
+    case "ms":
+      return value;
+    case "s":
+      return value * 1000;
+    case "m":
+      return value * 60 * 1000;
+    case "h":
+      return value * 60 * 60 * 1000;
+    default:
+      return -1;
   }
 };
 
@@ -1170,8 +1330,11 @@ const parseDuration = (duration: string): number => {
  */
 export const getAvailableGateways = async (
   ddClient: v1.DockerDesktopClient,
-  namespace?: string
-): Promise<{ items: Array<{ name: string; namespace: string; listeners: string[] }>; error?: string }> => {
+  namespace?: string,
+): Promise<{
+  items: Array<{ name: string; namespace: string; listeners: string[] }>;
+  error?: string;
+}> => {
   try {
     const gatewayResult = await listEnvoyGateways(ddClient);
 
@@ -1181,11 +1344,15 @@ export const getAvailableGateways = async (
 
     const gateways = gatewayResult.items || [];
     const availableGateways = gateways
-      .filter((gw: Gateway) => !namespace || gw.metadata.namespace === namespace)
+      .filter(
+        (gw: Gateway) => !namespace || gw.metadata.namespace === namespace,
+      )
       .map((gw: Gateway) => ({
         name: gw.metadata.name,
         namespace: gw.metadata.namespace,
-        listeners: gw.spec.listeners.map(l => `${l.name} (${l.protocol}:${l.port})`)
+        listeners: gw.spec.listeners.map(
+          (l) => `${l.name} (${l.protocol}:${l.port})`,
+        ),
       }));
 
     return { items: availableGateways };
@@ -1193,7 +1360,7 @@ export const getAvailableGateways = async (
     console.error("Error getting available Gateways:", error);
     return {
       items: [],
-      error: typeof error === 'string' ? error : JSON.stringify(error, null, 2)
+      error: typeof error === "string" ? error : JSON.stringify(error, null, 2),
     };
   }
 };
@@ -1206,8 +1373,15 @@ export const getAvailableGateways = async (
  */
 export const getAvailableServices = async (
   ddClient: v1.DockerDesktopClient,
-  namespace: string
-): Promise<{ items: Array<{ name: string; namespace: string; ports: Array<{ name?: string; port: number; protocol: string }> }>; error?: string }> => {
+  namespace: string,
+): Promise<{
+  items: Array<{
+    name: string;
+    namespace: string;
+    ports: Array<{ name?: string; port: number; protocol: string }>;
+  }>;
+  error?: string;
+}> => {
   try {
     const output = await ddClient.extension.host?.cli.exec("kubectl", [
       "get",
@@ -1215,7 +1389,7 @@ export const getAvailableServices = async (
       "-n",
       namespace,
       "-o",
-      "json"
+      "json",
     ]);
 
     if (output?.stderr && !output.stderr.includes("not found")) {
@@ -1232,19 +1406,19 @@ export const getAvailableServices = async (
         ports: (svc.spec.ports || []).map((port: any) => ({
           name: port.name,
           port: port.port,
-          protocol: port.protocol || 'TCP'
-        }))
+          protocol: port.protocol || "TCP",
+        })),
       }));
 
       return { items: availableServices };
     } catch (e) {
-      return { items: [], error: 'Failed to parse Services JSON' };
+      return { items: [], error: "Failed to parse Services JSON" };
     }
   } catch (error: any) {
     console.error("Error getting available Services:", error);
     return {
       items: [],
-      error: typeof error === 'string' ? error : JSON.stringify(error, null, 2)
+      error: typeof error === "string" ? error : JSON.stringify(error, null, 2),
     };
   }
 };
@@ -1261,15 +1435,22 @@ export const checkGatewayCompatibility = async (
   ddClient: v1.DockerDesktopClient,
   gatewayName: string,
   gatewayNamespace: string,
-  routeNamespace: string
+  routeNamespace: string,
 ): Promise<{ compatible: boolean; message?: string; listeners?: string[] }> => {
   try {
-    const gatewayStatus = await getGatewayStatus(ddClient, gatewayNamespace, gatewayName);
+    const gatewayStatus = await getGatewayStatus(
+      ddClient,
+      gatewayNamespace,
+      gatewayName,
+    );
 
-    if (gatewayStatus.status === 'unknown' || gatewayStatus.status === 'failed') {
+    if (
+      gatewayStatus.status === "unknown" ||
+      gatewayStatus.status === "failed"
+    ) {
       return {
         compatible: false,
-        message: `Gateway is not ready: ${gatewayStatus.message}`
+        message: `Gateway is not ready: ${gatewayStatus.message}`,
       };
     }
 
@@ -1282,30 +1463,31 @@ export const checkGatewayCompatibility = async (
       gatewayName,
       "-o",
       "json",
-      "--ignore-not-found"
+      "--ignore-not-found",
     ]);
 
     if (!gatewayOutput?.stdout || gatewayOutput.stdout.trim() === "") {
       return {
         compatible: false,
-        message: `Gateway '${gatewayName}' not found in namespace '${gatewayNamespace}'`
+        message: `Gateway '${gatewayName}' not found in namespace '${gatewayNamespace}'`,
       };
     }
 
     const gateway: Gateway = JSON.parse(gatewayOutput.stdout);
-    const httpListeners = gateway.spec.listeners.filter(l =>
-      l.protocol === 'HTTP' || l.protocol === 'HTTPS'
+    const httpListeners = gateway.spec.listeners.filter(
+      (l) => l.protocol === "HTTP" || l.protocol === "HTTPS",
     );
 
     if (httpListeners.length === 0) {
       return {
         compatible: false,
-        message: 'Gateway has no HTTP/HTTPS listeners that can accept HTTPRoutes'
+        message:
+          "Gateway has no HTTP/HTTPS listeners that can accept HTTPRoutes",
       };
     }
 
     // Check if any listener allows HTTPRoutes from the route's namespace
-    const compatibleListeners = httpListeners.filter(listener => {
+    const compatibleListeners = httpListeners.filter((listener) => {
       const allowedRoutes = listener.allowedRoutes;
 
       if (!allowedRoutes || !allowedRoutes.namespaces) {
@@ -1314,11 +1496,11 @@ export const checkGatewayCompatibility = async (
 
       const namespacePolicy = allowedRoutes.namespaces.from;
 
-      if (namespacePolicy === 'All') {
+      if (namespacePolicy === "All") {
         return true;
-      } else if (namespacePolicy === 'Same') {
+      } else if (namespacePolicy === "Same") {
         return gatewayNamespace === routeNamespace;
-      } else if (namespacePolicy === 'Selector') {
+      } else if (namespacePolicy === "Selector") {
         // For simplicity, assume selector allows the namespace
         // In a real implementation, we'd check the selector against namespace labels
         return true;
@@ -1330,20 +1512,23 @@ export const checkGatewayCompatibility = async (
     if (compatibleListeners.length === 0) {
       return {
         compatible: false,
-        message: `Gateway listeners do not allow HTTPRoutes from namespace '${routeNamespace}'`
+        message: `Gateway listeners do not allow HTTPRoutes from namespace '${routeNamespace}'`,
       };
     }
 
     return {
       compatible: true,
       message: `Gateway is compatible with ${compatibleListeners.length} listener(s)`,
-      listeners: compatibleListeners.map(l => `${l.name} (${l.protocol}:${l.port})`)
+      listeners: compatibleListeners.map(
+        (l) => `${l.name} (${l.protocol}:${l.port})`,
+      ),
     };
   } catch (error: any) {
     console.error("Error checking Gateway compatibility:", error);
     return {
       compatible: false,
-      message: typeof error === 'string' ? error : JSON.stringify(error, null, 2)
+      message:
+        typeof error === "string" ? error : JSON.stringify(error, null, 2),
     };
   }
 };

@@ -7,14 +7,29 @@ This guide helps troubleshoot common issues with the Envoy Gateway extension. **
 ### Gateway/HTTPRoute Creation
 
 **Current Status:**
-- ✅ Gateway creation and HTTPRoute creation forms in the UI.
-- ✅ These operations primarily use the **host's `kubectl`** (via `ddClient.extension.host.cli.exec()`) for applying the generated resources. This enhances reliability by using the host's Kubernetes context.
-- ✅ The backend service might still be involved in YAML generation if the UI delegates that, but the `kubectl apply` is typically now a host operation.
+- ✅ Gateway creation and HTTPRoute creation forms in the UI are functional.
+- ✅ The backend Go service handles resource creation. It has been made more robust against kubeconfig issues (e.g., `KUBECONFIG` env var not set, hardcoded paths removed).
+- ✅ Frontend error handling for backend API calls (`callBackendAPI` in `ui/src/helper/kubernetes.ts`) has been improved to display more specific error messages from the backend instead of generic errors like "socket hang up".
 
-**If Issues Occur:**
-- **Check Host `kubectl` Setup**: Ensure `kubectl` on your host machine is configured correctly and can connect to your Docker Desktop Kubernetes cluster (e.g., `kubectl get nodes`). The extension relies on this for most direct K8s interactions.
+**Common Issues & Solutions:**
+
+-   **Error: "socket hang up" or generic "Failed to create Gateway" during creation.**
+    *   **Previous Cause**: Often due to the backend Go service crashing, possibly because of kubeconfig initialization problems (e.g., `KUBECONFIG` environment variable not set for the backend service in the VM, or previously, a hardcoded path being invalid). The frontend might also have obscured the detailed error.
+    *   **Resolution**:
+        *   The backend (`backend/main.go`) now relies solely on the `KUBECONFIG` environment variable being correctly set for its runtime environment. It will return a specific error if `KUBECONFIG` is not found.
+        *   The backend's YAML application logic now fails faster and more cleanly if kubeconfig setup fails.
+        *   The frontend's `callBackendAPI` function in `ui/src/helper/kubernetes.ts` has improved error parsing to show more detailed messages from the backend.
+    *   **Troubleshooting**:
+        1.  Ensure the `KUBECONFIG` environment variable is correctly configured and accessible by the Docker Desktop extension's backend VM service. This might involve checking `docker-compose.yaml` or `metadata.json` for how environment variables are passed to the service.
+        2.  Check extension logs for more specific error messages from the backend.
+
+-   **Gateway created but in "FAILED" state with "AddressNotAssigned"**:
+    *   This indicates an issue with the LoadBalancer configuration not providing an external IP. See the "LoadBalancer Configuration Issues" section.
+
+**If Other Issues Occur:**
+- **Check Host `kubectl` Setup**: While the backend handles creation, ensure `kubectl` on your host machine is configured correctly for general cluster checks.
 - **Kubernetes Cluster Health**: Verify your Kubernetes cluster in Docker Desktop is running and healthy.
-- **Extension Logs**: Check Docker Desktop extension logs. These logs will show output from `host.cli.exec()` calls, which can provide details on `kubectl apply` errors.
+- **Extension Logs**: Check Docker Desktop extension logs for detailed output.
 - **Resource YAML**: If possible, inspect the YAML being applied (e.g., from console logs if the UI outputs it) and try applying it manually on your host using `kubectl apply -f -` to see detailed errors.
 ### Kubectl Proxy Management - **Now Fully Functional!**
 
@@ -80,9 +95,13 @@ ps aux | grep "kubectl proxy"
 ### LoadBalancer Configuration Issues (e.g., MetalLB)
 
 **Symptoms:**
-- UI shows "LoadBalancer Not Configured" even after attempting configuration.
+- UI shows "LoadBalancer Not Configured" or an inaccurate "Configured" status (e.g., "Provider: UNKNOWN" but still marked "Configured").
+- Gateways are "FAILED" with "AddressNotAssigned" because they don't receive an external IP.
+- Errors during MetalLB configuration via the UI dialog, such as:
+    - JavaScript TypeErrors (e.g., "e.includes is not a function").
+    - Ambiguous messages like "Output: [[object Object]], Error: []".
+    - The "Configure LoadBalancer" button might be missing even when the status is "NOT CONFIGURED" and an error is present.
 - Errors like "Failed to install MetalLB" or issues applying `IPAddressPool`/`L2Advertisement`.
-- Gateways do not receive an external IP address.
 
 **Architectural Context:**
 - **Initial MetalLB Manifest & Wait**: The `metallb-native.yaml` manifest and `kubectl wait` commands are applied using the **host's `kubectl`** (via `ddClient.extension.host.cli.exec()`). The `--validate=false` flag is used for the initial manifest to bypass potential K8s API connection issues from within a VM for schema validation (though this specific apply is now a host operation).
@@ -104,6 +123,15 @@ ps aux | grep "kubectl proxy"
         *   `kubectl get ipaddresspools.metallb.io -n metallb-system -o yaml`
         *   `kubectl get l2advertisements.metallb.io -n metallb-system -o yaml`
     *   Look for: Ensure these custom resources are created and configured with the expected IP range. The UI logic requires `IPAddressPools` to exist for MetalLB to be considered fully configured.
+4.  **UI Status and Configuration Dialog Behavior**:
+    *   **Accurate Status**: The "LoadBalancer Configuration" status in the UI (`ui/src/components/LoadBalancerManager.tsx` driven by `ui/src/services/loadBalancerService.ts`) is now stricter. It will only show "CONFIGURED" if MetalLB is confirmed operational (namespace exists, controller ready, and `IPAddressPools` are present). If `metallb-system` namespace is not found, it will correctly show "NOT CONFIGURED".
+    *   **"Configure LoadBalancer" Button Visibility**: The button to configure MetalLB in `LoadBalancerManager.tsx` is now displayed correctly when the status is "NOT CONFIGURED", even if an error message (like "MetalLB namespace 'metallb-system' not found...") is also present.
+    *   **Improved Configuration Dialog Feedback**:
+        *   JavaScript TypeErrors (like "e.includes is not a function") during MetalLB configuration in `configureMetalLB` (`loadBalancerService.ts`) due to unsafe string operations on non-string variables from backend responses have been mitigated by coercing variables to strings (e.g., `String(poolResponse?.data || "")`).
+        *   Misleading errors like "Output: [[object Object]], Error: []" (when the backend's `/apply-yaml` reported `success: false` but sent complex objects in `data`) are now handled better. The frontend in `configureMetalLB` now attempts to parse nested error messages from `response.data.error` and provides clearer feedback in the dialog if ambiguous errors occur, suggesting the operation might have succeeded.
+5.  **Error Messages During Configuration**:\n    *   Pay close attention to any error messages displayed in the UI during the \"Configure LoadBalancer\" process. With recent fixes, these messages should be more informative.\n    *   If errors mention \"connection refused\" when applying `IPAddressPool` or `L2Advertisement` (less likely now for this specific error but possible for others), it points to the backend service\'s `kubectl` (used via `/apply-yaml`) having trouble reaching the K8s API. Ensure your K8s API server address in `~/.kube/config` is accessible from *within* Docker containers/VMs (e.g., needs to be `host.docker.internal` or `kubernetes.docker.internal`).
+6.  **Extension Logs**:\n    *   Check Docker Desktop extension logs for detailed output from both host CLI commands and backend service operations. This is crucial for diagnosing `kubectl` command failures.
+7.  **UI Status Refresh**:\n    *   After attempting configuration or manual `kubectl` checks, click the \"Refresh\" button for the LoadBalancer status in the UI to trigger a fresh status assessment.
 4.  **Error Messages During Configuration**:
     *   Pay close attention to any error messages displayed in the UI during the "Configure LoadBalancer" process.
     *   If errors mention "connection refused" when applying `IPAddressPool` or `L2Advertisement`, it points to the backend service's `kubectl` (used via `/apply-yaml`) having trouble reaching the K8s API. This is less common now but check if your K8s API server address in `~/.kube/config` is accessible from *within* Docker containers/VMs (e.g., needs to be `host.docker.internal` or `kubernetes.docker.internal` if the backend isn't using the host's `kubectl` environment directly for these specific operations).

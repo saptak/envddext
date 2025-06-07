@@ -68,7 +68,7 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 
 ## Current Status
 
-**Latest Update: June 7, 2025** - VM Service Backend Architecture implemented, with refined Kubernetes interaction patterns (primarily host CLI from frontend services for reliability) and robust LoadBalancer management. All Docker Desktop extension limitations resolved.
+**Latest Update: June 8, 2025** - Further refinements to Gateway creation, LoadBalancer status UI, and MetalLB configuration dialogs for improved reliability and user feedback. VM Service Backend Architecture implemented, with refined Kubernetes interaction patterns (primarily host CLI from frontend services for reliability) and robust LoadBalancer management. All Docker Desktop extension limitations resolved.
 
 ### ✅ Completed Features (Iteration 1-5)
 
@@ -76,11 +76,11 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 - **Go Backend Service**: Complete backend rewrite with HTTP API server
 - **File System Access**: Full `/tmp/` access and temporary file operations (by backend service)
 - **Process Management**: Proper kubectl proxy lifecycle with PID tracking (by backend service)
-- **Gateway/HTTPRoute Creation**: Fully functional resource creation, primarily using host CLI for `kubectl apply`.
+- **Gateway/HTTPRoute Creation**: Fully functional resource creation, with enhanced reliability due to improved backend kubeconfig handling and clearer frontend error propagation from the backend service.
 - **Template Application**: Reliable GitHub template deployment using the **host's `kubectl`** for applying templates from URLs.
-- **LoadBalancer Management**: Robust MetalLB integration, including installation (using host CLI for initial manifest with `--validate=false`), configuration (IP range detection, dynamic IPAddressPool/L2Advertisement via backend `/apply-yaml`), and accurate real-time status display (using host CLI for all K8s checks).
+- **LoadBalancer Management**: Robust MetalLB integration, including installation (using host CLI for initial manifest with `--validate=false`), configuration (IP range detection, dynamic IPAddressPool/L2Advertisement via backend `/apply-yaml`), and highly accurate real-time status display (using host CLI for all K8s checks). UI for status reporting and MetalLB configuration dialogs significantly improved for clarity and error feedback, resolving issues related to "AddressNotAssigned" Gateways.
 - **Docker Desktop Integration**: VM service with Unix socket communication
-- **Error Handling**: Comprehensive error reporting and fallback mechanisms
+- **Error Handling**: Comprehensive error reporting from backend to frontend, with specific UI feedback improvements in areas like Gateway creation and LoadBalancer configuration dialogs.
 
 #### Core Infrastructure
 - Basic Envoy Gateway installation and status checking
