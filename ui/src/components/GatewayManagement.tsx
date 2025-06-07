@@ -19,8 +19,10 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 import { GatewayCreationForm } from './GatewayCreationForm';
 import { GatewayStatusMonitor } from './GatewayStatusMonitor';
+import { LoadBalancerManager } from './LoadBalancerManager';
 import { listEnvoyGateways } from '../helper/kubernetes';
 import { Gateway } from '../types/gateway';
+import { LoadBalancerStatus } from '../services/loadBalancerService';
 
 const ddClient = createDockerDesktopClient();
 
@@ -36,6 +38,7 @@ export const GatewayManagement: React.FC<GatewayManagementProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createSuccess, setCreateSuccess] = useState<string | null>(null);
+  const [loadBalancerStatus, setLoadBalancerStatus] = useState<LoadBalancerStatus | null>(null);
 
   useEffect(() => {
     fetchGateways();
@@ -79,6 +82,16 @@ export const GatewayManagement: React.FC<GatewayManagementProps> = ({
   const handleGatewayDeleted = () => {
     // Refresh the gateway list when a gateway is deleted
     fetchGateways();
+  };
+
+  const handleLoadBalancerStatusChange = (status: LoadBalancerStatus) => {
+    setLoadBalancerStatus(status);
+    // Refresh gateway list if LoadBalancer was just configured
+    if (status.isConfigured && (!loadBalancerStatus || !loadBalancerStatus.isConfigured)) {
+      setTimeout(() => {
+        fetchGateways();
+      }, 3000); // Wait a bit for IP assignments to propagate
+    }
   };
 
   const getGatewayStatusSummary = (gateway: Gateway) => {
@@ -131,6 +144,25 @@ export const GatewayManagement: React.FC<GatewayManagementProps> = ({
         <Alert severity="error" sx={{ mb: 3 }}>
           <Typography variant="subtitle2">Error loading Gateways</Typography>
           <Typography variant="body2">{error}</Typography>
+        </Alert>
+      )}
+
+      {/* LoadBalancer Configuration */}
+      <Box sx={{ mb: 3 }}>
+        <LoadBalancerManager 
+          onStatusChange={handleLoadBalancerStatusChange}
+          showConfigureButton={true}
+        />
+      </Box>
+
+      {/* Gateway Address Assignment Warning */}
+      {loadBalancerStatus && !loadBalancerStatus.isConfigured && (
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          <Typography variant="subtitle2">Gateways may not receive IP addresses</Typography>
+          <Typography variant="body2">
+            Without a LoadBalancer controller, your Gateways will remain in "AddressNotAssigned" state. 
+            Configure a LoadBalancer above to resolve this issue.
+          </Typography>
         </Alert>
       )}
 

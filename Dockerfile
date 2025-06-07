@@ -1,3 +1,4 @@
+# Build the React frontend
 FROM --platform=$BUILDPLATFORM node:18.3.0-alpine3.16 AS client-builder
 
 WORKDIR /ui
@@ -14,6 +15,22 @@ RUN --mount=type=cache,target=/usr/src/app/.npm \
 COPY ui /ui
 RUN npm run build
 
+# Build the Go backend
+FROM --platform=$BUILDPLATFORM golang:1.19-alpine AS backend-builder
+
+WORKDIR /app
+
+# Copy go mod files
+COPY backend/go.mod backend/go.sum ./
+RUN go mod download
+
+# Copy source code
+COPY backend/ .
+
+# Build the backend binary
+RUN CGO_ENABLED=0 GOOS=linux go build -o backend main.go
+
+# Final stage
 FROM alpine
 LABEL org.opencontainers.image.title="Envoy Gateway" \
     org.opencontainers.image.description="This is a Envoy Gateway Extension that shows how to interact with Envoy Gateway on Kubernetes." \
@@ -39,7 +56,7 @@ RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/s
     && mkdir /darwin \
     && chmod +x ./kubectl && mv ./kubectl /darwin/
 
-RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/windows/amd64/kubectl.exe" \
+RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/windows/amd64/kubectl.exe \
     && mkdir /windows \
     && chmod +x ./kubectl.exe && mv ./kubectl.exe /windows/
 
@@ -78,6 +95,10 @@ RUN HELM_VERSION=v3.18.0 && \
     rm -rf /windows/windows-arm64 && \
     rm helm-${HELM_VERSION}-windows-arm64.zip
 
+# Copy the backend binary
+COPY --from=backend-builder /app/backend /backend
+
 COPY metadata.json .
 COPY docker.svg .
+COPY docker-compose.yaml .
 COPY --from=client-builder /ui/build ui

@@ -1,11 +1,15 @@
 # Envoy Gateway Docker Desktop Extension
 
-A comprehensive Docker Desktop extension for managing Envoy Gateway resources with an intuitive tabbed interface, GitHub-based templates, HTTP testing tools, and enhanced monitoring capabilities.
+A comprehensive Docker Desktop extension for managing Envoy Gateway resources with an intuitive tabbed interface, GitHub-based templates, HTTP testing tools, and enhanced monitoring capabilities. Built with a robust VM service backend architecture that eliminates Docker Desktop extension limitations.
 
 ## Key Features
 
+- **VM Service Backend**: Robust Go backend service that bypasses Docker Desktop extension limitations
+- **Full Gateway/HTTPRoute Creation**: Complete YAML generation and kubectl operations via backend
+- **LoadBalancer Management**: MetalLB integration with auto-configuration and monitoring
+- **Reliable Proxy Management**: Process control with PID tracking and proper cleanup
 - **Tabbed Interface**: Organized UI with Overview, Templates, Gateway Management, HTTP Testing, and Proxy Manager tabs
-- **GitHub Templates Integration**: Apply templates directly from GitHub repositories
+- **GitHub Templates Integration**: Apply templates directly from GitHub repositories via backend
 - **HTTP Testing Tools**: Built-in HTTP client for testing routes with request/response display
 - **Kubectl Proxy Manager**: Integrated proxy management for accessing Kubernetes services
 - **Enhanced Monitoring**: Real-time status tracking with detailed deployment information
@@ -48,6 +52,14 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 - Real-time proxy status monitoring
 - Direct integration with HTTP testing tools
 
+### ⚖️ LoadBalancer Manager
+- MetalLB LoadBalancer controller integration
+- Automatic IP range detection for Docker Desktop
+- One-click MetalLB installation and configuration
+- Real-time LoadBalancer status and health monitoring
+- IP address pool management and visualization
+- Support for existing MetalLB installations
+
 ### 🔗 GitHub Integration
 - Templates stored at [github.com/saptak/envoygatewaytemplates](https://github.com/saptak/envoygatewaytemplates)
 - Direct HTTP URL application to kubectl
@@ -56,9 +68,19 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 
 ## Current Status
 
-**Latest Update: May 25, 2025** - HTTP Testing Tools and Kubectl Proxy Manager completed!
+**Latest Update: June 6, 2025** - VM Service Backend Architecture implemented! All Docker Desktop extension limitations resolved.
 
-### ✅ Completed Features (Iteration 1-4)
+### ✅ Completed Features (Iteration 1-5)
+
+#### VM Service Backend Architecture (Iteration 5 ✅)
+- **Go Backend Service**: Complete backend rewrite with HTTP API server
+- **File System Access**: Full `/tmp/` access and temporary file operations  
+- **Process Management**: Proper kubectl proxy lifecycle with PID tracking
+- **Gateway/HTTPRoute Creation**: Fully functional resource creation via backend
+- **Template Application**: Reliable GitHub template deployment
+- **LoadBalancer Management**: MetalLB integration with auto-configuration
+- **Docker Desktop Integration**: VM service with Unix socket communication
+- **Error Handling**: Comprehensive error reporting and fallback mechanisms
 
 #### Core Infrastructure
 - Basic Envoy Gateway installation and status checking
@@ -119,7 +141,7 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 
 ### 🚧 Next Iterations (Planned)
 
-#### Iteration 5: Enhanced UI and Visualization
+#### Iteration 6: Enhanced UI and Visualization
 - Resource cards with detailed information
 - Visual diagrams showing Gateway and Route relationships
 - Resource management actions (delete, refresh, edit)
@@ -181,12 +203,16 @@ docker extension install envoyproxy/envoy-gateway-extension:latest --force
 
 - Docker Desktop with Kubernetes enabled
 - Node.js and npm for UI development
+- Go 1.19+ for backend development
 
 ### Project Structure
 
-- `ui/`: React-based frontend
+- `ui/`: React-based frontend with Material-UI components
+- `backend/`: Go backend service with HTTP API server  
 - `docs/`: Documentation and implementation plans
-- `Dockerfile`: Multi-stage build for the extension
+- `docker-compose.yaml`: VM service configuration
+- `Dockerfile`: Multi-stage build for frontend and backend
+- `metadata.json`: Docker Desktop extension metadata with VM service setup
 
 ## Documentation
 
@@ -195,5 +221,7 @@ For more information about the extension, see the following documents:
 - [Extension PRD](docs/envoy_gateway_extension_prd.md)
 - [Implementation Plan](docs/envoy_gateway_implementation_plan.md)
 - [Use Cases](docs/envoy_gateway_use_cases.md)
+- [Docker Desktop Limitations](docs/docker-desktop-limitations.md) - **Now resolved with VM backend!**
+- [Troubleshooting Guide](docs/troubleshooting-guide.md)
 
 For more information about Envoy Gateway, see the [Envoy Gateway documentation](https://gateway.envoyproxy.io/docs/).

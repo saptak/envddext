@@ -1,162 +1,170 @@
-# Troubleshooting Guide - Docker Desktop Extension Limitations
+# Troubleshooting Guide - Envoy Gateway Extension
 
-This guide helps troubleshoot common issues related to Docker Desktop extension security limitations in the Envoy Gateway extension.
+This guide helps troubleshoot common issues with the Envoy Gateway extension. **Note**: Previous Docker Desktop extension limitations have been resolved with the VM service backend architecture!
 
 ## Common Error Messages and Solutions
 
-### Gateway/HTTPRoute Creation Errors
+### Gateway/HTTPRoute Creation - **Now Works Perfectly!**
 
-#### Error: "shell operators are not allowed when executing commands through SDK APIs"
+#### ✅ Gateway/HTTPRoute Creation Success
 
-**Symptoms:**
-- Gateway creation fails with shell operator error
-- HTTPRoute creation fails similarly
-- Error appears when clicking "Create Gateway" or "Create HTTPRoute"
+**Current Status:**
+- ✅ Gateway creation works directly via backend API
+- ✅ HTTPRoute creation works directly via backend API  
+- ✅ Full YAML generation and kubectl operations in backend
+- ✅ Real-time error feedback and success confirmation
 
-**Root Cause:**
-Docker Desktop extension SDK blocks shell operators like pipes (`|`), redirects (`>`), and heredoc (`<<`).
+**How It Works Now:**
+1. Click "Create Gateway" or "Create HTTPRoute" in the UI
+2. Backend generates complete YAML structure
+3. Backend writes YAML to temporary file in `/tmp/`
+4. Backend executes kubectl apply automatically
+5. Success/error feedback shown immediately in UI
 
-**Solution:**
-1. The extension will show a manual kubectl command
-2. Copy the provided command
-3. Run it in your terminal
-4. Refresh the Gateway list in the UI
-
-**Example Output:**
-```bash
-kubectl apply -f - << 'EOF'
-apiVersion: gateway.networking.k8s.io/v1
-kind: Gateway
-metadata:
-  name: my-gateway
-  namespace: default
-spec:
-  gatewayClassName: envoy-gateway
-  listeners:
-    - name: http
-      port: 80
-      protocol: HTTP
-      allowedRoutes:
-        namespaces:
+**If Issues Occur:**
+- Check Docker Desktop VM service is running
+- Verify Kubernetes cluster connectivity
+- Check backend logs via Docker Desktop extension logs
           from: Same
         kinds:
           - kind: HTTPRoute
 EOF
-```
+### Kubectl Proxy Management - **Now Fully Functional!**
 
-#### Error: "the path '/tmp/...' does not exist"
+#### ✅ Complete Proxy Lifecycle Management
 
-**Symptoms:**
-- File path errors mentioning `/tmp/` directory
-- Gateway creation fails with path not found
+**Current Status:**
+- ✅ Start proxy works perfectly via backend
+- ✅ Stop proxy works perfectly with PID tracking
+- ✅ Real-time status monitoring
+- ✅ Automatic cleanup on extension restart
 
-**Root Cause:**
-Docker Desktop extensions cannot create files accessible to host kubectl.
+**How It Works Now:**
+1. **Start**: Backend starts kubectl proxy and stores PID in `/tmp/kubectl-proxy-{port}.pid`
+2. **Monitor**: Backend checks proxy status via HTTP connectivity tests
+3. **Stop**: Backend uses stored PID for reliable process termination
+4. **Cleanup**: Automatic PID file cleanup and process management
 
-**Solution:**
-Update to latest extension version which includes the manual command workaround.
+#### Troubleshooting Proxy Issues
 
-### Kubectl Proxy Issues
+**If Proxy Won't Start:**
+1. Check if port 8001 is already in use: `lsof -i :8001`
+2. Check Kubernetes cluster connectivity: `kubectl cluster-info`
+3. Verify Docker Desktop VM service is running
 
-#### Error: Proxy appears stopped but still running
+**If Proxy Won't Stop:**
+1. Backend should handle this automatically now
+2. If needed, manual cleanup: `pkill -f "kubectl proxy"`
+3. Check Docker Desktop extension logs for backend errors
 
-**Symptoms:**
-- Clicked "Stop Proxy" but proxy continues working
-- `curl http://localhost:8001/api/v1` still responds
-- UI shows proxy as stopped
-
-**Root Cause:**
-`pkill -f "kubectl proxy"` is blocked by Docker Desktop extension security.
-
-**Solution:**
-Manually stop the proxy from terminal:
+**Proxy Status Verification:**
 ```bash
-pkill -f "kubectl proxy"
-```
-
-**Verification:**
-```bash
-# Should fail/timeout if proxy is stopped
+# Check if proxy is responding
 curl -s http://localhost:8001/api/v1 --connect-timeout 2
+
+# Check for proxy processes
+ps aux | grep "kubectl proxy"
 ```
-
-#### Error: Cannot start proxy - port already in use
-
-**Symptoms:**
-- Proxy start fails
-- Error about port 8001 being in use
-
-**Root Cause:**
-Previous proxy process wasn't properly terminated.
-
-**Solution:**
-1. Stop existing proxy: `pkill -f "kubectl proxy"`
-2. Verify it's stopped: `ps aux | grep "kubectl proxy"`
 3. Try starting proxy again from UI
 
-### GitHub Templates Issues
+### GitHub Templates - **Enhanced with Backend!**
 
-#### Error: Templates fail to apply
+#### ✅ Improved Template Application
 
-**Symptoms:**
-- Template application fails
-- Kubectl errors about network/URL access
+**Current Status:**
+- ✅ Enhanced reliability via backend API
+- ✅ Better error handling and user feedback
+- ✅ Automatic retry mechanisms
+- ✅ Comprehensive logging
 
-**Root Cause:**
-Network connectivity or GitHub access issues.
-
-**Solution:**
-1. Check internet connectivity
-2. Verify GitHub repository access
-3. Try manual application:
+**If Template Application Fails:**
+1. **Check Connectivity**: Backend will show specific error messages
+2. **Repository Access**: Backend handles GitHub API calls with retries
+3. **Manual Verification**: Test template URL accessibility
    ```bash
-   kubectl apply -f https://raw.githubusercontent.com/saptak/envoygatewaytemplates/main/templates/basic-http/echo-service.yaml
+   curl -I https://raw.githubusercontent.com/saptak/envoygatewaytemplates/main/templates/basic-http/echo-service.yaml
    ```
+4. **Backend Logs**: Check Docker Desktop extension logs for detailed error information
 
 ### General Extension Issues
+
+#### Backend Service Issues
+
+**Symptoms:**
+- Extension loads but operations fail
+- "Backend service not responding" errors
+- API calls timeout
+
+**Root Cause:**
+VM service backend not properly started or configured.
+
+**Solution:**
+1. **Check VM Service**: Verify Docker Desktop VM service is running
+2. **Restart Extension**: Uninstall and reinstall to restart VM service
+   ```bash
+   docker extension uninstall envoyproxy/envoy-gateway-extension
+   ./build-and-install-github-templates.sh
+   ```
+3. **Docker Desktop Restart**: Restart Docker Desktop if VM issues persist
 
 #### Error: kubectl not found or accessible
 
 **Symptoms:**
-- All kubectl operations fail
-- Extension shows kubectl connectivity issues
+- Backend reports kubectl connectivity issues
+- Kubernetes operations fail
 
 **Root Cause:**
 Docker Desktop kubectl integration not properly configured.
 
 **Solution:**
 1. Restart Docker Desktop
-2. Verify kubectl works outside extension: `kubectl version`
-3. Reinstall extension: `./build-and-install-github-templates.sh`
+2. Verify kubectl works: `kubectl version`
+3. Check Kubernetes context: `kubectl config current-context`
+4. Reinstall extension: `./build-and-install-github-templates.sh`
 
 #### Error: Extension UI not responding
 
 **Symptoms:**
 - Extension tab loads but shows errors
 - Components don't render properly
+- Frontend/backend communication fails
 
 **Root Cause:**
-Extension build or installation issues.
+Extension build, VM service, or socket communication issues.
 
 **Solution:**
-1. Uninstall extension: `docker extension uninstall envoyproxy/envoy-gateway-extension`
-2. Rebuild and reinstall: `./build-and-install-github-templates.sh`
-3. Clear Docker Desktop cache if needed
+1. **Check Extension Status**: Look for extension in Docker Desktop
+2. **Rebuild Extension**: Clean rebuild resolves most issues
+   ```bash
+   docker extension uninstall envoyproxy/envoy-gateway-extension
+   ./build-and-install-github-templates.sh
+   ```
+3. **Check Logs**: View Docker Desktop extension logs for detailed errors
+4. **Docker Desktop Restart**: Full restart if communication issues persist
 
 ## Diagnostic Commands
 
-### Check Extension Status
+### Check Extension and VM Service Status
 ```bash
 # List installed extensions
 docker extension ls
 
 # Check if extension is running
 docker extension ls | grep envoy-gateway
+
+# Check Docker Desktop VM service logs
+docker extension logs envoyproxy/envoy-gateway-extension
+
+# Check if backend service is responding
+curl -s http://localhost:8001/health 2>/dev/null || echo "Backend not accessible"
 ```
 
-### Check Kubectl Connectivity
+### Check Backend API Health
 ```bash
-# Test kubectl access
+# Test backend health endpoint (if proxy is running)
+curl -s http://localhost:8001/health
+
+# Test kubectl access via backend
 kubectl version --client
 
 # Test cluster connectivity  
@@ -166,7 +174,7 @@ kubectl get namespaces
 kubectl get gateways -A
 ```
 
-### Check Proxy Status
+### Check Proxy Status (Enhanced)
 ```bash
 # Check if proxy is running
 ps aux | grep "kubectl proxy"
@@ -174,8 +182,13 @@ ps aux | grep "kubectl proxy"
 # Test proxy connectivity
 curl -s http://localhost:8001/api/v1 --connect-timeout 3
 
-# Check proxy logs (if available)
-ps aux | grep "kubectl proxy" | awk '{print $2}' | xargs -I {} lsof -p {}
+# Check PID file (new with backend)
+cat /tmp/kubectl-proxy-8001.pid 2>/dev/null || echo "No PID file found"
+
+# Check if PID is still active
+if [ -f /tmp/kubectl-proxy-8001.pid ]; then
+  ps -p $(cat /tmp/kubectl-proxy-8001.pid) || echo "Process not running"
+fi
 ```
 
 ### Debug Resource Creation
@@ -204,49 +217,51 @@ EOF
 kubectl get gateways -n default
 ```
 
-## Known Limitations and Workarounds
+## ✅ Previous Limitations - Now Resolved!
 
-### Resource Creation Limitations
+### ✅ Resource Creation - **Fully Functional**
 
-**Limitation**: Cannot create Gateway/HTTPRoute resources directly through UI
-**Workaround**: Use manual kubectl commands provided by extension
+**Previous Issue**: ~~Cannot create Gateway/HTTPRoute resources directly through UI~~
+**Current Status**: ✅ **Fully functional via backend API**
 
-**Why it happens**: Docker Desktop extension file system restrictions
+**How it works now**: Backend generates YAML, writes to `/tmp/`, and executes kubectl automatically
 
-### Process Management Limitations
+### ✅ Process Management - **Fully Functional**
 
-**Limitation**: Cannot stop kubectl proxy through UI
-**Workaround**: Manual `pkill -f "kubectl proxy"` from terminal
+**Previous Issue**: ~~Cannot stop kubectl proxy through UI~~
+**Current Status**: ✅ **Complete process lifecycle management**
 
-**Why it happens**: Docker Desktop extension process management restrictions
+**How it works now**: Backend tracks PIDs and provides reliable start/stop functionality
 
-### Shell Command Limitations
+### ✅ Shell Operations - **Fully Functional**
 
-**Limitation**: Cannot use advanced shell features
-**Workaround**: Use direct kubectl commands or URL-based resource application
+**Previous Issue**: ~~Cannot use advanced shell features~~
+**Current Status**: ✅ **Full shell capability in backend**
 
-**Why it happens**: Docker Desktop extension security sandbox
+**How it works now**: Backend has complete shell access for complex operations
 
 ## Best Practices
 
-### Extension Usage
-1. Always use the provided manual commands for resource creation
-2. Manually verify proxy status if stop button doesn't work
-3. Use GitHub templates for quick resource deployment
-4. Keep terminal access available for workarounds
+### Extension Usage with VM Backend
+1. ✅ Use UI directly - all operations work natively
+2. ✅ Proxy management works reliably through UI
+3. ✅ GitHub templates apply automatically
+4. ✅ Resource creation works directly from forms
+5. Monitor backend logs for any issues
 
 ### Development Workflow
-1. Test resources manually before using extension
-2. Use `kubectl --dry-run=client` to validate YAML
-3. Keep extension updated for latest workarounds
-4. Document any new limitations discovered
+1. ✅ Use extension UI for all operations
+2. ✅ Backend validates YAML automatically
+3. Keep extension updated for enhancements
+4. Check backend logs for debugging
+5. Use diagnostic commands to verify VM service health
 
 ### Troubleshooting Workflow
-1. Check extension logs in Docker Desktop
-2. Verify kubectl connectivity independently
-3. Test manual commands provided by extension
-4. Use diagnostic commands to isolate issues
-5. Restart extension if needed
+1. **Check VM Service**: Verify backend service is running
+2. **Check Extension Logs**: Use `docker extension logs envoyproxy/envoy-gateway-extension`
+3. **Verify Connectivity**: Test kubectl and cluster access
+4. **Backend Health**: Check backend API responses
+5. **Restart if Needed**: Reinstall extension to restart VM service
 
 ## Getting Help
 
@@ -259,9 +274,10 @@ When reporting issues, include:
 - Output of diagnostic commands
 
 ### Common Solutions Summary
-- **Resource creation**: Use manual kubectl commands
-- **Proxy stop**: Use `pkill -f "kubectl proxy"`
-- **Extension issues**: Rebuild and reinstall
+- **Resource creation**: ✅ **Works natively through UI**
+- **Proxy management**: ✅ **Full start/stop control via UI**  
+- **Extension issues**: Rebuild and reinstall to restart VM service
+- **Backend issues**: Check Docker Desktop extension logs
 - **Connectivity**: Verify kubectl and cluster access
 
 ### Related Documentation

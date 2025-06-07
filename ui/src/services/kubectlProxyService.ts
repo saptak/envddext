@@ -37,7 +37,7 @@ export class KubectlProxyService {
    */
   async startProxy(port: number = this.DEFAULT_PROXY_PORT): Promise<ProxyStatus> {
     try {
-      console.log(`Starting kubectl proxy on port ${port}...`);
+      console.log(`Starting kubectl proxy on port ${port} via backend...`);
 
       // First, check if proxy is already running
       const currentStatus = await this.checkProxyStatus();
@@ -46,32 +46,25 @@ export class KubectlProxyService {
         return currentStatus;
       }
 
-      // Stop any existing proxy first
-      await this.stopProxy();
+      // Use the VM backend to start the proxy
+      const response = await this.ddClient.extension.vm?.service?.post('/start-proxy', { port }) as any;
 
-      // Start the proxy using Docker Desktop CLI
-      const output = await this.ddClient.extension.host?.cli.exec("kubectl", [
-        "proxy",
-        "--port=" + port.toString(),
-        "--accept-hosts=^localhost$,^127\\.0\\.0\\.1$,^\\[::1\\]$"
-      ]);
+      if (response?.success) {
+        this.proxyStatus = {
+          isRunning: response.data?.isRunning || true,
+          port: response.data?.port || port,
+          startTime: new Date(),
+          pid: response.data?.pid
+        };
 
-      if (output?.stderr && !output.stderr.includes("Starting to serve")) {
-        throw new Error(`Failed to start kubectl proxy: ${output.stderr}`);
+        // Start status monitoring
+        this.startStatusMonitoring();
+
+        console.log(`Kubectl proxy started successfully on port ${port}`);
+        return this.proxyStatus;
+      } else {
+        throw new Error(response?.error || 'Unknown error starting proxy');
       }
-
-      // Update status
-      this.proxyStatus = {
-        isRunning: true,
-        port: port,
-        startTime: new Date()
-      };
-
-      // Start status monitoring
-      this.startStatusMonitoring();
-
-      console.log(`Kubectl proxy started successfully on port ${port}`);
-      return this.proxyStatus;
 
     } catch (error: any) {
       console.error('Failed to start kubectl proxy:', error);
@@ -89,7 +82,7 @@ export class KubectlProxyService {
    */
   async stopProxy(): Promise<void> {
     try {
-      console.log('Stopping kubectl proxy...');
+      console.log('Stopping kubectl proxy via backend...');
 
       // Stop status monitoring
       if (this.statusCheckInterval) {
@@ -97,17 +90,14 @@ export class KubectlProxyService {
         this.statusCheckInterval = undefined;
       }
 
-      // Try to find and kill kubectl proxy processes
-      // Note: This is a simplified approach. In production, we'd want to track the actual PID
-      try {
-        const killOutput = await this.ddClient.extension.host?.cli.exec("pkill", [
-          "-f",
-          "kubectl proxy"
-        ]);
-        console.log('Kubectl proxy processes killed:', killOutput?.stdout);
-      } catch (killError) {
-        // It's okay if pkill fails - the process might not be running
-        console.log('No kubectl proxy processes found to kill');
+      // Use the VM backend to stop the proxy
+      const response = await this.ddClient.extension.vm?.service?.post('/stop-proxy', { port: this.proxyStatus.port }) as any;
+
+      if (response?.success) {
+        console.log('Kubectl proxy stopped successfully via backend');
+      } else {
+        console.warn('Backend stop proxy returned error:', response?.error);
+        // Continue anyway - we still want to update our local status
       }
 
       // Update status
@@ -134,31 +124,50 @@ export class KubectlProxyService {
    */
   async checkProxyStatus(): Promise<ProxyStatus> {
     try {
-      // Try to make a simple request to the proxy endpoint
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
+      // Use the VM backend to check proxy status
+      const response = await this.ddClient.extension.vm?.service?.get(`/proxy-status?port=${this.proxyStatus.port}`) as any;
 
-      const response = await fetch(`http://localhost:${this.proxyStatus.port}/api/v1`, {
-        method: 'GET',
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        this.proxyStatus.isRunning = true;
-        this.proxyStatus.error = undefined;
+      if (response?.success && response.data) {
+        this.proxyStatus = {
+          ...this.proxyStatus,
+          isRunning: response.data.isRunning,
+          port: response.data.port,
+          pid: response.data.pid,
+          error: undefined
+        };
       } else {
-        this.proxyStatus.isRunning = false;
-        this.proxyStatus.error = `Proxy responded with status ${response.status}`;
+        // Fallback to local check if backend fails
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+          const httpResponse = await fetch(`http://localhost:${this.proxyStatus.port}/api/v1`, {
+            method: 'GET',
+            signal: controller.signal
+          });
+
+          clearTimeout(timeoutId);
+
+          if (httpResponse.ok) {
+            this.proxyStatus.isRunning = true;
+            this.proxyStatus.error = undefined;
+          } else {
+            this.proxyStatus.isRunning = false;
+            this.proxyStatus.error = `Proxy responded with status ${httpResponse.status}`;
+          }
+        } catch (error: any) {
+          this.proxyStatus.isRunning = false;
+          if (error.name === 'AbortError') {
+            this.proxyStatus.error = 'Proxy connection timeout';
+          } else {
+            this.proxyStatus.error = 'Proxy not responding';
+          }
+        }
       }
     } catch (error: any) {
+      console.error('Error checking proxy status:', error);
       this.proxyStatus.isRunning = false;
-      if (error.name === 'AbortError') {
-        this.proxyStatus.error = 'Proxy connection timeout';
-      } else {
-        this.proxyStatus.error = 'Proxy not responding';
-      }
+      this.proxyStatus.error = 'Backend status check failed';
     }
 
     return { ...this.proxyStatus };
@@ -271,38 +280,34 @@ export class KubectlProxyService {
    */
   async testProxyConnectivity(): Promise<{ success: boolean; message: string }> {
     try {
-      const status = await this.checkProxyStatus();
+      console.log('Testing kubectl proxy connectivity via backend...');
 
-      if (!status.isRunning) {
-        return {
-          success: false,
-          message: 'Kubectl proxy is not running'
-        };
-      }
+      // Use the VM backend to test proxy connectivity
+      const response = await this.ddClient.extension.vm?.service?.get(`/test-proxy?port=${this.proxyStatus.port}`) as any;
 
-      // Try to access the API
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
-      const response = await fetch(`http://localhost:${this.proxyStatus.port}/api/v1`, {
-        method: 'GET',
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        return {
-          success: true,
-          message: 'Kubectl proxy is working correctly'
-        };
+      if (response?.success && response.data) {
+        const testData = response.data;
+        
+        if (testData.connectivity) {
+          return {
+            success: true,
+            message: testData.message || 'Kubectl proxy is working correctly'
+          };
+        } else {
+          return {
+            success: false,
+            message: testData.message || 'Proxy connectivity test failed'
+          };
+        }
       } else {
         return {
           success: false,
-          message: `Proxy returned status ${response.status}: ${response.statusText}`
+          message: response?.error || 'Backend test failed'
         };
       }
+
     } catch (error: any) {
+      console.error('Error testing proxy connectivity:', error);
       return {
         success: false,
         message: `Proxy connectivity test failed: ${error.message || 'Unknown error'}`

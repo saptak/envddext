@@ -1,0 +1,22 @@
+# Minimal Dockerfile for quick testing
+FROM alpine
+
+# Copy pre-built UI
+COPY ui/build ui
+
+# Add basic metadata
+COPY metadata.json .
+COPY docker.svg .
+COPY docker-compose.yaml .
+
+# Add minimal backend placeholder (we'll use the existing build)
+RUN echo '#!/bin/sh\necho "Backend service"' > /backend && chmod +x /backend
+
+# Add required tools
+RUN apk add curl && \
+    curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.31.0/bin/linux/amd64/kubectl && \
+    chmod +x kubectl && mv kubectl /usr/local/bin/
+
+LABEL org.opencontainers.image.title="Envoy Gateway" \
+    org.opencontainers.image.description="Minimal test build" \
+    com.docker.desktop.extension.api.version=">= 0.2.3"

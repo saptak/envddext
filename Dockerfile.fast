@@ -1,0 +1,75 @@
+# Fast build using pre-built components
+FROM alpine
+
+# Add required packages
+RUN apk add curl tar gzip unzip
+
+# Copy the pre-built UI
+COPY ui/build ui
+
+# Copy the pre-built backend binary
+COPY backend/backend /backend
+RUN chmod +x /backend
+
+# Copy metadata and configs
+COPY metadata.json .
+COPY docker.svg .
+COPY docker-compose.yaml .
+
+# Download kubectl quickly (use a specific version to avoid version lookup)
+RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.31.0/bin/linux/amd64/kubectl \
+    && chmod +x ./kubectl && mv ./kubectl /usr/local/bin/kubectl \
+    && mkdir /linux && cp /usr/local/bin/kubectl /linux/
+
+# Download kubectl for darwin
+RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.31.0/bin/darwin/amd64/kubectl \
+    && mkdir /darwin && chmod +x ./kubectl && mv ./kubectl /darwin/
+
+# Download kubectl for windows  
+RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.31.0/bin/windows/amd64/kubectl.exe \
+    && mkdir /windows && chmod +x ./kubectl.exe && mv ./kubectl.exe /windows/
+
+# Add minimal helm (just linux for now to speed up)
+RUN curl -LO https://get.helm.sh/helm-v3.18.0-linux-amd64.tar.gz \
+    && tar -zxvf helm-v3.18.0-linux-amd64.tar.gz linux-amd64/helm \
+    && mv linux-amd64/helm /linux/helm \
+    && rm helm-v3.18.0-linux-amd64.tar.gz && rm -rf linux-amd64
+
+RUN curl -LO https://get.helm.sh/helm-v3.18.0-linux-arm64.tar.gz \
+    && tar -zxvf helm-v3.18.0-linux-arm64.tar.gz linux-arm64/helm \
+    && mv linux-arm64/helm /linux/helm-arm64 \
+    && rm helm-v3.18.0-linux-arm64.tar.gz && rm -rf linux-arm64
+
+# Add minimal helm for other platforms
+RUN curl -LO https://get.helm.sh/helm-v3.18.0-darwin-amd64.tar.gz \
+    && tar -zxvf helm-v3.18.0-darwin-amd64.tar.gz darwin-amd64/helm \
+    && mv darwin-amd64/helm /darwin/helm \
+    && rm helm-v3.18.0-darwin-amd64.tar.gz && rm -rf darwin-amd64
+
+RUN curl -LO https://get.helm.sh/helm-v3.18.0-darwin-arm64.tar.gz \
+    && tar -zxvf helm-v3.18.0-darwin-arm64.tar.gz darwin-arm64/helm \
+    && mv darwin-arm64/helm /darwin/helm-arm64 \
+    && rm helm-v3.18.0-darwin-arm64.tar.gz && rm -rf darwin-arm64
+
+RUN curl -LO https://get.helm.sh/helm-v3.18.0-windows-amd64.zip \
+    && unzip helm-v3.18.0-windows-amd64.zip -d /windows \
+    && mv /windows/windows-amd64/helm.exe /windows/helm.exe \
+    && rm -rf /windows/windows-amd64 && rm helm-v3.18.0-windows-amd64.zip
+
+RUN curl -LO https://get.helm.sh/helm-v3.18.0-windows-arm64.zip \
+    && unzip helm-v3.18.0-windows-arm64.zip -d /windows \
+    && mv /windows/windows-arm64/helm.exe /windows/helm-arm64.exe \
+    && rm -rf /windows/windows-arm64 && rm helm-v3.18.0-windows-arm64.zip
+
+# Set labels
+LABEL org.opencontainers.image.title="Envoy Gateway" \
+    org.opencontainers.image.description="This is a Envoy Gateway Extension that shows how to interact with Envoy Gateway on Kubernetes." \
+    org.opencontainers.image.vendor="Saptak Sen" \
+    org.opencontainers.image.licenses="Apache-2.0" \
+    com.docker.desktop.extension.icon="" \
+    com.docker.desktop.extension.api.version=">= 0.2.3" \
+    com.docker.extension.screenshots="" \
+    com.docker.extension.detailed-description="" \
+    com.docker.extension.publisher-url="" \
+    com.docker.extension.additional-urls="" \
+    com.docker.extension.changelog=""

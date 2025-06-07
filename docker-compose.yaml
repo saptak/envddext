@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  envoy-gateway-backend:
+    image: ${DESKTOP_PLUGIN_IMAGE}
+    container_name: envoy-gateway-backend
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp:/tmp
+      - /host_mnt/Users:/host_users:ro
+    environment:
+      - KUBECONFIG=/host_users/${USER}/.kube/config
+    extra_hosts:
+      - "kubernetes.docker.internal:host-gateway"
+    command: ["/backend"]
+    networks:
+      - default
+    restart: unless-stopped
+
+networks:
+  default:
+    driver: bridge

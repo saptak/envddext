@@ -8,6 +8,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **LoadBalancer Management**: Complete MetalLB integration with auto-configuration for Docker Desktop
+- **LoadBalancer Status Monitoring**: Real-time status tracking with IP pool visualization
+- **Auto IP Range Detection**: Automatic network range detection for MetalLB configuration
+- **Enhanced Error Handling**: Improved error handling for existing MetalLB installations
+
+### Fixed
+- **LoadBalancer Configuration Error**: Fixed "exit status 1" error when MetalLB is already installed
+- **Resource Conflict Handling**: Proper handling of existing MetalLB resources during configuration
+- **Service Detection Logic**: Improved LoadBalancer service detection and status reporting
+
+## [0.5.0] - 2025-06-06
+
+### Added - **MAJOR ARCHITECTURE OVERHAUL**
+- **VM Service Backend**: Complete rewrite with Go backend service in Docker Desktop VM
+- **All Docker Desktop Limitations Resolved**: Full file system access, process management, and shell operations
+- **Gateway/HTTPRoute Creation**: Now works natively through UI with backend YAML generation
+- **Enhanced Proxy Management**: Complete kubectl proxy lifecycle with PID tracking and reliable stop functionality
+- **Backend API Endpoints**: RESTful API for all Kubernetes operations (/create-gateway, /create-httproute, /start-proxy, /stop-proxy, /proxy-status, /apply-template, /kubectl, /health)
+- **Unix Socket Communication**: Secure frontend-backend communication via Docker Desktop VM
+- **Multi-stage Docker Build**: React frontend + Go backend compilation
+
+### Changed - **BREAKING ARCHITECTURE**
+- **Complete Backend Rewrite**: All service layers now communicate with Go backend API
+- **Infrastructure Updates**: metadata.json with VM service config, docker-compose.yaml for VM deployment
+- **Build Process**: Enhanced build script with Go dependency management
+- **Frontend Integration**: Services rewritten for API communication while maintaining UI/UX
+
+### Fixed - **ALL PREVIOUS LIMITATIONS**
+- ✅ Gateway and HTTPRoute creation through UI (was blocked by Docker Desktop restrictions)
+- ✅ Kubectl proxy stop functionality (was blocked by process management restrictions)  
+- ✅ File system operations (was blocked by temp file access restrictions)
+- ✅ Shell command limitations (was blocked by pipe/redirect restrictions)
+- ✅ Process management (was blocked by pkill pattern restrictions)
+
+## [0.4.0] - 2025-05-26
+
+### Added
 - HTTP Testing Tools with comprehensive testing interface
 - Built-in HTTP client supporting all HTTP methods (GET, POST, PUT, DELETE, etc.)
 - Request/response display with syntax highlighting
@@ -97,8 +134,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [x] **Kubectl Proxy Manager**: Integrated proxy management with service URL generation
 - [x] **Real-time Monitoring**: Live proxy status and connectivity testing
 
+### Iteration 5: VM Service Backend Architecture ✅ COMPLETED
+- [x] **Complete Architecture Rewrite**: Go backend service in Docker Desktop VM
+- [x] **All Limitations Resolved**: File system, process management, and shell operation restrictions eliminated
+- [x] **Gateway/HTTPRoute Creation**: Native UI creation with backend YAML generation and kubectl operations
+- [x] **Enhanced Proxy Management**: Full process lifecycle control with PID tracking
+- [x] **Backend API**: RESTful endpoints for all Kubernetes operations
+- [x] **Infrastructure Updates**: VM service configuration, multi-stage Docker build
+
 ### Future Iterations
-- **Iteration 5**: Enhanced UI and Visualization
+- **Iteration 6**: Enhanced UI and Visualization
 - **Iteration 6**: TLS Termination Example
 - **Iteration 7**: Traffic Splitting Example
 - **Iteration 8**: Configuration Forms and Wizards
@@ -110,6 +155,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Technical Details
 
 ### Components Added in Latest Release
+- `LoadBalancerManager`: Complete MetalLB LoadBalancer management interface
+- `LoadBalancerService`: Backend integration for MetalLB configuration and monitoring
 - `HTTPClient`: Comprehensive HTTP testing interface with request/response handling
 - `ProxyManager`: Kubectl proxy management with service URL generation
 - `HTTPResponseDisplay`: Syntax-highlighted response viewer with formatting
