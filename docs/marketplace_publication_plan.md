@@ -3,7 +3,7 @@
 ## Document Information
 - **Document Title**: Envoy Gateway Extension Marketplace Publication Plan
 - **Version**: 1.0
-- **Date**: May 22, 2024
+- **Date**: June 7, 2025
 - **Status**: Ready for Implementation
 
 ## Executive Summary
@@ -13,12 +13,20 @@ This document outlines the comprehensive plan to publish the Envoy Gateway Docke
 ## Current Extension Status
 
 ### ✅ Completed Components
-- **Core Functionality**: Basic Envoy Gateway management and resource viewing
-- **Template System**: GitHub-based template integration with quick start workflows
-- **Enhanced Monitoring**: Real-time deployment status monitoring with detailed pod information
-- **UI/UX**: Tabbed interface with comprehensive status displays and troubleshooting
-- **Multi-platform Support**: Cross-platform binaries (kubectl, helm) for Linux, macOS, Windows
-- **Documentation**: Comprehensive PRD, implementation plan, and user documentation
+- **Core Functionality**: Docker Desktop extension framework, basic Envoy Gateway management and resource viewing.
+- **VM Service Backend**: Go backend in Docker Desktop VM resolving previous sandbox limitations and providing APIs for specific operations (e.g., applying dynamic YAML, process management).
+- **Kubernetes Interaction Architecture**:
+  - Primarily uses `kubectl` executed via `ddClient.extension.host.cli.exec()` from frontend services for reliable reads (e.g., status checks for LoadBalancer, Gateways, HTTPRoutes) and applying URL-based manifests (e.g., GitHub templates, initial MetalLB setup).
+  - Backend VM service's `kubectl` (via endpoints like `/apply-yaml`) used for specific tasks like applying dynamically generated YAML strings.
+- **Gateway & HTTPRoute Management**: Form-based creation for Gateways and HTTPRoutes with validation and status monitoring.
+- **LoadBalancer Management**: Robust MetalLB integration, including installation (using host CLI for initial manifest with `--validate=false`), configuration (IP range detection, dynamic IPAddressPool/L2Advertisement via backend `/apply-yaml`), and accurate real-time status display (using host CLI for all K8s checks).
+- **Template System**: GitHub-based template integration with quick start workflows; templates applied via host CLI for reliability.
+- **HTTP Testing Tools**: Integrated HTTP client for testing deployed routes and services.
+- **Proxy Manager**: UI for managing `kubectl proxy` (lifecycle managed by backend service).
+- **Enhanced Monitoring**: Real-time deployment status monitoring for various components.
+- **UI/UX**: 5-tab interface (Overview, Templates, Gateway Management, HTTP Testing, Proxy Manager) with comprehensive status displays, troubleshooting guidance, and dark theme integration.
+- **Multi-platform Support**: Cross-platform binaries (kubectl, helm) for Linux, macOS, Windows.
+- **Documentation**: Comprehensive PRD, implementation plans, troubleshooting guides, and changelogs updated to reflect current architecture and features.
 
 ### 🚧 Current Limitations
 - Missing marketplace-specific metadata and labels
@@ -63,7 +71,7 @@ Based on Docker's documentation, the following requirements must be met:
 ### Phase 1: Technical Preparation (3-5 days)
 
 #### Task 1.1: Update Image Labels and Metadata (1 day)
-**Objective**: Add all required Docker image labels for marketplace compliance
+**Objective**: Add all required Docker image labels for marketplace compliance (ensuring descriptions reflect current features including LoadBalancer management, form-based resource creation, HTTP testing tools, and the refined K8s interaction architecture).
 
 **Actions**:
 1. Update Dockerfile with complete image labels:
@@ -182,8 +190,8 @@ Based on Docker's documentation, the following requirements must be met:
 **Objective**: Create compelling marketplace listing content
 
 **Actions**:
-1. **Short Description** (160 characters): Concise value proposition
-2. **Detailed Description**: Comprehensive feature overview
+1. **Short Description** (160 characters): Concise value proposition (ensure it captures key capabilities like LoadBalancer management if space allows).
+2. **Detailed Description**: Comprehensive feature overview (ensure this highlights LoadBalancer management, reliable K8s interactions via host CLI, form-based creation, HTTP testing, etc.).
    - Key benefits and use cases
    - Target audience
    - Feature highlights
@@ -223,10 +231,11 @@ Based on Docker's documentation, the following requirements must be met:
 **Test Scenarios**:
 1. Fresh installation and setup
 2. Template application workflows
-3. Status monitoring and troubleshooting
-4. Resource management operations
-5. Error handling and recovery
-6. Performance under load
+3. LoadBalancer configuration (MetalLB), functionality, and status accuracy
+4. Gateway/HTTPRoute creation via forms, HTTP testing tools functionality, and Proxy Manager functionality
+5. Overall status monitoring and troubleshooting capabilities across all features
+6. Error handling and recovery
+7. Performance under load
 
 **Deliverables**:
 - Platform compatibility report

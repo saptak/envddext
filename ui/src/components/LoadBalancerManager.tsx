@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Card,
@@ -21,8 +21,8 @@ import {
   FormControlLabel,
   Switch,
   Divider,
-  LinearProgress
-} from '@mui/material';
+  LinearProgress,
+} from "@mui/material";
 import {
   CheckCircle as CheckCircleIcon,
   Warning as WarningIcon,
@@ -30,10 +30,14 @@ import {
   Cloud as CloudIcon,
   Settings as SettingsIcon,
   NetworkCheck as NetworkCheckIcon,
-  Router as RouterIcon
-} from '@mui/icons-material';
+  Router as RouterIcon,
+} from "@mui/icons-material";
 import { createDockerDesktopClient } from "@docker/extension-api-client";
-import { LoadBalancerService, LoadBalancerStatus, LoadBalancerConfiguration } from '../services/loadBalancerService';
+import {
+  LoadBalancerService,
+  LoadBalancerStatus,
+  LoadBalancerConfiguration,
+} from "../services/loadBalancerService";
 
 const ddClient = createDockerDesktopClient();
 const loadBalancerService = new LoadBalancerService(ddClient);
@@ -45,16 +49,16 @@ interface LoadBalancerManagerProps {
 
 export const LoadBalancerManager: React.FC<LoadBalancerManagerProps> = ({
   onStatusChange,
-  showConfigureButton = true
+  showConfigureButton = true,
 }) => {
   const [status, setStatus] = useState<LoadBalancerStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [configuring, setConfiguring] = useState(false);
   const [showConfigDialog, setShowConfigDialog] = useState(false);
   const [config, setConfig] = useState<LoadBalancerConfiguration>({
-    provider: 'metallb',
-    ipRange: '172.18.200.1-172.18.200.100',
-    autoDetectRange: true
+    provider: "metallb",
+    ipRange: "172.18.200.1-172.18.200.100",
+    autoDetectRange: true,
   });
 
   useEffect(() => {
@@ -68,10 +72,10 @@ export const LoadBalancerManager: React.FC<LoadBalancerManagerProps> = ({
       setStatus(result);
       onStatusChange?.(result);
     } catch (error) {
-      console.error('Error checking LoadBalancer status:', error);
+      console.error("Error checking LoadBalancer status:", error);
       const errorStatus = {
         isConfigured: false,
-        error: 'Failed to check LoadBalancer status'
+        error: "Failed to check LoadBalancer status",
       };
       setStatus(errorStatus);
       onStatusChange?.(errorStatus);
@@ -84,7 +88,7 @@ export const LoadBalancerManager: React.FC<LoadBalancerManagerProps> = ({
     try {
       setConfiguring(true);
       const result = await loadBalancerService.configureMetalLB(config);
-      
+
       if (result.success) {
         // Wait a moment and check status again
         setTimeout(() => {
@@ -92,20 +96,20 @@ export const LoadBalancerManager: React.FC<LoadBalancerManagerProps> = ({
         }, 2000);
         setShowConfigDialog(false);
       } else {
-        console.error('Failed to configure LoadBalancer:', result.error);
+        console.error("Failed to configure LoadBalancer:", result.error);
         // Update status with error
-        setStatus(prev => ({
+        setStatus((prev) => ({
           ...prev,
           isConfigured: false,
-          error: result.error
+          error: result.error,
         }));
       }
     } catch (error: any) {
-      console.error('Error configuring LoadBalancer:', error);
-      setStatus(prev => ({
+      console.error("Error configuring LoadBalancer:", error);
+      setStatus((prev) => ({
         ...prev,
         isConfigured: false,
-        error: typeof error === 'string' ? error : error.message
+        error: typeof error === "string" ? error : error.message,
       }));
     } finally {
       setConfiguring(false);
@@ -116,16 +120,16 @@ export const LoadBalancerManager: React.FC<LoadBalancerManagerProps> = ({
     try {
       setConfiguring(true);
       const result = await loadBalancerService.removeMetalLB();
-      
+
       if (result.success) {
         setTimeout(() => {
           checkStatus();
         }, 2000);
       } else {
-        console.error('Failed to remove LoadBalancer:', result.error);
+        console.error("Failed to remove LoadBalancer:", result.error);
       }
     } catch (error: any) {
-      console.error('Error removing LoadBalancer:', error);
+      console.error("Error removing LoadBalancer:", error);
     } finally {
       setConfiguring(false);
     }
@@ -134,7 +138,7 @@ export const LoadBalancerManager: React.FC<LoadBalancerManagerProps> = ({
   const getStatusIcon = () => {
     if (loading) return <CircularProgress size={20} />;
     if (!status) return <ErrorIcon color="error" />;
-    
+
     if (status.isConfigured) {
       return <CheckCircleIcon color="success" />;
     } else {
@@ -143,17 +147,17 @@ export const LoadBalancerManager: React.FC<LoadBalancerManagerProps> = ({
   };
 
   const getStatusColor = () => {
-    if (!status || loading) return 'default';
-    return status.isConfigured ? 'success' : 'warning';
+    if (!status || loading) return "default";
+    return status.isConfigured ? "success" : "warning";
   };
 
   const getProviderIcon = () => {
     if (!status?.provider) return <RouterIcon />;
-    
+
     switch (status.provider) {
-      case 'metallb':
+      case "metallb":
         return <RouterIcon />;
-      case 'cloud':
+      case "cloud":
         return <CloudIcon />;
       default:
         return <NetworkCheckIcon />;
@@ -164,7 +168,7 @@ export const LoadBalancerManager: React.FC<LoadBalancerManagerProps> = ({
     return (
       <Card>
         <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <CircularProgress size={24} />
             <Typography>Checking LoadBalancer status...</Typography>
           </Box>
@@ -177,14 +181,19 @@ export const LoadBalancerManager: React.FC<LoadBalancerManagerProps> = ({
     <Box>
       <Card>
         <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              mb: 2,
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
               {getStatusIcon()}
-              <Typography variant="h6">
-                LoadBalancer Configuration
-              </Typography>
+              <Typography variant="h6">LoadBalancer Configuration</Typography>
               <Chip
-                label={status?.isConfigured ? 'Configured' : 'Not Configured'}
+                label={status?.isConfigured ? "Configured" : "Not Configured"}
                 color={getStatusColor() as any}
                 size="small"
               />
@@ -209,7 +218,8 @@ export const LoadBalancerManager: React.FC<LoadBalancerManagerProps> = ({
           {!status?.isConfigured && !status?.error && (
             <Alert severity="warning" sx={{ mb: 2 }}>
               <AlertTitle>LoadBalancer Not Configured</AlertTitle>
-              No LoadBalancer controller detected. Gateways will not receive external IP addresses.
+              No LoadBalancer controller detected. Gateways will not receive
+              external IP addresses.
               {showConfigureButton && (
                 <Box sx={{ mt: 1 }}>
                   <Button
@@ -217,9 +227,27 @@ export const LoadBalancerManager: React.FC<LoadBalancerManagerProps> = ({
                     size="small"
                     onClick={() => setShowConfigDialog(true)}
                     disabled={configuring}
-                    startIcon={configuring ? <CircularProgress size={16} /> : <SettingsIcon />}
+                    startIcon={
+                      configuring ? (
+                        <CircularProgress size={16} />
+                      ) : (
+                        <SettingsIcon />
+                      )
+                    }
+                    sx={(theme) =>
+                      theme.palette.mode === "light"
+                        ? {
+                            bgcolor: theme.palette.primary.main,
+                            color: theme.palette.primary.contrastText,
+                            border: `1px solid ${theme.palette.primary.dark}`,
+                            "&:hover": {
+                              bgcolor: theme.palette.primary.dark,
+                            },
+                          }
+                        : {}
+                    }
                   >
-                    {configuring ? 'Configuring...' : 'Configure LoadBalancer'}
+                    {configuring ? "Configuring..." : "Configure LoadBalancer"}
                   </Button>
                 </Box>
               )}
@@ -230,14 +258,17 @@ export const LoadBalancerManager: React.FC<LoadBalancerManagerProps> = ({
             <Box>
               <Alert severity="success" sx={{ mb: 2 }}>
                 <AlertTitle>LoadBalancer Active</AlertTitle>
-                LoadBalancer controller is configured and working. Gateways will receive external IP addresses.
+                LoadBalancer controller is configured and working. Gateways will
+                receive external IP addresses.
               </Alert>
 
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+              <Box
+                sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}
+              >
                 {getProviderIcon()}
                 <Box>
                   <Typography variant="subtitle2">
-                    Provider: {status.provider?.toUpperCase() || 'Unknown'}
+                    Provider: {status.provider?.toUpperCase() || "Unknown"}
                   </Typography>
                   {status.version && (
                     <Typography variant="body2" color="text.secondary">
@@ -260,7 +291,7 @@ export const LoadBalancerManager: React.FC<LoadBalancerManagerProps> = ({
                         </ListItemIcon>
                         <ListItemText
                           primary={pool.name}
-                          secondary={pool.addresses.join(', ')}
+                          secondary={pool.addresses.join(", ")}
                         />
                       </ListItem>
                     ))}
@@ -268,7 +299,7 @@ export const LoadBalancerManager: React.FC<LoadBalancerManagerProps> = ({
                 </Box>
               )}
 
-              {status.provider === 'metallb' && showConfigureButton && (
+              {status.provider === "metallb" && showConfigureButton && (
                 <Box sx={{ mt: 2 }}>
                   <Button
                     variant="outlined"
@@ -276,9 +307,15 @@ export const LoadBalancerManager: React.FC<LoadBalancerManagerProps> = ({
                     size="small"
                     onClick={handleRemove}
                     disabled={configuring}
-                    startIcon={configuring ? <CircularProgress size={16} /> : <ErrorIcon />}
+                    startIcon={
+                      configuring ? (
+                        <CircularProgress size={16} />
+                      ) : (
+                        <ErrorIcon />
+                      )
+                    }
                   >
-                    {configuring ? 'Removing...' : 'Remove MetalLB'}
+                    {configuring ? "Removing..." : "Remove MetalLB"}
                   </Button>
                 </Box>
               )}
@@ -288,13 +325,19 @@ export const LoadBalancerManager: React.FC<LoadBalancerManagerProps> = ({
       </Card>
 
       {/* Configuration Dialog */}
-      <Dialog open={showConfigDialog} onClose={() => setShowConfigDialog(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={showConfigDialog}
+        onClose={() => setShowConfigDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Configure LoadBalancer (MetalLB)</DialogTitle>
         <DialogContent>
           <Box sx={{ mt: 1 }}>
             <Typography variant="body2" color="text.secondary" gutterBottom>
-              MetalLB will provide LoadBalancer functionality for your Docker Desktop cluster.
-              This enables Gateways to receive external IP addresses.
+              MetalLB will provide LoadBalancer functionality for your Docker
+              Desktop cluster. This enables Gateways to receive external IP
+              addresses.
             </Typography>
 
             <Divider sx={{ my: 2 }} />
@@ -303,7 +346,12 @@ export const LoadBalancerManager: React.FC<LoadBalancerManagerProps> = ({
               control={
                 <Switch
                   checked={config.autoDetectRange}
-                  onChange={(e) => setConfig(prev => ({ ...prev, autoDetectRange: e.target.checked }))}
+                  onChange={(e) =>
+                    setConfig((prev) => ({
+                      ...prev,
+                      autoDetectRange: e.target.checked,
+                    }))
+                  }
                 />
               }
               label="Auto-detect IP range"
@@ -314,7 +362,9 @@ export const LoadBalancerManager: React.FC<LoadBalancerManagerProps> = ({
                 fullWidth
                 label="IP Address Range"
                 value={config.ipRange}
-                onChange={(e) => setConfig(prev => ({ ...prev, ipRange: e.target.value }))}
+                onChange={(e) =>
+                  setConfig((prev) => ({ ...prev, ipRange: e.target.value }))
+                }
                 placeholder="172.18.200.1-172.18.200.100"
                 helperText="Specify the IP range for LoadBalancer services (e.g., 172.18.200.1-172.18.200.100)"
                 sx={{ mt: 2 }}
@@ -323,8 +373,11 @@ export const LoadBalancerManager: React.FC<LoadBalancerManagerProps> = ({
 
             <Alert severity="info" sx={{ mt: 2 }}>
               <Typography variant="body2">
-                MetalLB will be installed in the <code>metallb-system</code> namespace.
-                {config.autoDetectRange ? ' The IP range will be automatically detected based on your Docker network configuration.' : ''}
+                MetalLB will be installed in the <code>metallb-system</code>{" "}
+                namespace.
+                {config.autoDetectRange
+                  ? " The IP range will be automatically detected based on your Docker network configuration."
+                  : ""}
               </Typography>
             </Alert>
 
@@ -339,19 +392,51 @@ export const LoadBalancerManager: React.FC<LoadBalancerManagerProps> = ({
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button 
+          <Button
             onClick={() => setShowConfigDialog(false)}
             disabled={configuring}
+            color="primary"
+            sx={
+              (theme) =>
+                theme.palette.mode === "light"
+                  ? {
+                      // Ensure it looks like an outlined button for better visibility
+                      borderColor: theme.palette.primary.main,
+                      color: theme.palette.primary.main,
+                      borderWidth: "1px",
+                      borderStyle: "solid",
+                      "&:hover": {
+                        backgroundColor: theme.palette.action.hover, // Standard hover for outlined primary
+                      },
+                    }
+                  : {} // Apply no specific sx overrides for dark mode
+            }
           >
             Cancel
           </Button>
           <Button
             onClick={handleConfigure}
             variant="contained"
-            disabled={configuring || (!config.autoDetectRange && !config.ipRange.trim())}
-            startIcon={configuring ? <CircularProgress size={16} /> : <SettingsIcon />}
+            disabled={
+              configuring || (!config.autoDetectRange && !config.ipRange.trim())
+            }
+            startIcon={
+              configuring ? <CircularProgress size={16} /> : <SettingsIcon />
+            }
+            sx={(theme) =>
+              theme.palette.mode === "light"
+                ? {
+                    bgcolor: theme.palette.primary.main,
+                    color: theme.palette.primary.contrastText,
+                    border: `1px solid ${theme.palette.primary.dark}`,
+                    "&:hover": {
+                      bgcolor: theme.palette.primary.dark,
+                    },
+                  }
+                : {}
+            }
           >
-            {configuring ? 'Installing...' : 'Install & Configure'}
+            {configuring ? "Installing..." : "Install & Configure"}
           </Button>
         </DialogActions>
       </Dialog>

@@ -97,8 +97,8 @@ ioutil.WriteFile(pidFile, []byte(strconv.Itoa(pid)), 0644)
 
 **Files Updated**:
 - `backend/main.go` - Complete backend implementation with API endpoints
-- `ui/src/helper/kubernetes.ts` - Now calls backend API instead of direct kubectl
-- `ui/src/services/` - All services rewritten to use backend API
+- `ui/src/helper/kubernetes.ts` - Primarily uses host CLI (`ddClient.extension.host.cli.exec()`) for direct Kubernetes interactions like fetching Gateways and HTTPRoutes.
+- `ui/src/services/` - Services like `loadBalancerService.ts` and `githubTemplateService.ts` have been refactored to primarily use host CLI for Kubernetes status checks and applying URL-based manifests for improved reliability. Backend API is used for operations like applying dynamically generated YAML strings (`/apply-yaml`) or managing VM-specific processes.
 
 ### Kubectl Proxy Management - **Fully Resolved!**
 
@@ -138,18 +138,18 @@ ioutil.WriteFile(pidFile, []byte(strconv.Itoa(pid)), 0644)
 
 ### Resource Listing/Status - **Enhanced Architecture!**
 
-**Previous Implementation**: Simple kubectl commands worked but were limited
+**Previous Implementation**: Simple kubectl commands via host CLI or backend were used.
 
-**Current Enhancement**:
-- ✅ Enhanced via backend API for consistency
-- ✅ Better error handling and data processing
-- ✅ Supports complex operations when needed
-- ✅ Unified architecture across all operations
+**Current Architecture for Frontend-Initiated K8s Reads/Applies**:
+- ✅ **Host CLI Preferred**: For most read operations (e.g., `kubectl get gateways`, `kubectl get namespaces`, status checks for LoadBalancer components) and for applying manifests directly from URLs (e.g., GitHub templates, initial MetalLB manifest), frontend services (in `ui/src/services/` and `ui/src/helper/kubernetes.ts`) now predominantly use `ddClient.extension.host.cli.exec("kubectl", ...)`. This provides the most reliable way to interact with the Kubernetes API from the extension's frontend.
+- ✅ **Backend for Specific Tasks**: The backend's `/kubectl` and `/apply-yaml` endpoints are used for operations that benefit from running within the VM (e.g., the backend applying dynamically generated YAML strings like MetalLB's `IPAddressPool` and `L2Advertisement`, or for process management).
+- ✅ **Improved Reliability**: This hybrid approach leverages the strengths of both the host CLI (for direct K8s API access from frontend services) and the VM service backend (for its unrestricted environment for specific tasks).
 
-**Examples** (now handled by backend):
-- `/kubectl` endpoint with `["get", "gateways"]` arguments
-- `/kubectl` endpoint with `["get", "namespaces"]` arguments  
-- Enhanced error handling and JSON response formatting
+**Examples**:
+- Listing Gateways/HTTPRoutes: `ui/src/helper/kubernetes.ts` uses `host.cli.exec()`.
+- Checking LoadBalancer status: `ui/src/services/loadBalancerService.ts` uses `host.cli.exec()` for all its `kubectl get` calls.
+- Applying GitHub templates: `ui/src/services/githubTemplateService.ts` uses `host.cli.exec()` to apply from URL.
+- Applying dynamic MetalLB IPAddressPools: `ui/src/services/loadBalancerService.ts` uses the backend's `/apply-yaml` endpoint.
 
 ## Research and Resolution Process
 
@@ -214,11 +214,12 @@ exec.Command("kubectl", "apply", "-f", "-").Run() // with stdin
 
 ## Recommendations for Extension Development
 
-### 1. **Use VM Service Backend Architecture** ⭐ **Recommended**
-- Implement Go/Node.js backend service in Docker Desktop VM
-- Use Unix socket communication between frontend and backend
-- Backend has full system privileges and no restrictions
-- All complex operations should go through backend API
+### 1. **Use VM Service Backend Architecture with Host CLI for K8s Interactions** ⭐ **Recommended**
+- Implement Go/Node.js backend service in Docker Desktop VM for unrestricted operations (file system, process management, orchestrating complex tasks).
+- Use Unix socket communication between frontend and backend.
+- For direct Kubernetes API interactions (CRUD operations, status checks) initiated from frontend services:
+    - **Prefer `ddClient.extension.host.cli.exec("kubectl", ...)`**. This leverages the host's `kubectl` context and avoids common VM-to-host Kubernetes API connectivity issues (e.g., `127.0.0.1` vs `host.docker.internal`). This has proven more reliable for operations like `kubectl get`, `kubectl apply -f <URL>`, and `kubectl wait`.
+- For operations where the backend needs to generate data (e.g., dynamic YAML) and then apply it, or manage processes in the VM, use the backend API (e.g., a backend `/apply-yaml` endpoint, proxy management endpoints).
 
 ### 2. **Backend Implementation Strategy**
 - Create RESTful API endpoints for all Kubernetes operations
@@ -228,7 +229,8 @@ exec.Command("kubectl", "apply", "-f", "-").Run() // with stdin
 
 ### 3. **Frontend Integration Strategy**
 - Keep frontend focused on UI/UX concerns
-- All external operations should call backend API
+- External operations requiring unrestricted environment access (e.g. complex file generation before apply, VM process management) should call the backend API.
+- Direct Kubernetes interactions (reads, applying URL-based manifests, status checks) from frontend services should preferably use `ddClient.extension.host.cli.exec("kubectl", ...)`.
 - Implement proper TypeScript types for API communication
 - Handle backend errors gracefully with user feedback
 

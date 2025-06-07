@@ -10,7 +10,7 @@ Based on Docker's marketplace requirements, update the Dockerfile with these lab
 
 ```dockerfile
 LABEL org.opencontainers.image.title="Envoy Gateway Extension" \
-    org.opencontainers.image.description="Manage and observe Envoy Gateway resources in your local Kubernetes cluster directly from Docker Desktop. Features template-based deployments, real-time monitoring, and troubleshooting guidance." \
+    org.opencontainers.image.description="Manage, observe, configure, and test Envoy Gateway resources, including MetalLB-based LoadBalancer setup, in your local Kubernetes cluster directly from Docker Desktop. Features form-based Gateway/HTTPRoute creation, GitHub-hosted templates, an integrated HTTP client for testing, real-time monitoring, and troubleshooting guidance." \
     org.opencontainers.image.vendor="Saptak Sen" \
     org.opencontainers.image.licenses="Apache-2.0" \
     org.opencontainers.image.source="https://github.com/saptak/envddext" \
@@ -19,10 +19,10 @@ LABEL org.opencontainers.image.title="Envoy Gateway Extension" \
     org.opencontainers.image.version="1.0.0" \
     com.docker.desktop.extension.api.version=">= 0.2.3" \
     com.docker.desktop.extension.icon="https://raw.githubusercontent.com/saptak/envddext/main/docker.svg" \
-    com.docker.extension.screenshots="[{\"alt\":\"Main Dashboard\",\"url\":\"https://raw.githubusercontent.com/saptak/envddext/main/screenshots/dashboard.png\"},{\"alt\":\"Template Selection\",\"url\":\"https://raw.githubusercontent.com/saptak/envddext/main/screenshots/templates.png\"},{\"alt\":\"Deployment Monitoring\",\"url\":\"https://raw.githubusercontent.com/saptak/envddext/main/screenshots/monitoring.png\"},{\"alt\":\"Troubleshooting\",\"url\":\"https://raw.githubusercontent.com/saptak/envddext/main/screenshots/troubleshooting.png\"},{\"alt\":\"Resource Management\",\"url\":\"https://raw.githubusercontent.com/saptak/envddext/main/screenshots/resources.png\"}]" \
-    com.docker.extension.detailed-description="The Envoy Gateway Extension for Docker Desktop provides a comprehensive interface for managing Envoy Gateway resources in your local Kubernetes cluster. Key features include: Template-based deployments with GitHub integration, Real-time deployment status monitoring with detailed pod information, Automatic issue detection and troubleshooting guidance, Visual indicators for pod readiness and deployment health, Tabbed UI interface for better organization, Service endpoint monitoring and testing capabilities. Perfect for developers evaluating API Gateway solutions, DevOps engineers testing configurations, and platform engineers exploring Envoy Gateway integration." \
+    com.docker.desktop.extension.screenshots="[{\\"alt\\":\\"Main Dashboard\\\",\\\"url\\\":\\\"https://raw.githubusercontent.com/saptak/envddext/main/screenshots/dashboard.png\\\"},{\\"alt\\":\\"Template Selection\\\",\\\"url\\\":\\\"https://raw.githubusercontent.com/saptak/envddext/main/screenshots/templates.png\\\"},{\\"alt\\":\\"Deployment Monitoring\\\",\\\"url\\\":\\\"https://raw.githubusercontent.com/saptak/envddext/main/screenshots/monitoring.png\\\"},{\\"alt\\":\\"Troubleshooting\\\",\\\"url\\\":\\\"https://raw.githubusercontent.com/saptak/envddext/main/screenshots/troubleshooting.png\\\"},{\\"alt\\":\\"Resource Management\\\",\\\"url\\\":\\\"https://raw.githubusercontent.com/saptak/envddext/main/screenshots/resources.png\\\"}]\" \
+    com.docker.extension.detailed-description="The Envoy Gateway Extension for Docker Desktop provides a comprehensive interface for managing Envoy Gateway resources in your local Kubernetes cluster. Key features include: Robust MetalLB-based LoadBalancer configuration and status monitoring; Form-based creation for Gateways and HTTPRoutes; Template-based deployments using GitHub-hosted examples (applied via host CLI for reliability); An integrated HTTP client for testing deployments; Real-time deployment status monitoring with detailed pod information; Automatic issue detection and troubleshooting guidance; Visual indicators for pod readiness and deployment health; A 5-tab UI for organized access to Overview, Templates, Gateway Management, HTTP Testing, and Proxy Management. The extension architecture leverages a Go backend in the Docker VM for unrestricted operations and the host's kubectl CLI for reliable frontend-initiated Kubernetes interactions. Perfect for developers evaluating API Gateway solutions, DevOps engineers testing configurations, and platform engineers exploring Envoy Gateway integration." \
     com.docker.extension.publisher-url="https://github.com/saptak" \
-    com.docker.extension.additional-urls="[{\"title\":\"Documentation\",\"url\":\"https://github.com/saptak/envddext/blob/main/docs/\"},{\"title\":\"Issues\",\"url\":\"https://github.com/saptak/envddext/issues\"},{\"title\":\"Envoy Gateway\",\"url\":\"https://gateway.envoyproxy.io/\"}]" \
+    com.docker.extension.additional-urls="[{\\"title\\\":\\"Documentation\\\",\\\"url\\\":\\\"https://github.com/saptak/envddext/blob/main/docs/\\\"},{\\\"title\\\":\\\"Issues\\\",\\\"url\\\":\\\"https://github.com/saptak/envddext/issues\\\"},{\\\"title\\\":\\\"Envoy Gateway\\\",\\\"url\\\":\\\"https://gateway.envoyproxy.io/\\\"}]\" \
     com.docker.extension.changelog="https://raw.githubusercontent.com/saptak/envddext/main/docs/CHANGELOG.md" \
     com.docker.extension.categories="[\"kubernetes\",\"networking\",\"api-gateway\",\"envoy\"]"
 ```
@@ -32,7 +32,7 @@ LABEL org.opencontainers.image.title="Envoy Gateway Extension" \
 ```json
 {
   "name": "Envoy Gateway",
-  "description": "Manage and observe Envoy Gateway resources in your local Kubernetes cluster using Docker Desktop.",
+  "description": "Manage, observe, configure, and test Envoy Gateway resources, including LoadBalancer setup, in your local Kubernetes cluster using Docker Desktop.",
   "version": "1.0.0",
   "icon": "docker.svg",
   "categories": ["kubernetes", "networking", "api-gateway", "envoy"],
@@ -206,11 +206,15 @@ Please report security vulnerabilities to: [security email]
 
 - [ ] **Functionality Testing**
   - [ ] Extension installation
-  - [ ] Envoy Gateway installation
-  - [ ] Template application
-  - [ ] Status monitoring
-  - [ ] Resource management
-  - [ ] Error handling
+    - [ ] Envoy Gateway installation
+    - [ ] Template application (from GitHub)
+    - [ ] LoadBalancer configuration and status accuracy
+    - [ ] Gateway/HTTPRoute form-based creation and status
+    - [ ] HTTP testing tools functionality
+    - [ ] Proxy Manager functionality
+    - [ ] Overall status monitoring for deployments
+    - [ ] Resource management (if applicable beyond creation e.g. listing, deletion if implemented)
+    - [ ] Error handling across all features
 
 #### Performance Benchmarks
 

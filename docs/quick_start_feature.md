@@ -49,7 +49,7 @@ The Quick Start feature is implemented as a React component in the Envoy Gateway
 
 1. **Quick Start Button**: A button in the Quick Setup section that triggers the Quick Start dialog.
 2. **Dialog Component**: A modal dialog that displays available examples and guides users through the setup process.
-3. **Example Templates**: Pre-configured YAML templates for common Envoy Gateway use cases.
+3. **Example Templates**: Pre-configured YAML templates for common Envoy Gateway use cases. These templates are primarily fetched from a GitHub repository and applied using the **host's `kubectl`** (via `ddClient.extension.host.cli.exec()`) for reliable deployment.
 
 ## Future Enhancements
 
@@ -64,9 +64,11 @@ Future enhancements to the Quick Start feature may include:
 
 The Quick Start feature is implemented in the following files:
 
-- `ui/src/App.tsx`: Contains the Quick Start button and dialog components.
-- `ui/src/components/QuickStart/`: (Future) Will contain dedicated components for the Quick Start feature.
-- `ui/src/templates/`: (Future) Will contain YAML templates for example configurations.
+- `ui/src/AppWithGitHubTemplates.tsx`: Contains the main application logic, including the Quick Start button and dialog components that render the templates.
+- `ui/src/services/githubTemplateService.ts`: Handles fetching template metadata (from an `index.json` file on GitHub) and their YAML content. Template application uses the host's `kubectl`.
+- `templates/index.json` (in the `envoygatewaytemplates` GitHub repository): The primary source of metadata for available templates.
+- `envddext/ui/src/templates/index.json`: A local fallback or cached version of the template metadata.
+- `ui/src/components/QuickStart/`: (Future) May contain dedicated components if the Quick Start dialog logic is extracted from `AppWithGitHubTemplates.tsx`.
 
 ## Related Documentation
 

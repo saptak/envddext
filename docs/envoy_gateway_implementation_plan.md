@@ -11,10 +11,13 @@
 
 ### Core Extension Status
 - ✅ **Core Extension Framework**: Complete Docker Desktop extension setup
-- ✅ **Kubernetes Integration**: Full kubectl and Helm integration
-- ✅ **Gateway Management**: Complete CRUD operations for Gateways
-- ✅ **HTTPRoute Management**: Complete CRUD operations with enhanced dark theme UI
-- ✅ **Template System**: GitHub-based template library with local fallback
+- ✅ **Kubernetes Integration**:
+  - Primarily uses `kubectl` executed via `ddClient.extension.host.cli.exec()` from frontend services for reliable reads (e.g., status checks) and applying URL-based manifests.
+  - Go backend service in VM handles specific tasks like applying dynamically generated YAML (`/apply-yaml` endpoint) and managing VM processes (e.g., `kubectl proxy`).
+- ✅ **Gateway Management**: Complete CRUD operations for Gateways.
+- ✅ **HTTPRoute Management**: Complete CRUD operations with enhanced dark theme UI.
+- ✅ **LoadBalancer Management**: Robust MetalLB configuration, including installation, dynamic IP pool/advertisement setup, and accurate status display using host CLI for K8s interactions.
+- ✅ **Template System**: GitHub-based template library with local fallback, applied via host CLI for reliability.
 - ✅ **User Interface**: Modern React-based UI with Material-UI components and complete dark theme integration
 - ✅ **Documentation**: Comprehensive user and developer documentation
 
@@ -273,10 +276,12 @@ This document outlines the detailed implementation plan for enhancing the Envoy 
 
 ### Technology Stack
 - **Frontend**: React, TypeScript, Material-UI
-- **Backend**: Node.js for local processing
-- **Kubernetes Interaction**: Kubernetes JavaScript Client
-- **Visualization**: D3.js or similar for resource visualization
-- **State Management**: Redux or Context API
+- **Backend**: Go for VM service backend (provides API endpoints for specific tasks like applying dynamic YAML, managing VM processes).
+- **Kubernetes Interaction**:
+  - **Host CLI from Frontend**: `kubectl` commands executed via `ddClient.extension.host.cli.exec()` are the primary method for frontend services (e.g., `loadBalancerService.ts`, `githubTemplateService.ts`, `kubernetes.ts`) to interact with Kubernetes for fetching resources, status checks, and applying URL-based manifests. This ensures reliability by using the host's Kubernetes context.
+  - **VM Backend `kubectl`**: The Go backend service uses its embedded `kubectl` for operations it orchestrates (e.g., via `/apply-yaml` for dynamically generated YAML content).
+- **Visualization**: D3.js or similar for resource visualization (Planned)
+- **State Management**: React Hooks (Context API for simpler shared state if needed, no global Redux)
 
 ### Key Components
 
@@ -349,7 +354,7 @@ This document outlines the detailed implementation plan for enhancing the Envoy 
 | Envoy Gateway version compatibility | High | Medium | Test with multiple versions, implement version checks |
 | Performance issues with large clusters | Medium | Low | Implement pagination and lazy loading |
 | User experience complexity | Medium | Medium | Conduct early user testing, implement progressive disclosure |
-| Docker Desktop API limitations | High | Low | Identify limitations early, design around constraints |
+| Docker Desktop API limitations | Was High, Now Low | Low | VM Service Backend architecture with strategic use of `host.cli.exec()` from frontend services has largely mitigated these. Kubernetes interactions from the VM backend still require careful handling of API endpoint (e.g., `host.docker.internal` vs `127.0.0.1`). |
 
 ## Success Criteria
 
