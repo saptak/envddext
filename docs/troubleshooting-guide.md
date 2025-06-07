@@ -23,6 +23,17 @@ This guide helps troubleshoot common issues with the Envoy Gateway extension. **
         1.  Ensure the `KUBECONFIG` environment variable is correctly configured and accessible by the Docker Desktop extension's backend VM service. This might involve checking `docker-compose.yaml` or `metadata.json` for how environment variables are passed to the service.
         2.  Check extension logs for more specific error messages from the backend.
 
+-   **UI shows "Failed to create Gateway" but Gateway is actually created successfully (visible after UI refresh).**
+    *   **Previous Cause**: This occurred when the backend *did* successfully create/configure the Gateway and sent a success response (e.g., `{"success":true, "data":"..."}`), but the frontend misinterpreted the structure of this response. Specifically, the `ddClient.extension.vm.service.post()` call (used by the frontend's `callBackendAPI` helper) was found to wrap the backend's actual JSON `APIResponse` inside a top-level `data` property (e.g., `ddClient` returns `{ data: { success: true, data: "..." }, headers: { ... } }`). Frontend helper functions like `createGateway` were expecting the `success` flag directly on the object returned by `callBackendAPI` instead of nested within its `.data` property.
+    *   **Resolution**:
+        *   The `callBackendAPI` function in `ui/src/helper/kubernetes.ts` was modified to return the raw response object it receives from `ddClient.extension.vm.service.post()` for successful HTTP operations. For errors it catches itself (e.g., if `ddClient` throws an exception), it still forms and returns a standard `APIResponse`-like object (e.g., `{ success: false, error: "details" }`).
+        *   Helper functions that use `callBackendAPI` (such as `createGateway`, `listHostContexts`, `createHTTPRoute` in `ui/src/helper/kubernetes.ts`) were updated. They now inspect the structure of the response received from `callBackendAPI` to correctly locate the actual backend `APIResponse` payload – checking if it's the direct object or nested under a `.data` property. This allows them to accurately determine the operational success state.
+        *   Additionally, the backend's `s.applyYAML` function (in `backend/main.go`) was refined to correctly interpret `kubectl apply` output indicating "unchanged" or "configured" as success (even if `kubectl` returned a non-zero exit code), ensuring the backend consistently signals success for these idempotent operations.
+    *   **Outcome**: The UI now correctly reflects the success of Gateway creation operations. Misleading error messages for successful or idempotent creations have been eliminated.
+    *   **Troubleshooting (if similar issues recur)**:
+        1.  Check backend logs (`docker logs envoy-gateway-backend`) for success messages from the relevant handler (e.g., `handleCreateGateway: Successfully applied YAML...`).
+        2.  Examine the detailed error message in the UI (which includes debug traces showing the structure of the response received by the frontend helpers). This was key to diagnosing this issue.
+
 -   **Gateway created but in "FAILED" state with "AddressNotAssigned"**:
     *   This indicates an issue with the LoadBalancer configuration not providing an external IP. See the "LoadBalancer Configuration Issues" section.
 

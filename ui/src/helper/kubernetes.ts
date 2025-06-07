@@ -22,60 +22,81 @@ interface APIResponse<T = any> {
 }
 
 // Helper function to call backend API
-const callBackendAPI = async <T = any>(
+const callBackendAPI = async (
   ddClient: v1.DockerDesktopClient,
   endpoint: string,
   method: "GET" | "POST" = "GET",
-  data?: any,
-): Promise<APIResponse<T>> => {
+  dataRequest?: any,
+): Promise<any> => {
+  // Return Promise<any> as ddClient response structure varies
   try {
-    let response;
+    let rawResponseFromService;
     if (method === "POST") {
-      response = await ddClient.extension.vm?.service?.post(endpoint, data);
+      rawResponseFromService = await ddClient.extension.vm?.service?.post(
+        endpoint,
+        dataRequest,
+      );
     } else {
-      response = await ddClient.extension.vm?.service?.get(endpoint);
+      rawResponseFromService =
+        await ddClient.extension.vm?.service?.get(endpoint);
     }
-    return response as APIResponse<T>;
+    return rawResponseFromService; // Return the raw response
   } catch (err: any) {
-    // Renamed to 'err'
     console.error(`Backend API call failed (${method} ${endpoint}):`, err);
-    let extractedErrorMessage: string | undefined;
 
-    if (
-      err &&
-      err.response &&
-      err.response.data &&
-      typeof err.response.data.error === "string"
-    ) {
-      extractedErrorMessage = err.response.data.error;
-    } else if (err && err.data && typeof err.data.error === "string") {
-      // Check for DockerDesktopClient error format
-      extractedErrorMessage = err.data.error;
-    } else if (err && typeof err.error === "string") {
-      // If the error field is directly on the caught object
-      extractedErrorMessage = err.error;
+    let debugMessage = `callBackendAPI caught error for ${method} ${endpoint}. `;
+
+    if (err && typeof err === "object") {
+      if (err.message) {
+        debugMessage += `Message: [${String(err.message)}]. `;
+      }
+      if (err.name) {
+        debugMessage += `Name: [${String(err.name)}]. `;
+      }
+      if (
+        err.response &&
+        err.response.data &&
+        typeof err.response.data.error === "string"
+      ) {
+        debugMessage += `Nested backend error (err.response.data.error): [${err.response.data.error}]. `;
+      } else if (err.data && typeof err.data.error === "string") {
+        debugMessage += `Nested ddClient data.error: [${err.data.error}]. `;
+      } else if (typeof err.error === "string") {
+        debugMessage += `Direct err.error: [${err.error}]. `;
+      }
+
+      if (err.stack) {
+        debugMessage += `Stack: [${String(err.stack).substring(0, 200)}...]. `;
+      }
+
+      try {
+        const allProps = Object.getOwnPropertyNames(err);
+        const errDetails: { [key: string]: any } = {};
+        allProps.forEach((key) => {
+          errDetails[key] = String((err as any)[key])?.substring(0, 100);
+        });
+        const fullErrorString = JSON.stringify(errDetails, null, 2);
+        debugMessage += `Full error object properties (stringified): [${fullErrorString.substring(0, 500)}${fullErrorString.length > 500 ? "..." : ""}].`;
+      } catch (stringifyError) {
+        debugMessage +=
+          "Full error object could not be stringified with custom logic. ";
+        try {
+          debugMessage += `Fallback stringify: ${String(err).substring(0, 500)}. `;
+        } catch {
+          debugMessage += `Fallback stringify also failed. `;
+        }
+      }
     } else if (typeof err === "string") {
-      extractedErrorMessage = err;
-    } else if (err && err.message && typeof err.message === "string") {
-      extractedErrorMessage = err.message; // Fallback to generic error message from standard Error object
+      debugMessage += `Error is a string: [${err}].`;
+    } else {
+      debugMessage += `Caught error is of unknown type: [${String(err)}].`;
     }
 
-    // If a specific message was extracted, use it.
-    // Otherwise, try to stringify the error, or convert to string as a last resort.
-    const finalError =
-      extractedErrorMessage ||
-      (typeof err === "object" && err !== null
-        ? JSON.stringify(err, Object.getOwnPropertyNames(err))
-        : String(err));
-
+    // Return an object that conforms to APIResponse for errors from the catch block
     return {
       success: false,
-      // Provide a more generic fallback if stringification results in an empty object or unhelpful string
-      error:
-        finalError && finalError !== "{}" && finalError !== "null"
-          ? finalError
-          : `Failed during ${method} ${endpoint}: An unexpected error occurred. Check console for details.`,
-    };
+      error: debugMessage,
+    } as APIResponse<never>;
   }
 };
 
@@ -83,16 +104,63 @@ export const DockerDesktop = "docker-desktop";
 export const CurrentExtensionContext = "currentExtensionContext";
 export const IsK8sEnabled = "isK8sEnabled";
 
-export const listHostContexts = async (ddClient: v1.DockerDesktopClient) => {
-  const response = await callBackendAPI<string>(ddClient, "/kubectl", "POST", {
-    args: ["config", "view", "-o", "jsonpath='{.contexts}'"],
-  });
+export const listHostContexts = async (
+  ddClient: v1.DockerDesktopClient,
+): Promise<string | undefined> => {
+  const rawServiceResponse = await callBackendAPI(
+    ddClient,
+    "/kubectl",
+    "POST",
+    {
+      args: ["config", "view", "-o", "jsonpath='{.contexts}'"],
+    },
+  );
 
-  if (response.success) {
-    return response.data;
+  let finalSuccess: boolean = false;
+  let finalData: string | undefined = undefined;
+  let finalError: string | undefined = undefined;
+
+  if (
+    rawServiceResponse &&
+    typeof rawServiceResponse.success === "boolean" &&
+    rawServiceResponse.hasOwnProperty("error")
+  ) {
+    // This means rawServiceResponse IS the APIResponse (e.g., from callBackendAPI's catch block)
+    const directApiResp = rawServiceResponse as APIResponse<string>;
+    finalSuccess = directApiResp.success;
+    if (finalSuccess) {
+      finalData = directApiResp.data;
+    } else {
+      finalError =
+        directApiResp.error ||
+        "Unknown error from direct API response (listHostContexts)";
+    }
+  } else if (
+    rawServiceResponse &&
+    rawServiceResponse.data &&
+    typeof rawServiceResponse.data.success === "boolean"
+  ) {
+    // This means rawServiceResponse is the ddClient wrapper, and APIResponse is in .data
+    const nestedApiResp = rawServiceResponse.data as APIResponse<string>;
+    finalSuccess = nestedApiResp.success;
+    if (finalSuccess) {
+      finalData = nestedApiResp.data;
+    } else {
+      finalError =
+        nestedApiResp.error ||
+        "Unknown error from nested API response (listHostContexts)";
+    }
   } else {
-    console.log(response.error);
-    return response.error;
+    // Malformed or unexpected structure from callBackendAPI
+    finalSuccess = false;
+    finalError = `Frontend_malformed_service_response for /kubectl (contexts). RawResponse: [${JSON.stringify(rawServiceResponse)?.substring(0, 200)}]`;
+  }
+
+  if (finalSuccess) {
+    return finalData;
+  } else {
+    console.error("Error listing host contexts:", finalError);
+    throw new Error(finalError || "Failed to list host contexts");
   }
 };
 
@@ -637,17 +705,53 @@ export const createGateway = async (
   ddClient: v1.DockerDesktopClient,
   gatewayData: GatewayFormData,
 ): Promise<{ success: boolean; error?: string; gateway?: Gateway }> => {
-  const response = await callBackendAPI<string>(
+  // rawServiceResponse is potentially { data: APIResponse<string>, headers: ... } OR an APIResponse if catch block in callBackendAPI was hit
+  const rawServiceResponse = await callBackendAPI(
+    // No type argument here
     ddClient,
     "/create-gateway",
     "POST",
     gatewayData,
   );
 
-  if (response.success) {
-    return { success: true };
+  let errorForUI: string | undefined = undefined;
+  let successForUI = false;
+
+  // Determine if rawServiceResponse is the direct APIResponse (from callBackendAPI's catch)
+  // or if it's the wrapped response { data: APIResponse, headers: ... } from ddClient success
+  const actualBackendResponse: APIResponse<string> | null =
+    rawServiceResponse &&
+    typeof rawServiceResponse.success === "boolean" &&
+    rawServiceResponse.hasOwnProperty("error")
+      ? rawServiceResponse // Came from callBackendAPI's catch block
+      : rawServiceResponse &&
+          rawServiceResponse.data &&
+          typeof rawServiceResponse.data.success === "boolean"
+        ? rawServiceResponse.data // Actual APIResponse is nested in .data
+        : null;
+
+  if (actualBackendResponse) {
+    if (actualBackendResponse.success) {
+      successForUI = true;
+      // TODO: If actualBackendResponse.data (which would be a string from APIResponse<string>)
+      // contains gateway details, parse it and potentially return in the 'gateway' field.
+      // For now, just confirming success. Example:
+      // if (typeof actualBackendResponse.data === 'string' && actualBackendResponse.data.includes(gatewayData.name)) {
+      //   // Basic indication of success, could be more structured if backend sent full Gateway object
+      // }
+    } else {
+      // actualBackendResponse.success is false (either from backend or from callBackendAPI's catch)
+      errorForUI = `Backend_reported_failure. Error: [${actualBackendResponse.error || "No specific error from backend."}] ContainedData: [${JSON.stringify(actualBackendResponse.data)?.substring(0, 100)}]`;
+    }
   } else {
-    return { success: false, error: response.error };
+    // The response structure from ddClient/callBackendAPI was not as expected
+    errorForUI = `Frontend_malformed_service_response. RawResponse: [${JSON.stringify(rawServiceResponse)?.substring(0, 200)}]`;
+  }
+
+  if (successForUI) {
+    return { success: true }; // Optionally, return parsed gateway details: { success: true, gateway: parsedGateway }
+  } else {
+    return { success: false, error: errorForUI };
   }
 };
 
@@ -878,17 +982,57 @@ export const createHTTPRoute = async (
     };
   }
 
-  const response = await callBackendAPI<string>(
+  const rawServiceResponse = await callBackendAPI(
+    // No type argument here
     ddClient,
     "/create-httproute",
     "POST",
     routeData,
   );
 
-  if (response.success) {
+  let finalSuccess: boolean = false;
+  // Assuming backend data for HTTPRoute creation success is just a string message
+  let finalData: string | undefined = undefined;
+  let finalError: string | undefined = undefined;
+
+  if (
+    rawServiceResponse &&
+    typeof rawServiceResponse.success === "boolean" &&
+    rawServiceResponse.hasOwnProperty("error")
+  ) {
+    const directApiResp = rawServiceResponse as APIResponse<string>;
+    finalSuccess = directApiResp.success;
+    if (finalSuccess) {
+      finalData = directApiResp.data;
+    } else {
+      finalError =
+        directApiResp.error ||
+        "Unknown error from direct API response (createHTTPRoute)";
+    }
+  } else if (
+    rawServiceResponse &&
+    rawServiceResponse.data &&
+    typeof rawServiceResponse.data.success === "boolean"
+  ) {
+    const nestedApiResp = rawServiceResponse.data as APIResponse<string>;
+    finalSuccess = nestedApiResp.success;
+    if (finalSuccess) {
+      finalData = nestedApiResp.data;
+    } else {
+      finalError =
+        nestedApiResp.error ||
+        "Unknown error from nested API response (createHTTPRoute)";
+    }
+  } else {
+    finalSuccess = false;
+    finalError = `Frontend_malformed_service_response for /create-httproute. RawResponse: [${JSON.stringify(rawServiceResponse)?.substring(0, 200)}]`;
+  }
+
+  if (finalSuccess) {
+    // We don't have the httpRoute object from the backend, similar to createGateway
     return { success: true };
   } else {
-    return { success: false, error: response.error };
+    return { success: false, error: finalError };
   }
 };
 

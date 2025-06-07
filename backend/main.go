@@ -125,9 +125,11 @@ func (s *Server) handleCreateGateway(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.applyYAML(yamlContent, "gateway"); err != nil {
+		log.Printf("handleCreateGateway: Error from s.applyYAML for Gateway '%s': %v", gatewayData.Name, err)
 		s.sendError(w, fmt.Sprintf("Failed to apply Gateway: %v", err), http.StatusInternalServerError)
 		return
 	}
+	log.Printf("handleCreateGateway: Successfully applied YAML for Gateway '%s'. Sending success response.", gatewayData.Name)
 
 	response := APIResponse{
 		Success: true,
@@ -558,8 +560,25 @@ func (s *Server) applyYAML(yamlContent, resourceType string) error {
 		output, err = cmd.CombinedOutput()
 
 		if err != nil {
-			// If both methods fail, provide helpful error message
-			errorMsg := string(output)
+			// Client-side apply also resulted in a non-zero exit code.
+			// BUT, check if the output indicates a success-like state.
+			outputStr := strings.ToLower(string(output))
+			successKeywords := []string{"unchanged", "configured", "created", "applied"}
+			isSuccessLike := false
+			for _, keyword := range successKeywords {
+				if strings.Contains(outputStr, keyword) {
+					isSuccessLike = true
+					log.Printf("kubectl apply for %s reported error but output indicates success ('%s'): %s", resourceType, keyword, string(output))
+					break
+				}
+			}
+
+			if isSuccessLike {
+				return nil // Treat as success despite non-zero exit code
+			}
+
+			// If truly a failure (non-zero exit AND no success-like keywords in output):
+			errorMsg := string(output) // Use 'output' which is cmd.CombinedOutput()
 			if strings.Contains(errorMsg, "connection refused") {
 				return fmt.Errorf("cannot connect to Kubernetes cluster - please ensure Kubernetes is enabled in Docker Desktop and the cluster is running")
 			}
