@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -19,17 +19,21 @@ import {
   List,
   ListItem,
   ListItemText,
-  ListItemSecondaryAction
-} from '@mui/material';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import StopIcon from '@mui/icons-material/Stop';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import LinkIcon from '@mui/icons-material/Link';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ErrorIcon from '@mui/icons-material/Error';
+  ListItemSecondaryAction,
+} from "@mui/material";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import StopIcon from "@mui/icons-material/Stop";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import LinkIcon from "@mui/icons-material/Link";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import ErrorIcon from "@mui/icons-material/Error";
 import { createDockerDesktopClient } from "@docker/extension-api-client";
-import { KubectlProxyService, ProxyStatus, ServiceEndpoint } from '../services/kubectlProxyService';
+import {
+  KubectlProxyService,
+  ProxyStatus,
+  ServiceEndpoint,
+} from "../services/kubectlProxyService";
 
 const ddClient = createDockerDesktopClient();
 
@@ -40,20 +44,23 @@ interface ProxyManagerProps {
 
 export const ProxyManager: React.FC<ProxyManagerProps> = ({
   onProxyStatusChange,
-  onUrlGenerated
+  onUrlGenerated,
 }) => {
   const [proxyService] = useState(() => new KubectlProxyService(ddClient));
-  const [proxyStatus, setProxyStatus] = useState<ProxyStatus>({ isRunning: false, port: 8001 });
+  const [proxyStatus, setProxyStatus] = useState<ProxyStatus>({
+    isRunning: false,
+    port: 8001,
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   // URL Generator state
-  const [serviceName, setServiceName] = useState('echo-service');
-  const [namespace, setNamespace] = useState('demo');
+  const [serviceName, setServiceName] = useState("echo-service");
+  const [namespace, setNamespace] = useState("demo");
   const [port, setPort] = useState(8080);
-  const [path, setPath] = useState('/');
-  const [generatedUrl, setGeneratedUrl] = useState('');
+  const [path, setPath] = useState("/");
+  const [generatedUrl, setGeneratedUrl] = useState("");
 
   useEffect(() => {
     // Initial status check
@@ -75,7 +82,11 @@ export const ProxyManager: React.FC<ProxyManagerProps> = ({
       setProxyStatus(status);
       setError(status.error || null);
     } catch (error: any) {
-      setError(typeof error === 'string' ? error : error.message || 'Failed to check proxy status');
+      setError(
+        typeof error === "string"
+          ? error
+          : error.message || "Failed to check proxy status",
+      );
     }
   };
 
@@ -89,14 +100,18 @@ export const ProxyManager: React.FC<ProxyManagerProps> = ({
       setProxyStatus(status);
 
       if (status.isRunning) {
-        setSuccess('Kubectl proxy started successfully!');
+        setSuccess("Kubectl proxy started successfully!");
         // Generate URL for current service selection
         updateGeneratedUrl();
       } else {
-        setError(status.error || 'Failed to start proxy');
+        setError(status.error || "Failed to start proxy");
       }
     } catch (error: any) {
-      setError(typeof error === 'string' ? error : error.message || 'Failed to start proxy');
+      setError(
+        typeof error === "string"
+          ? error
+          : error.message || "Failed to start proxy",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -111,10 +126,14 @@ export const ProxyManager: React.FC<ProxyManagerProps> = ({
       await proxyService.stopProxy();
       const status = proxyService.getProxyStatus();
       setProxyStatus(status);
-      setSuccess('Kubectl proxy stopped successfully!');
-      setGeneratedUrl('');
+      setSuccess("Kubectl proxy stopped successfully!");
+      setGeneratedUrl("");
     } catch (error: any) {
-      setError(typeof error === 'string' ? error : error.message || 'Failed to stop proxy');
+      setError(
+        typeof error === "string"
+          ? error
+          : error.message || "Failed to stop proxy",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -133,7 +152,11 @@ export const ProxyManager: React.FC<ProxyManagerProps> = ({
         setError(result.message);
       }
     } catch (error: any) {
-      setError(typeof error === 'string' ? error : error.message || 'Connectivity test failed');
+      setError(
+        typeof error === "string"
+          ? error
+          : error.message || "Connectivity test failed",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -141,10 +164,15 @@ export const ProxyManager: React.FC<ProxyManagerProps> = ({
 
   const updateGeneratedUrl = () => {
     if (proxyStatus.isRunning && serviceName && namespace && port) {
-      const url = proxyService.generateProxyUrl(serviceName, namespace, port, path);
+      const url = proxyService.generateProxyUrl(
+        serviceName,
+        namespace,
+        port,
+        path,
+      );
       setGeneratedUrl(url);
     } else {
-      setGeneratedUrl('');
+      setGeneratedUrl("");
     }
   };
 
@@ -155,28 +183,28 @@ export const ProxyManager: React.FC<ProxyManagerProps> = ({
   const handleCopyUrl = async (url: string) => {
     try {
       await navigator.clipboard.writeText(url);
-      setSuccess('URL copied to clipboard!');
+      setSuccess("URL copied to clipboard!");
     } catch (error) {
-      setError('Failed to copy URL to clipboard');
+      setError("Failed to copy URL to clipboard");
     }
   };
 
   const handleUseUrl = (url: string) => {
     onUrlGenerated?.(url);
-    setSuccess('URL sent to HTTP client!');
+    setSuccess("URL sent to HTTP client!");
   };
 
   const handleQuickService = (endpoint: ServiceEndpoint) => {
     setServiceName(endpoint.serviceName);
     setNamespace(endpoint.namespace);
     setPort(endpoint.port);
-    setPath(endpoint.path || '/');
+    setPath(endpoint.path || "/");
   };
 
-  const getStatusColor = (): 'success' | 'error' | 'warning' | 'default' => {
-    if (proxyStatus.isRunning) return 'success';
-    if (proxyStatus.error) return 'error';
-    return 'default';
+  const getStatusColor = (): "success" | "error" | "warning" | "default" => {
+    if (proxyStatus.isRunning) return "success";
+    if (proxyStatus.error) return "error";
+    return "default";
   };
 
   const getStatusIcon = () => {
@@ -189,13 +217,20 @@ export const ProxyManager: React.FC<ProxyManagerProps> = ({
 
   return (
     <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          mb: 2,
+        }}
+      >
         <Typography variant="h6" component="h3">
           Kubectl Proxy Manager
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Chip
-            label={proxyStatus.isRunning ? 'Running' : 'Stopped'}
+            label={proxyStatus.isRunning ? "Running" : "Stopped"}
             color={getStatusColor()}
             icon={getStatusIcon() || undefined}
             size="small"
@@ -209,18 +244,21 @@ export const ProxyManager: React.FC<ProxyManagerProps> = ({
       </Box>
 
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Kubectl proxy provides access to Kubernetes services through a local HTTP proxy.
-        Start the proxy to test services without manual port forwarding.
+        Kubectl proxy provides access to Kubernetes services through a local
+        HTTP proxy. Start the proxy to test services without manual port
+        forwarding.
       </Typography>
 
       {/* Status and Controls */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} md={6}>
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
             <Button
               variant="contained"
               color={proxyStatus.isRunning ? "error" : "primary"}
-              onClick={proxyStatus.isRunning ? handleStopProxy : handleStartProxy}
+              onClick={
+                proxyStatus.isRunning ? handleStopProxy : handleStartProxy
+              }
               disabled={isLoading}
               startIcon={
                 isLoading ? (
@@ -231,12 +269,24 @@ export const ProxyManager: React.FC<ProxyManagerProps> = ({
                   <PlayArrowIcon />
                 )
               }
+              sx={(theme) =>
+                !proxyStatus.isRunning && theme.palette.mode === "light"
+                  ? {
+                      bgcolor: theme.palette.primary.main,
+                      color: theme.palette.primary.contrastText,
+                      border: `1px solid ${theme.palette.primary.dark}`,
+                      "&:hover": {
+                        bgcolor: theme.palette.primary.dark,
+                      },
+                    }
+                  : {}
+              }
             >
               {isLoading
-                ? 'Working...'
+                ? "Working..."
                 : proxyStatus.isRunning
-                ? 'Stop Proxy'
-                : 'Start Proxy'}
+                  ? "Stop Proxy"
+                  : "Start Proxy"}
             </Button>
 
             {proxyStatus.isRunning && (
@@ -258,7 +308,11 @@ export const ProxyManager: React.FC<ProxyManagerProps> = ({
                 Proxy URL: http://localhost:{proxyStatus.port}
               </Typography>
               {proxyStatus.startTime && (
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block" }}
+                >
                   Started: {proxyStatus.startTime.toLocaleTimeString()}
                 </Typography>
               )}
@@ -275,7 +329,11 @@ export const ProxyManager: React.FC<ProxyManagerProps> = ({
       )}
 
       {success && (
-        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess(null)}>
+        <Alert
+          severity="success"
+          sx={{ mb: 2 }}
+          onClose={() => setSuccess(null)}
+        >
           {success}
         </Alert>
       )}
@@ -339,19 +397,25 @@ export const ProxyManager: React.FC<ProxyManagerProps> = ({
                 InputProps={{
                   readOnly: true,
                   endAdornment: (
-                    <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Box sx={{ display: "flex", gap: 1 }}>
                       <Tooltip title="Copy URL">
-                        <IconButton onClick={() => handleCopyUrl(generatedUrl)} size="small">
+                        <IconButton
+                          onClick={() => handleCopyUrl(generatedUrl)}
+                          size="small"
+                        >
                           <ContentCopyIcon />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Use in HTTP Client">
-                        <IconButton onClick={() => handleUseUrl(generatedUrl)} size="small">
+                        <IconButton
+                          onClick={() => handleUseUrl(generatedUrl)}
+                          size="small"
+                        >
                           <LinkIcon />
                         </IconButton>
                       </Tooltip>
                     </Box>
-                  )
+                  ),
                 }}
               />
             </Box>

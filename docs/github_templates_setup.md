@@ -4,7 +4,7 @@ This document explains how to set up a GitHub repository to host templates for t
 
 ## Overview
 
-The Envoy Gateway extension can now apply Kubernetes templates directly from GitHub URLs. This approach has several advantages:
+The Envoy Gateway extension applies Kubernetes templates directly from GitHub URLs. The frontend service (`ui/src/services/githubTemplateService.ts`) uses the **host's `kubectl`** (via `ddClient.extension.host.cli.exec()`) for this process, ensuring reliable application by leveraging the host's Kubernetes context. This approach has several advantages:
 
 1. Avoids issues with local file paths
 2. Makes it easier to maintain and update templates

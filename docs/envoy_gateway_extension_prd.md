@@ -3,7 +3,7 @@
 ## Document Information
 - **Document Title**: Envoy Gateway Extension Enhancement PRD
 - **Version**: 1.0
-- **Date**: May 19, 2023
+- **Date**: June 7, 2025
 - **Status**: Draft
 
 ## Executive Summary
@@ -147,7 +147,7 @@ The current Docker Desktop extension allows users to install Envoy Gateway and v
 
 ## Implementation Status
 
-### ✅ Completed Features (as of May 22, 2024)
+### ✅ Completed Features (as of June 7, 2025)
 
 1. **Foundation and Basic Functionality**
    - Docker Desktop extension framework integration
@@ -156,10 +156,10 @@ The current Docker Desktop extension allows users to install Envoy Gateway and v
    - Basic Gateway and HTTPRoute resource listing
 
 2. **Template System**
-   - GitHub-based template repository integration
-   - Quick start dialog with common templates
-   - Apply templates directly from GitHub URLs
-   - Template metadata and categorization system
+   - GitHub-based template repository integration.
+   - Quick start dialog with common templates.
+   - Template application uses the **host's `kubectl`** (via `ddClient.extension.host.cli.exec()`) for improved reliability when applying from URLs.
+   - Template metadata and categorization system.
 
 3. **Enhanced Deployment Monitoring** (Task 2.1)
    - Real-time deployment status monitoring with detailed pod information
@@ -169,15 +169,22 @@ The current Docker Desktop extension allows users to install Envoy Gateway and v
    - Service endpoint monitoring and display
    - Comprehensive error handling and user feedback
 
-### 🚧 In Progress
+4. **Gateway and HTTPRoute Creation Forms & UI** (Tasks from Iteration 2 & 3)
+   - Form-based interface for creating Gateway and HTTPRoute resources.
+   - Configuration validation and YAML preview.
+   - Real-time status monitoring for created resources.
+   - Dark theme integration for all form components.
 
-1. **Gateway and HTTPRoute Creation Forms** (Task 2.2)
-   - Form-based interface for creating Gateway resources
-   - Configuration validation and YAML preview
+5. **HTTP Testing Tools** (Task 3.2)
+   - Built-in HTTP client in the UI for testing routes.
+   - Request/response display and curl command generation.
+   - Content type detection and JSON formatting.
 
-2. **HTTP Testing Tools** (Task 2.4)
-   - Built-in HTTP client for testing routes
-   - Request/response display and curl command generation
+6. **LoadBalancer Management**
+   - Robust MetalLB installation and configuration.
+   - Automatic IP range detection for Docker Desktop environments.
+   - Accurate real-time LoadBalancer status monitoring (MetalLB controller and IPAddressPools).
+   - Kubernetes interactions (status checks, initial manifest apply) primarily use the **host's `kubectl`** for reliability. Dynamic YAML for IPAddressPool/L2Advertisement applied via backend's `/apply-yaml` endpoint.
 
 ### 📋 Planned Features
 

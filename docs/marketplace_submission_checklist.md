@@ -35,8 +35,8 @@
 #### Visual Assets
 - [ ] **Extension Icon**: 256x256px, SVG or PNG format
 - [ ] **Screenshots**: 5-7 high-quality screenshots (1920x1080+)
-  - [ ] Main dashboard view
-  - [ ] Key feature demonstrations
+  - [ ] Main dashboard view (reflecting current UI)
+  - [ ] Key feature demonstrations (e.g., LoadBalancer Management, Gateway/HTTPRoute Creation Forms, Template Application, HTTP Testing Tools, Proxy Manager)
   - [ ] User workflow examples
 - [ ] **Demo Video** (Optional): 2-3 minute feature overview
 
@@ -48,8 +48,8 @@
 - [ ] **SUPPORT.md**: Support channels and help resources
 
 #### Marketplace Content
-- [ ] **Short Description**: Concise value proposition (160 chars max)
-- [ ] **Detailed Description**: Comprehensive feature overview
+- [ ] **Short Description**: Concise value proposition (160 chars max) (ensure it mentions key current features like LoadBalancer management if possible)
+- [ ] **Detailed Description**: Comprehensive feature overview (ensure it highlights robust LoadBalancer management, reliable K8s interactions, form-based resource creation, HTTP testing, etc.)
 - [ ] **Publisher Information**: Complete publisher profile
 - [ ] **Categories/Tags**: Relevant categorization for discoverability
 - [ ] **Additional URLs**: Links to docs, support, source code
@@ -59,7 +59,14 @@
 #### Functionality Testing
 - [ ] **Installation**: Extension installs successfully
 - [ ] **Core Features**: All advertised features work correctly
-- [ ] **Error Handling**: Graceful error handling and user feedback
+  - [ ] LoadBalancer configuration (MetalLB) and accurate status display
+  - [ ] Gateway creation via forms and status
+  - [ ] HTTPRoute creation via forms and status
+  - [ ] Template application from GitHub (reliability and functionality)
+  - [ ] HTTP Testing Tools (request/response, cURL gen, history)
+  - [ ] Proxy Manager (start/stop, URL generation)
+  - [ ] Overall deployment status monitoring for various resources
+- [ ] **Error Handling**: Graceful error handling and user feedback across all features
 - [ ] **Performance**: Acceptable resource usage and response times
 - [ ] **Uninstallation**: Clean removal without residual files
 
@@ -210,7 +217,7 @@
 ---
 
 **Document Version**: 1.0
-**Last Updated**: May 22, 2024
+**Last Updated**: June 7, 2025
 **Next Review**: Before submission
 
 This checklist ensures comprehensive preparation for Docker Desktop Extension Marketplace submission and provides a clear path to successful publication.

@@ -22,17 +22,22 @@ import {
   Snackbar,
   Alert,
   Tab,
-  Tabs
+  Tabs,
 } from "@mui/material";
 import { createDockerDesktopClient } from "@docker/extension-api-client";
-import { listEnvoyGateways, listEnvoyHTTPRoutes, checkEnvoyGatewayCRDs, installEnvoyGateway } from "./helper/kubernetes";
+import {
+  listEnvoyGateways,
+  listEnvoyHTTPRoutes,
+  checkEnvoyGatewayCRDs,
+  installEnvoyGateway,
+} from "./helper/kubernetes";
 import {
   fetchTemplatesMetadata,
   loadTemplate,
   applyTemplateFromUrl,
   Template,
   TemplateMetadata,
-  checkDeploymentStatus
+  checkDeploymentStatus,
 } from "./services/githubTemplateService";
 import { DeploymentStatusMonitor } from "./components/DeploymentStatusMonitor";
 import { GatewayManagement } from "./components/GatewayManagement";
@@ -47,40 +52,49 @@ export function App() {
   const [routes, setRoutes] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<string | null>(null);
-  const [isEnvoyGatewayInstalled, setIsEnvoyGatewayInstalled] = React.useState<boolean>(false);
+  const [isEnvoyGatewayInstalled, setIsEnvoyGatewayInstalled] =
+    React.useState<boolean>(false);
   const [isInstalling, setIsInstalling] = React.useState<boolean>(false);
-  const [installationError, setInstallationError] = React.useState<string | null>(null);
-  const [quickStartDialogOpen, setQuickStartDialogOpen] = React.useState<boolean>(false);
+  const [installationError, setInstallationError] = React.useState<
+    string | null
+  >(null);
+  const [quickStartDialogOpen, setQuickStartDialogOpen] =
+    React.useState<boolean>(false);
 
   // Template related state
   const [templates, setTemplates] = React.useState<TemplateMetadata[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = React.useState<Template | null>(null);
-  const [templateYaml, setTemplateYaml] = React.useState<string>('');
+  const [selectedTemplate, setSelectedTemplate] =
+    React.useState<Template | null>(null);
+  const [templateYaml, setTemplateYaml] = React.useState<string>("");
   const [isApplyingTemplate, setIsApplyingTemplate] = React.useState(false);
   const [templateError, setTemplateError] = React.useState<string | null>(null);
   const [templateSuccess, setTemplateSuccess] = React.useState<boolean>(false);
-  const [isLoadingTemplates, setIsLoadingTemplates] = React.useState<boolean>(false);
+  const [isLoadingTemplates, setIsLoadingTemplates] =
+    React.useState<boolean>(false);
 
   // Add new state variables
   const [deploymentStatus, setDeploymentStatus] = React.useState<{
-    status: 'pending' | 'ready' | 'failed';
+    status: "pending" | "ready" | "failed";
     message?: string;
   } | null>(null);
-  const [statusCheckInterval, setStatusCheckInterval] = React.useState<NodeJS.Timeout | null>(null);
+  const [statusCheckInterval, setStatusCheckInterval] =
+    React.useState<NodeJS.Timeout | null>(null);
 
   // Add tab state and deployed services tracking
   const [currentTab, setCurrentTab] = React.useState<number>(0);
-  const [deployedServices, setDeployedServices] = React.useState<{
-    namespace: string;
-    deploymentName: string;
-    serviceName: string;
-  }[]>([
+  const [deployedServices, setDeployedServices] = React.useState<
+    {
+      namespace: string;
+      deploymentName: string;
+      serviceName: string;
+    }[]
+  >([
     // Default echo service from basic-http template
     {
-      namespace: 'demo',
-      deploymentName: 'echo-service',
-      serviceName: 'echo-service'
-    }
+      namespace: "demo",
+      deploymentName: "echo-service",
+      serviceName: "echo-service",
+    },
   ]);
 
   const fetchData = React.useCallback(async () => {
@@ -94,18 +108,18 @@ export function App() {
         const gwResult = await listEnvoyGateways(ddClient);
         const rtResult = await listEnvoyHTTPRoutes(ddClient);
         if (gwResult.error) {
-          console.error('Gateway error:', gwResult.error);
+          console.error("Gateway error:", gwResult.error);
           setError(gwResult.error);
         }
         if (rtResult.error) {
-          console.error('Route error:', rtResult.error);
+          console.error("Route error:", rtResult.error);
           setError(rtResult.error);
         }
         setGateways(gwResult.items || []);
         setRoutes(rtResult.items || []);
       } catch (e: any) {
-        console.error('Caught error:', e);
-        setError(typeof e === 'string' ? e : JSON.stringify(e, null, 2));
+        console.error("Caught error:", e);
+        setError(typeof e === "string" ? e : JSON.stringify(e, null, 2));
       }
     }
     setLoading(false);
@@ -123,15 +137,17 @@ export function App() {
       // TODO: Allow user to specify version?
       const result = await installEnvoyGateway(ddClient, "latest"); // Using latest version
       if (result.error) {
-        console.error('Installation error:', result.error);
+        console.error("Installation error:", result.error);
         setInstallationError(result.error);
       } else {
         // Installation successful, re-check CRDs and fetch data
         await fetchData();
       }
     } catch (e: any) {
-      console.error('Caught installation error:', e);
-      setInstallationError(typeof e === 'string' ? e : JSON.stringify(e, null, 2));
+      console.error("Caught installation error:", e);
+      setInstallationError(
+        typeof e === "string" ? e : JSON.stringify(e, null, 2),
+      );
     }
     setIsInstalling(false);
   };
@@ -147,14 +163,16 @@ export function App() {
       const templatesMetadata = await fetchTemplatesMetadata();
       setTemplates(templatesMetadata);
     } catch (error: any) {
-      console.error('Error fetching templates:', error);
-      setTemplateError(typeof error === 'string' ? error : JSON.stringify(error, null, 2));
+      console.error("Error fetching templates:", error);
+      setTemplateError(
+        typeof error === "string" ? error : JSON.stringify(error, null, 2),
+      );
     } finally {
       setIsLoadingTemplates(false);
     }
 
     setSelectedTemplate(null);
-    setTemplateYaml('');
+    setTemplateYaml("");
   };
 
   const handleQuickStartClose = () => {
@@ -182,8 +200,8 @@ export function App() {
         setTemplateError(`Failed to load template: ${templateId}`);
       }
     } catch (e: any) {
-      console.error('Error loading template:', e);
-      setTemplateError(typeof e === 'string' ? e : JSON.stringify(e, null, 2));
+      console.error("Error loading template:", e);
+      setTemplateError(typeof e === "string" ? e : JSON.stringify(e, null, 2));
     } finally {
       setIsLoadingTemplates(false);
     }
@@ -197,17 +215,17 @@ export function App() {
       const status = await checkDeploymentStatus(ddClient, selectedTemplate);
       setDeploymentStatus(status);
 
-      if (status.status === 'ready' || status.status === 'failed') {
+      if (status.status === "ready" || status.status === "failed") {
         if (statusCheckInterval) {
           clearInterval(statusCheckInterval);
           setStatusCheckInterval(null);
         }
       }
     } catch (error) {
-      console.error('Error checking deployment status:', error);
+      console.error("Error checking deployment status:", error);
       setDeploymentStatus({
-        status: 'failed',
-        message: 'Failed to check deployment status'
+        status: "failed",
+        message: "Failed to check deployment status",
       });
     }
   };
@@ -223,7 +241,10 @@ export function App() {
 
     try {
       // Apply the template using the GitHub template service
-      const result = await applyTemplateFromUrl(ddClient, selectedTemplate.metadata.yamlUrl);
+      const result = await applyTemplateFromUrl(
+        ddClient,
+        selectedTemplate.metadata.yamlUrl,
+      );
 
       if (result.success) {
         setTemplateSuccess(true);
@@ -237,20 +258,22 @@ export function App() {
         await fetchData();
 
         // Track deployed services based on template ID
-        if (selectedTemplate.metadata.id === 'basic-http-echo') {
+        if (selectedTemplate.metadata.id === "basic-http-echo") {
           // Check if service is already tracked
           const exists = deployedServices.some(
-            service => service.namespace === 'demo' && service.deploymentName === 'echo-service'
+            (service) =>
+              service.namespace === "demo" &&
+              service.deploymentName === "echo-service",
           );
 
           if (!exists) {
-            setDeployedServices(prev => [
+            setDeployedServices((prev) => [
               ...prev,
               {
-                namespace: 'demo',
-                deploymentName: 'echo-service',
-                serviceName: 'echo-service'
-              }
+                namespace: "demo",
+                deploymentName: "echo-service",
+                serviceName: "echo-service",
+              },
             ]);
           }
 
@@ -258,10 +281,12 @@ export function App() {
           setCurrentTab(2);
         }
       } else {
-        setTemplateError(result.error || 'Failed to apply template');
+        setTemplateError(result.error || "Failed to apply template");
       }
     } catch (error: any) {
-      setTemplateError(typeof error === 'string' ? error : JSON.stringify(error, null, 2));
+      setTemplateError(
+        typeof error === "string" ? error : JSON.stringify(error, null, 2),
+      );
     } finally {
       setIsApplyingTemplate(false);
     }
@@ -291,20 +316,22 @@ export function App() {
 
         // Track deployed services based on URL
         // Check if it's a basic-http template
-        if (url.includes('basic-http') || url.includes('echo-service')) {
+        if (url.includes("basic-http") || url.includes("echo-service")) {
           // Check if service is already tracked
           const exists = deployedServices.some(
-            service => service.namespace === 'demo' && service.deploymentName === 'echo-service'
+            (service) =>
+              service.namespace === "demo" &&
+              service.deploymentName === "echo-service",
           );
 
           if (!exists) {
-            setDeployedServices(prev => [
+            setDeployedServices((prev) => [
               ...prev,
               {
-                namespace: 'demo',
-                deploymentName: 'echo-service',
-                serviceName: 'echo-service'
-              }
+                namespace: "demo",
+                deploymentName: "echo-service",
+                serviceName: "echo-service",
+              },
             ]);
           }
 
@@ -312,10 +339,12 @@ export function App() {
           setCurrentTab(2);
         }
       } else {
-        setTemplateError(result.error || 'Failed to apply template from URL');
+        setTemplateError(result.error || "Failed to apply template from URL");
       }
     } catch (error: any) {
-      setTemplateError(typeof error === 'string' ? error : JSON.stringify(error, null, 2));
+      setTemplateError(
+        typeof error === "string" ? error : JSON.stringify(error, null, 2),
+      );
     } finally {
       setIsApplyingTemplate(false);
     }
@@ -327,58 +356,104 @@ export function App() {
         Envoy Gateway
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-        Manage and observe Envoy Gateway resources in your local Kubernetes cluster using Docker Desktop.
+        Manage and observe Envoy Gateway resources in your local Kubernetes
+        cluster using Docker Desktop.
       </Typography>
 
       {/* Backend Status and Summary */}
       <Paper sx={{ p: 2, mb: 3 }}>
-        <Typography variant="subtitle1">Backend Status: <b>{error || installationError ? "error" : "ok"}</b></Typography>
-        <Typography variant="subtitle1">Kubernetes: <b>{loading || isInstalling ? "Loading..." : "Ready"}</b></Typography>
-        <Typography variant="subtitle1">Gateways: <b>{gateways.length}</b></Typography>
-        <Typography variant="subtitle1">Routes: <b>{routes.length}</b></Typography>
+        <Typography variant="subtitle1">
+          Backend Status: <b>{error || installationError ? "error" : "ok"}</b>
+        </Typography>
+        <Typography variant="subtitle1">
+          Kubernetes: <b>{loading || isInstalling ? "Loading..." : "Ready"}</b>
+        </Typography>
+        <Typography variant="subtitle1">
+          Gateways: <b>{gateways.length}</b>
+        </Typography>
+        <Typography variant="subtitle1">
+          Routes: <b>{routes.length}</b>
+        </Typography>
       </Paper>
 
       {loading || isInstalling ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}>
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 5 }}>
           <CircularProgress />
-          {isInstalling && <Typography variant="body1" sx={{ ml: 2 }}>Installing Envoy Gateway...</Typography>}
+          {isInstalling && (
+            <Typography variant="body1" sx={{ ml: 2 }}>
+              Installing Envoy Gateway...
+            </Typography>
+          )}
         </Box>
       ) : error || installationError ? (
         <Paper sx={{ p: 2, mb: 3 }}>
-          <Typography color="error" sx={{ whiteSpace: 'pre-wrap' }}>
-            Error: {typeof (error || installationError) === 'string' ? (error || installationError) : JSON.stringify((error || installationError), null, 2)}
+          <Typography color="error" sx={{ whiteSpace: "pre-wrap" }}>
+            Error:{" "}
+            {typeof (error || installationError) === "string"
+              ? error || installationError
+              : JSON.stringify(error || installationError, null, 2)}
           </Typography>
         </Paper>
       ) : !isEnvoyGatewayInstalled ? (
         <Paper sx={{ p: 2, mb: 3 }}>
-          <Typography variant="h6" gutterBottom>Envoy Gateway Not Installed</Typography>
+          <Typography variant="h6" gutterBottom>
+            Envoy Gateway Not Installed
+          </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-            Envoy Gateway Custom Resource Definitions (CRDs) were not found in your Kubernetes cluster.
-            Please install Envoy Gateway to use this extension.
+            Envoy Gateway Custom Resource Definitions (CRDs) were not found in
+            your Kubernetes cluster. Please install Envoy Gateway to use this
+            extension.
           </Typography>
           <Button
             variant="contained"
             color="primary"
             onClick={handleInstallClick}
             disabled={isInstalling}
+            sx={(theme) =>
+              theme.palette.mode === "light"
+                ? {
+                    bgcolor: theme.palette.primary.main,
+                    color: theme.palette.primary.contrastText,
+                    border: `1px solid ${theme.palette.primary.dark}`,
+                    "&:hover": {
+                      bgcolor: theme.palette.primary.dark,
+                    },
+                  }
+                : {}
+            }
           >
             {isInstalling ? "Installing..." : "Install Envoy Gateway"}
           </Button>
-           {installationError && (
-             <Typography color="error" sx={{ whiteSpace: 'pre-wrap', mt: 2 }}>
-               Installation Error: {typeof installationError === 'string' ? installationError : JSON.stringify(installationError, null, 2)}
-             </Typography>
-           )}
+          {installationError && (
+            <Typography color="error" sx={{ whiteSpace: "pre-wrap", mt: 2 }}>
+              Installation Error:{" "}
+              {typeof installationError === "string"
+                ? installationError
+                : JSON.stringify(installationError, null, 2)}
+            </Typography>
+          )}
         </Paper>
       ) : (
         <>
           {/* Main Content */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-            <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
+            <Box sx={{ display: "flex", gap: 2 }}>
               <Button
                 variant="contained"
                 color="primary"
                 onClick={handleQuickStartOpen}
+                sx={(theme) =>
+                  theme.palette.mode === "light"
+                    ? {
+                        bgcolor: theme.palette.primary.main,
+                        color: theme.palette.primary.contrastText,
+                        border: `1px solid ${theme.palette.primary.dark}`,
+                        "&:hover": {
+                          bgcolor: theme.palette.primary.dark,
+                        },
+                      }
+                    : {}
+                }
               >
                 Quick Start
               </Button>
@@ -394,13 +469,29 @@ export function App() {
           </Box>
 
           {/* Tabs for different views */}
-          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-            <Tabs value={currentTab} onChange={handleTabChange} aria-label="envoy gateway tabs">
+          <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 3 }}>
+            <Tabs
+              value={currentTab}
+              onChange={handleTabChange}
+              aria-label="envoy gateway tabs"
+            >
               <Tab label="Resources" id="tab-0" aria-controls="tabpanel-0" />
-              <Tab label="Gateway Management" id="tab-1" aria-controls="tabpanel-1" />
-              <Tab label="Deployment Status" id="tab-2" aria-controls="tabpanel-2" />
+              <Tab
+                label="Gateway Management"
+                id="tab-1"
+                aria-controls="tabpanel-1"
+              />
+              <Tab
+                label="Deployment Status"
+                id="tab-2"
+                aria-controls="tabpanel-2"
+              />
               <Tab label="HTTP Testing" id="tab-3" aria-controls="tabpanel-3" />
-              <Tab label="Proxy Manager" id="tab-4" aria-controls="tabpanel-4" />
+              <Tab
+                label="Proxy Manager"
+                id="tab-4"
+                aria-controls="tabpanel-4"
+              />
             </Tabs>
           </Box>
 
@@ -480,7 +571,9 @@ export function App() {
                   Deployment Status
                 </Typography>
                 <Typography variant="body2" color="text.secondary" paragraph>
-                  Monitor the status of your deployed services. This view provides detailed information about pods, containers, and troubleshooting guidance.
+                  Monitor the status of your deployed services. This view
+                  provides detailed information about pods, containers, and
+                  troubleshooting guidance.
                 </Typography>
 
                 {deployedServices.map((service, index) => (
@@ -496,9 +589,10 @@ export function App() {
                 ))}
 
                 {deployedServices.length === 0 && (
-                  <Paper sx={{ p: 2, textAlign: 'center' }}>
+                  <Paper sx={{ p: 2, textAlign: "center" }}>
                     <Typography variant="body1" color="text.secondary">
-                      No deployments found. Apply a template to create deployments.
+                      No deployments found. Apply a template to create
+                      deployments.
                     </Typography>
                   </Paper>
                 )}
@@ -519,7 +613,9 @@ export function App() {
                   HTTP Testing
                 </Typography>
                 <Typography variant="body2" color="text.secondary" paragraph>
-                  Test your deployed Envoy Gateway services with HTTP requests. Use this tool to verify your routes and gateways are working correctly.
+                  Test your deployed Envoy Gateway services with HTTP requests.
+                  Use this tool to verify your routes and gateways are working
+                  correctly.
                 </Typography>
                 <HTTPClient />
               </>
@@ -539,7 +635,8 @@ export function App() {
                   Proxy Manager
                 </Typography>
                 <Typography variant="body2" color="text.secondary" paragraph>
-                  Manage kubectl proxy connections to access Kubernetes services directly. Enable proxy to test internal services and APIs.
+                  Manage kubectl proxy connections to access Kubernetes services
+                  directly. Enable proxy to test internal services and APIs.
                 </Typography>
                 <ProxyManager />
               </>
@@ -555,35 +652,42 @@ export function App() {
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle>
-          🚀 Envoy Gateway Quick Start
-        </DialogTitle>
+        <DialogTitle>🚀 Envoy Gateway Quick Start</DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ mb: 2 }}>
-            Welcome to the Envoy Gateway Quick Start! This wizard will help you get started with common Envoy Gateway use cases. Choose one of the examples below to deploy a complete working configuration to your Kubernetes cluster.
+            Welcome to the Envoy Gateway Quick Start! This wizard will help you
+            get started with common Envoy Gateway use cases. Choose one of the
+            examples below to deploy a complete working configuration to your
+            Kubernetes cluster.
           </DialogContentText>
 
           {isLoadingTemplates && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+            <Box sx={{ display: "flex", justifyContent: "center", my: 4 }}>
               <CircularProgress />
-              <Typography variant="body1" sx={{ ml: 2 }}>Loading templates...</Typography>
+              <Typography variant="body1" sx={{ ml: 2 }}>
+                Loading templates...
+              </Typography>
             </Box>
           )}
 
           {templateError && (
             <Alert severity="error" sx={{ mb: 2 }}>
-              <Typography variant="subtitle2" fontWeight="bold">Error:</Typography>
-              <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+              <Typography variant="subtitle2" fontWeight="bold">
+                Error:
+              </Typography>
+              <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
                 {templateError}
               </Typography>
               {templateError.includes("Gateway API CRDs are not installed") && (
                 <Box sx={{ mt: 1 }}>
                   <Typography variant="subtitle2">Troubleshooting:</Typography>
                   <Typography variant="body2">
-                    1. Make sure Envoy Gateway is installed by clicking the "Install Envoy Gateway" button on the main page.
+                    1. Make sure Envoy Gateway is installed by clicking the
+                    "Install Envoy Gateway" button on the main page.
                   </Typography>
                   <Typography variant="body2">
-                    2. If the issue persists, try restarting Docker Desktop and Kubernetes.
+                    2. If the issue persists, try restarting Docker Desktop and
+                    Kubernetes.
                   </Typography>
                 </Box>
               )}
@@ -623,7 +727,11 @@ export function App() {
                         <Typography variant="body2" color="text.secondary">
                           {template.description}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: "block", mt: 1 }}
+                        >
                           Difficulty: {template.difficulty}
                         </Typography>
                       </CardContent>
@@ -632,13 +740,46 @@ export function App() {
                           size="small"
                           color="primary"
                           onClick={() => handleTemplateSelect(template.id)}
+                          sx={
+                            (theme) =>
+                              theme.palette.mode === "light"
+                                ? {
+                                    // Ensure it looks like a contained button for better visibility
+                                    bgcolor: theme.palette.primary.main,
+                                    color: theme.palette.primary.contrastText,
+                                    border: `1px solid ${theme.palette.primary.dark}`, // Add a border for definition
+                                    "&:hover": {
+                                      bgcolor: theme.palette.primary.dark,
+                                    },
+                                  }
+                                : {} // Apply no specific sx overrides for dark mode, rely on theme defaults
+                          }
                         >
                           Select
                         </Button>
                         <Button
                           size="small"
                           color="secondary"
-                          onClick={() => handleApplyTemplateFromUrl(template.yamlUrl)}
+                          onClick={() =>
+                            handleApplyTemplateFromUrl(template.yamlUrl)
+                          }
+                          sx={
+                            (theme) =>
+                              theme.palette.mode === "light"
+                                ? {
+                                    // Ensure it looks like an outlined button for better visibility
+                                    borderColor: theme.palette.secondary.main,
+                                    color: theme.palette.secondary.main,
+                                    borderWidth: "1px",
+                                    borderStyle: "solid",
+                                    "&:hover": {
+                                      // Standard hover for outlined secondary button
+                                      backgroundColor:
+                                        theme.palette.action.hover, // Or alpha(theme.palette.secondary.main, theme.palette.action.hoverOpacity) if alpha is imported
+                                    },
+                                  }
+                                : {} // Apply no specific sx overrides for dark mode, rely on theme defaults
+                          }
                         >
                           Apply Directly
                         </Button>
@@ -650,7 +791,14 @@ export function App() {
             </>
           ) : (
             <>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  mb: 2,
+                }}
+              >
                 <Typography variant="h6">
                   {selectedTemplate.metadata.name}
                 </Typography>
@@ -677,17 +825,22 @@ export function App() {
               {deploymentStatus && (
                 <Alert
                   severity={
-                    deploymentStatus.status === 'ready' ? 'success' :
-                    deploymentStatus.status === 'failed' ? 'error' : 'info'
+                    deploymentStatus.status === "ready"
+                      ? "success"
+                      : deploymentStatus.status === "failed"
+                        ? "error"
+                        : "info"
                   }
                   sx={{ mb: 2 }}
                 >
                   <Typography variant="subtitle2" fontWeight="bold">
-                    {deploymentStatus.status === 'ready' ? 'Deployment Status: Ready' :
-                     deploymentStatus.status === 'failed' ? 'Deployment Status: Failed' :
-                     'Deployment Status: In Progress'}
+                    {deploymentStatus.status === "ready"
+                      ? "Deployment Status: Ready"
+                      : deploymentStatus.status === "failed"
+                        ? "Deployment Status: Failed"
+                        : "Deployment Status: In Progress"}
                   </Typography>
-                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                  <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
                     {deploymentStatus.message}
                   </Typography>
                 </Alert>
@@ -702,34 +855,46 @@ export function App() {
                 variant="outlined"
                 sx={{
                   mb: 2,
-                  maxHeight: '300px',
-                  overflow: 'auto',
-                  backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                  maxHeight: "300px",
+                  overflow: "auto",
+                  backgroundColor: "rgba(0, 0, 0, 0.04)",
                 }}
               >
                 <Box
                   component="pre"
                   sx={{
-                    fontFamily: 'monospace',
-                    fontSize: '0.875rem',
+                    fontFamily: "monospace",
+                    fontSize: "0.875rem",
                     p: 2,
                     m: 0,
-                    overflowX: 'auto',
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word'
+                    overflowX: "auto",
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
                   }}
                 >
                   {templateYaml}
                 </Box>
               </Paper>
 
-              <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ display: "flex", gap: 2 }}>
                 <Button
                   variant="contained"
                   color="primary"
                   onClick={handleApplyTemplate}
                   disabled={isApplyingTemplate}
-                  sx={{ mt: 2 }}
+                  sx={(theme) => ({
+                    mt: 2,
+                    ...(theme.palette.mode === "light"
+                      ? {
+                          bgcolor: theme.palette.primary.main,
+                          color: theme.palette.primary.contrastText,
+                          border: `1px solid ${theme.palette.primary.dark}`,
+                          "&:hover": {
+                            bgcolor: theme.palette.primary.dark,
+                          },
+                        }
+                      : {}),
+                  })}
                 >
                   {isApplyingTemplate ? "Applying..." : "Apply Template"}
                 </Button>
@@ -737,7 +902,11 @@ export function App() {
                 <Button
                   variant="outlined"
                   color="secondary"
-                  onClick={() => handleApplyTemplateFromUrl(selectedTemplate.metadata.yamlUrl)}
+                  onClick={() =>
+                    handleApplyTemplateFromUrl(
+                      selectedTemplate.metadata.yamlUrl,
+                    )
+                  }
                   disabled={isApplyingTemplate}
                   sx={{ mt: 2 }}
                 >
@@ -748,7 +917,23 @@ export function App() {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleQuickStartClose} color="primary">
+          <Button
+            variant="contained"
+            onClick={handleQuickStartClose}
+            color="primary"
+            sx={(theme) =>
+              theme.palette.mode === "light"
+                ? {
+                    bgcolor: theme.palette.primary.main,
+                    color: theme.palette.primary.contrastText,
+                    border: `1px solid ${theme.palette.primary.dark}`,
+                    "&:hover": {
+                      bgcolor: theme.palette.primary.dark,
+                    },
+                  }
+                : {}
+            }
+          >
             Close
           </Button>
         </DialogActions>

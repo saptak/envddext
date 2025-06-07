@@ -5,18 +5,28 @@ All notable changes to the Envoy Gateway Docker Desktop Extension will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [Unreleased] - 2025-06-07
 
-### Added
-- **LoadBalancer Management**: Complete MetalLB integration with auto-configuration for Docker Desktop
-- **LoadBalancer Status Monitoring**: Real-time status tracking with IP pool visualization
-- **Auto IP Range Detection**: Automatic network range detection for MetalLB configuration
-- **Enhanced Error Handling**: Improved error handling for existing MetalLB installations
+### Changed
+- **Architectural Refinement for Kubernetes Interactions**:
+    - Frontend services (`loadBalancerService.ts`, `githubTemplateService.ts`, `kubernetes.ts`) now primarily use the host's `kubectl` (via `ddClient.extension.host.cli.exec()`) for most direct Kubernetes operations (reading resources, status checks, applying URL-based manifests, `kubectl wait`). This significantly improves reliability by leveraging the host's Kubernetes context and avoiding VM-to-host API connectivity issues (e.g., `127.0.0.1` vs `host.docker.internal`).
+    - The backend VM service's `/apply-yaml` endpoint is used for applying dynamically generated YAML strings (e.g., MetalLB `IPAddressPool` and `L2Advertisement`).
+- **LoadBalancer Management (`loadBalancerService.ts`) Overhaul**:
+    - All Kubernetes status detection calls (`quickCheckMetalLBNamespace`, `checkMetalLBStatus`, `checkCloudLoadBalancer`, `checkLoadBalancerServices`, `detectDockerNetworkRange`) refactored to use the host CLI for accuracy and reliability.
+    - MetalLB installation (`configureMetalLB`):
+        - Initial `metallb-native.yaml` manifest application now uses host CLI with `--validate=false` flag to bypass schema validation issues related to K8s API access from within the VM.
+        - `kubectl wait` for MetalLB pods now uses host CLI.
+    - MetalLB status detection (`checkMetalLBStatus`) logic refined: MetalLB is now considered fully "Configured" only if its controller deployment is ready *and* at least one `IPAddressPool` is detected.
+- **GitHub Template Application (`githubTemplateService.ts`)**:
+    - Switched from using the backend `/apply-template` endpoint to using the host's `kubectl` (via `ddClient.extension.host.cli.exec()`) for applying templates directly from URLs, enhancing reliability.
 
 ### Fixed
-- **LoadBalancer Configuration Error**: Fixed "exit status 1" error when MetalLB is already installed
-- **Resource Conflict Handling**: Proper handling of existing MetalLB resources during configuration
-- **Service Detection Logic**: Improved LoadBalancer service detection and status reporting
+- **LoadBalancer Configuration Reliability**:
+    - Resolved persistent "Failed to install MetalLB: exit status 1" errors by moving initial manifest application to host CLI with appropriate flags and refining logic for handling pre-existing installations.
+    - Addressed "connection refused" errors encountered when the backend VM service attempted Kubernetes API calls (e.g., for manifest validation or applying resources) by shifting these operations to the host CLI where `127.0.0.1` correctly points to the K8s API.
+- **LoadBalancer Status Accuracy**: UI now correctly reflects MetalLB status based on comprehensive host CLI checks, including the presence of `IPAddressPools`.
+- **Template Application Reliability**: Resolved "connection refused" errors during template application by moving the operation to the host CLI.
+- **Build Stability**: Corrected various TypeScript syntax errors in `loadBalancerService.ts` that were causing build failures.
 
 ## [0.5.0] - 2025-06-06
 
