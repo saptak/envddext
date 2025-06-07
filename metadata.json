@@ -1,12 +1,21 @@
 {
   "name": "Envoy Gateway",
-  "description": "Manage and observe Envoy Gateway resources with HTTP testing tools and kubectl proxy management in your local Kubernetes cluster using Docker Desktop.",
+  "description": "Manage and observe Envoy Gateway resources with HTTP testing tools, LoadBalancer management, and kubectl proxy management in your local Kubernetes cluster using Docker Desktop.",
   "icon": "docker.svg",
+  "vm": {
+    "composefile": "docker-compose.yaml",
+    "exposes": {
+      "socket": "envoy-gateway-backend.sock"
+    }
+  },
   "ui": {
     "dashboard-tab": {
       "title": "Envoy Gateway",
       "src": "index.html",
-      "root": "ui"
+      "root": "ui",
+      "backend": {
+        "socket": "envoy-gateway-backend.sock"
+      }
     }
   },
   "host": {

@@ -127,37 +127,15 @@ export const applyTemplateFromUrl = async (
       return gcResult;
     }
 
-    // Apply the template directly from the URL
-    console.log(`Applying template directly from URL: ${url}`);
+    // Use the VM backend to apply the template
+    console.log(`Applying template via backend from URL: ${url}`);
 
-    try {
-      // Apply the YAML directly from the URL using kubectl apply
-      console.log(`Running kubectl apply -f ${url}`);
+    const response = await ddClient.extension.vm?.service?.post('/apply-template', { url }) as any;
 
-      const applyResult = await ddClient.extension.host?.cli.exec("kubectl", [
-        "apply", "-f", url
-      ]);
-
-      console.log(`kubectl apply result:`, applyResult);
-
-      // Check for errors
-      if (applyResult?.stderr &&
-          !applyResult.stderr.includes('configured') &&
-          !applyResult.stderr.includes(' unchanged') &&
-          !applyResult.stderr.includes(' created')) {
-        return {
-          success: false,
-          error: applyResult.stderr
-        };
-      }
-
+    if (response?.success) {
       return { success: true };
-    } catch (fetchError: any) {
-      console.error("Error fetching template from URL:", fetchError);
-      return {
-        success: false,
-        error: `Failed to fetch template from URL: ${typeof fetchError === 'string' ? fetchError : JSON.stringify(fetchError, null, 2)}`
-      };
+    } else {
+      return { success: false, error: response?.error || 'Unknown error applying template' };
     }
   } catch (error: any) {
     console.error("Error applying template from URL:", error);

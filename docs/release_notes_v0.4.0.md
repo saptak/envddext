@@ -1,8 +1,8 @@
 # Release Notes v0.4.0 - HTTP Testing Tools and Kubectl Proxy Manager
 
-**Release Date**: May 25, 2025  
+**Release Date**: May 26, 2025  
 **Version**: 0.4.0  
-**Iteration**: 4 - HTTP Testing and Proxy Management
+**Iteration**: 3 - HTTP Testing and Proxy Management
 
 ## 🎉 Major Features Added
 

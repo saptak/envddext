@@ -3,24 +3,52 @@ import { Gateway, GatewayFormData, GatewayStatusInfo, GatewayClass } from "../ty
 import { HTTPRoute, HTTPRouteFormData, HTTPRouteStatusInfo, HTTPRouteValidationResult, ValidationError } from '../types/httproute';
 import yaml from 'js-yaml';
 
+// Backend API response type
+interface APIResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
+// Helper function to call backend API
+const callBackendAPI = async <T = any>(
+  ddClient: v1.DockerDesktopClient,
+  endpoint: string,
+  method: 'GET' | 'POST' = 'GET',
+  data?: any
+): Promise<APIResponse<T>> => {
+  try {
+    let response;
+    if (method === 'POST') {
+      response = await ddClient.extension.vm?.service?.post(endpoint, data);
+    } else {
+      response = await ddClient.extension.vm?.service?.get(endpoint);
+    }
+    return response as APIResponse<T>;
+  } catch (error: any) {
+    console.error(`Backend API call failed (${method} ${endpoint}):`, error);
+    return {
+      success: false,
+      error: typeof error === 'string' ? error : JSON.stringify(error, null, 2)
+    };
+  }
+};
+
 export const DockerDesktop = "docker-desktop";
 export const CurrentExtensionContext = "currentExtensionContext";
 export const IsK8sEnabled = "isK8sEnabled";
 
 export const listHostContexts = async (ddClient: v1.DockerDesktopClient) => {
-  const output = await ddClient.extension.host?.cli.exec("kubectl", [
-    "config",
-    "view",
-    "-o",
-    "jsonpath='{.contexts}'",
-  ]);
-  console.log(output);
-  if (output?.stderr) {
-    console.log(output.stderr);
-    return output.stderr;
+  const response = await callBackendAPI<string>(ddClient, '/kubectl', 'POST', {
+    args: ["config", "view", "-o", "jsonpath='{.contexts}'"]
+  });
+  
+  if (response.success) {
+    return response.data;
+  } else {
+    console.log(response.error);
+    return response.error;
   }
-
-  return output?.stdout;
 };
 
 export const setDockerDesktopContext = async (
@@ -545,139 +573,12 @@ export const createGateway = async (
   ddClient: v1.DockerDesktopClient,
   gatewayData: GatewayFormData
 ): Promise<{ success: boolean; error?: string; gateway?: Gateway }> => {
-  try {
-    // Build the Gateway object
-    const gateway: Gateway = {
-      apiVersion: 'gateway.networking.k8s.io/v1',
-      kind: 'Gateway',
-      metadata: {
-        name: gatewayData.name,
-        namespace: gatewayData.namespace,
-        ...(gatewayData.labels && Object.keys(gatewayData.labels).length > 0 && { labels: gatewayData.labels }),
-        ...(gatewayData.annotations && Object.keys(gatewayData.annotations).length > 0 && { annotations: gatewayData.annotations })
-      },
-      spec: {
-        gatewayClassName: gatewayData.gatewayClassName,
-        listeners: gatewayData.listeners.map(listener => ({
-          name: listener.name,
-          port: listener.port,
-          protocol: listener.protocol,
-          ...(listener.hostname && { hostname: listener.hostname }),
-          ...(listener.protocol === 'HTTPS' && listener.tlsMode && {
-            tls: {
-              mode: listener.tlsMode,
-              ...(listener.certificateName && {
-                certificateRefs: [{
-                  name: listener.certificateName,
-                  ...(listener.certificateNamespace && { namespace: listener.certificateNamespace })
-                }]
-              })
-            }
-          }),
-          allowedRoutes: {
-            namespaces: {
-              from: listener.allowedRoutesFrom
-            },
-            kinds: listener.allowedRouteKinds.map(kind => ({
-              kind,
-              ...(kind !== 'HTTPRoute' && { group: 'gateway.networking.k8s.io' })
-            }))
-          }
-        }))
-      }
-    };
-
-    // Convert to proper YAML format
-    const yamlContent = yaml.dump(gateway);
-
-    // Try using kubectl without any file dependencies
-    // Create the resource directly using kubectl create with YAML
-    
-    // First try kubectl help to test basic accessibility
-    const helpOutput = await ddClient.extension.host?.cli.exec("kubectl", ["--help"]);
-    // kubectl help returns undefined/0 on success, non-zero on failure
-    if (helpOutput?.code && helpOutput.code !== 0) {
-      return {
-        success: false,
-        error: `kubectl binary not accessible: code=${helpOutput?.code}, stderr=${helpOutput?.stderr}, stdout=${helpOutput?.stdout}`
-      };
-    }
-
-    // Try kubectl version
-    const versionOutput = await ddClient.extension.host?.cli.exec("kubectl", ["version", "--client"]);
-    if (versionOutput?.code && versionOutput.code !== 0) {
-      return {
-        success: false,
-        error: `kubectl version failed: code=${versionOutput?.code}, stderr=${versionOutput?.stderr}, stdout=${versionOutput?.stdout}`
-      };
-    }
-
-    // Now try to create a namespace (simpler operation) to test kubectl functionality
-    const testOutput = await ddClient.extension.host?.cli.exec("kubectl", [
-      "get", "namespaces", "--no-headers", "-o", "name"
-    ]);
-    
-    if (testOutput?.code && testOutput.code !== 0) {
-      return {
-        success: false,
-        error: `kubectl connection test failed: ${testOutput?.stderr || testOutput?.stdout || 'No cluster access'}`
-      };
-    }
-
-    // kubectl is working! But Docker Desktop extensions have file system limitations
-    // Show user the exact command to run manually
-    
-    try {
-      // WORKAROUND: Since Docker Desktop extensions can't write temp files or use data URLs,
-      // we need the user to manually create the gateway. Show them the exact kubectl command.
-      
-      const kubectlCommand = `kubectl apply -f - << 'EOF'
-${yamlContent}
-EOF`;
-
-      return {
-        success: false,
-        error: `Docker Desktop extension limitations prevent direct Gateway creation. Please run this command in your terminal:
-
-${kubectlCommand}
-
-Alternatively, save the following YAML to a file and apply it:
-
-${yamlContent}`
-      };
-      
-    } catch (error: any) {
-      return {
-        success: false,
-        error: `Error generating Gateway YAML: ${error.message}`
-      };
-    }
-
-    // This code is unreachable due to the return above, so commenting out
-    /*
-    // Check for errors using exit code and stderr content
-    if (applyOutput?.code !== 0 || 
-        (applyOutput?.stderr && 
-         !applyOutput.stderr.includes('configured') &&
-         !applyOutput.stderr.includes('unchanged') &&
-         !applyOutput.stderr.includes('created'))) {
-      return {
-        success: false,
-        error: applyOutput?.stderr || applyOutput?.stdout || 'kubectl apply failed'
-      };
-    }
-
-    return {
-      success: true,
-      gateway
-    };
-    */
-  } catch (error: any) {
-    console.error("Error creating Gateway:", error);
-    return {
-      success: false,
-      error: typeof error === 'string' ? error : JSON.stringify(error, null, 2)
-    };
+  const response = await callBackendAPI<string>(ddClient, '/create-gateway', 'POST', gatewayData);
+  
+  if (response.success) {
+    return { success: true };
+  } else {
+    return { success: false, error: response.error };
   }
 };
 
@@ -891,128 +792,21 @@ export const createHTTPRoute = async (
   ddClient: v1.DockerDesktopClient,
   routeData: HTTPRouteFormData
 ): Promise<{ success: boolean; error?: string; httpRoute?: HTTPRoute }> => {
-  try {
-    // Validate the form data first
-    const validation = validateHTTPRouteConfiguration(routeData);
-    if (!validation.isValid) {
-      return {
-        success: false,
-        error: `Validation failed: ${validation.errors.map(e => e.message).join(', ')}`
-      };
-    }
-
-    // Convert form data to HTTPRoute resource
-    const httpRoute: HTTPRoute = {
-      apiVersion: 'gateway.networking.k8s.io/v1',
-      kind: 'HTTPRoute',
-      metadata: {
-        name: routeData.name,
-        namespace: routeData.namespace,
-        labels: {
-          'app.kubernetes.io/created-by': 'envoy-gateway-extension'
-        }
-      },
-      spec: {
-        parentRefs: [
-          {
-            name: routeData.parentGateway,
-            ...(routeData.parentGatewayNamespace &&
-               routeData.parentGatewayNamespace !== routeData.namespace && {
-                 namespace: routeData.parentGatewayNamespace
-               })
-          }
-        ],
-        ...(routeData.hostnames.length > 0 && { hostnames: routeData.hostnames }),
-        rules: routeData.rules.map(rule => ({
-          ...(rule.name && { name: rule.name }),
-          matches: rule.matches.map(match => ({
-            path: {
-              type: match.pathType,
-              value: match.pathValue
-            },
-            ...(match.method && { method: match.method }),
-            ...(match.headers.length > 0 && {
-              headers: match.headers.map(header => ({
-                type: header.type,
-                name: header.name,
-                value: header.value
-              }))
-            }),
-            ...(match.queryParams.length > 0 && {
-              queryParams: match.queryParams.map(param => ({
-                type: param.type,
-                name: param.name,
-                value: param.value
-              }))
-            })
-          })),
-          backendRefs: rule.backendRefs.map(backend => ({
-            name: backend.name,
-            port: backend.port,
-            weight: backend.weight,
-            ...(backend.namespace &&
-               backend.namespace !== routeData.namespace && {
-                 namespace: backend.namespace
-               })
-          })),
-          ...(rule.requestTimeout || rule.backendRequestTimeout) && {
-            timeouts: {
-              ...(rule.requestTimeout && { request: rule.requestTimeout }),
-              ...(rule.backendRequestTimeout && { backendRequest: rule.backendRequestTimeout })
-            }
-          }
-        }))
-      }
-    };
-
-    // Create temporary file for the HTTPRoute YAML
-    const tempFile = `/tmp/httproute-${Date.now()}.yaml`;
-    const yamlContent = `# HTTPRoute created by Envoy Gateway Extension
-apiVersion: ${httpRoute.apiVersion}
-kind: ${httpRoute.kind}
-metadata:
-  name: ${httpRoute.metadata.name}
-  namespace: ${httpRoute.metadata.namespace}
-  labels:
-    app.kubernetes.io/created-by: envoy-gateway-extension
-spec:
-${JSON.stringify(httpRoute.spec, null, 2).split('\n').map(line => '  ' + line).join('\n')}`;
-
-    // Write YAML to temporary file
-    await ddClient.extension.host?.cli.exec("sh", [
-      "-c",
-      `cat > ${tempFile} << 'EOF'
-${yamlContent}
-EOF`
-    ]);
-
-    // Apply the HTTPRoute using kubectl
-    const applyOutput = await ddClient.extension.host?.cli.exec("kubectl", [
-      "apply",
-      "-f",
-      tempFile
-    ]);
-
-    // Clean up temporary file
-    await ddClient.extension.host?.cli.exec("rm", [tempFile]);
-
-    if (applyOutput?.stderr && applyOutput.stderr.includes('Error:')) {
-      return {
-        success: false,
-        error: applyOutput.stderr
-      };
-    }
-
-    return {
-      success: true,
-      httpRoute
-    };
-  } catch (error: any) {
-    console.error("Error creating HTTPRoute:", error);
+  // Validate the form data first
+  const validation = validateHTTPRouteConfiguration(routeData);
+  if (!validation.isValid) {
     return {
       success: false,
-      error: typeof error === 'string' ? error : JSON.stringify(error, null, 2)
+      error: `Validation failed: ${validation.errors.map(e => e.message).join(', ')}`
     };
+  }
+
+  const response = await callBackendAPI<string>(ddClient, '/create-httproute', 'POST', routeData);
+  
+  if (response.success) {
+    return { success: true };
+  } else {
+    return { success: false, error: response.error };
   }
 };
 
