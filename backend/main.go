@@ -47,13 +47,49 @@ type CertRef struct {
 }
 
 type HTTPRouteFormData struct {
-	Name        string     `json:"name"`
-	Namespace   string     `json:"namespace"`
-	GatewayName string     `json:"gatewayName"`
-	Hostnames   []string   `json:"hostnames"`
-	Rules       []HTTPRule `json:"rules"`
+	Name                   string               `json:"name"`
+	Namespace              string               `json:"namespace"`
+	ParentGateway          string               `json:"parentGateway"`
+	ParentGatewayNamespace string               `json:"parentGatewayNamespace"`
+	Hostnames              []string             `json:"hostnames"`
+	Rules                  []HTTPRuleFormData   `json:"rules"`
 }
 
+type HTTPRuleFormData struct {
+	Name                   string                     `json:"name,omitempty"`
+	Matches                []HTTPRouteMatchFormData   `json:"matches"`
+	BackendRefs            []HTTPBackendRefFormData   `json:"backendRefs"`
+	RequestTimeout         string                     `json:"requestTimeout,omitempty"`
+	BackendRequestTimeout  string                     `json:"backendRequestTimeout,omitempty"`
+}
+
+type HTTPRouteMatchFormData struct {
+	PathType     string                           `json:"pathType"`
+	PathValue    string                           `json:"pathValue"`
+	Method       string                           `json:"method,omitempty"`
+	Headers      []HTTPRouteHeaderMatchFormData   `json:"headers"`
+	QueryParams  []HTTPRouteQueryParamFormData    `json:"queryParams"`
+}
+
+type HTTPRouteHeaderMatchFormData struct {
+	Type  string `json:"type"`
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+type HTTPRouteQueryParamFormData struct {
+	Type  string `json:"type"`
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+type HTTPBackendRefFormData struct {
+	Name   string `json:"name"`
+	Port   int    `json:"port"`
+	Weight int    `json:"weight"`
+}
+
+// Legacy structures for backward compatibility
 type HTTPRule struct {
 	Matches     []HTTPMatch  `json:"matches"`
 	BackendRefs []BackendRef `json:"backendRefs"`
@@ -417,11 +453,11 @@ func (s *Server) generateHTTPRouteYAML(data HTTPRouteFormData) (string, error) {
 		"spec": map[string]interface{}{
 			"parentRefs": []map[string]interface{}{
 				{
-					"name": data.GatewayName,
+					"name": data.ParentGateway,
 				},
 			},
 			"hostnames": data.Hostnames,
-			"rules":     s.convertHTTPRules(data.Rules),
+			"rules":     s.convertHTTPRulesFromFormData(data.Rules),
 		},
 	}
 
@@ -460,6 +496,93 @@ func (s *Server) convertListeners(listeners []Listener) []map[string]interface{}
 	return result
 }
 
+func (s *Server) convertHTTPRulesFromFormData(rules []HTTPRuleFormData) []map[string]interface{} {
+	result := make([]map[string]interface{}, len(rules))
+	for i, rule := range rules {
+		matches := make([]map[string]interface{}, len(rule.Matches))
+		for j, match := range rule.Matches {
+			matchMap := map[string]interface{}{
+				"path": map[string]interface{}{
+					"type":  match.PathType,
+					"value": match.PathValue,
+				},
+			}
+			
+			// Add method if specified
+			if match.Method != "" {
+				matchMap["method"] = match.Method
+			}
+			
+			// Add headers if any
+			if len(match.Headers) > 0 {
+				headers := make([]map[string]interface{}, len(match.Headers))
+				for k, header := range match.Headers {
+					headers[k] = map[string]interface{}{
+						"type":  header.Type,
+						"name":  header.Name,
+						"value": header.Value,
+					}
+				}
+				matchMap["headers"] = headers
+			}
+			
+			// Add query params if any
+			if len(match.QueryParams) > 0 {
+				queryParams := make([]map[string]interface{}, len(match.QueryParams))
+				for k, param := range match.QueryParams {
+					queryParams[k] = map[string]interface{}{
+						"type":  param.Type,
+						"name":  param.Name,
+						"value": param.Value,
+					}
+				}
+				matchMap["queryParams"] = queryParams
+			}
+			
+			matches[j] = matchMap
+		}
+
+		backendRefs := make([]map[string]interface{}, len(rule.BackendRefs))
+		for j, ref := range rule.BackendRefs {
+			backendRef := map[string]interface{}{
+				"name": ref.Name,
+				"port": ref.Port,
+			}
+			
+			// Add weight if specified and not default
+			if ref.Weight > 0 && ref.Weight != 100 {
+				backendRef["weight"] = ref.Weight
+			}
+			
+			backendRefs[j] = backendRef
+		}
+
+		ruleMap := map[string]interface{}{
+			"matches":     matches,
+			"backendRefs": backendRefs,
+		}
+		
+		// Add timeouts if specified
+		if rule.RequestTimeout != "" {
+			if ruleMap["timeouts"] == nil {
+				ruleMap["timeouts"] = map[string]interface{}{}
+			}
+			ruleMap["timeouts"].(map[string]interface{})["request"] = rule.RequestTimeout
+		}
+		
+		if rule.BackendRequestTimeout != "" {
+			if ruleMap["timeouts"] == nil {
+				ruleMap["timeouts"] = map[string]interface{}{}
+			}
+			ruleMap["timeouts"].(map[string]interface{})["backendRequest"] = rule.BackendRequestTimeout
+		}
+
+		result[i] = ruleMap
+	}
+	return result
+}
+
+// Legacy function for backward compatibility
 func (s *Server) convertHTTPRules(rules []HTTPRule) []map[string]interface{} {
 	result := make([]map[string]interface{}, len(rules))
 	for i, rule := range rules {

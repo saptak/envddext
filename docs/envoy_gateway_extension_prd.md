@@ -3,28 +3,28 @@
 ## Document Information
 - **Document Title**: Envoy Gateway Extension Enhancement PRD
 - **Version**: 1.0
-- **Date**: June 7, 2025
-- **Status**: Draft
+- **Date**: June 11, 2025
+- **Status**: Implementation Complete
 
 ## Executive Summary
 
-The Envoy Gateway Extension for Docker Desktop provides a user interface for managing Envoy Gateway resources in a local Kubernetes cluster. While the extension currently offers basic functionality for viewing Gateway and Route resources, it lacks guided workflows for new users to quickly experience the benefits of Envoy Gateway.
+The Envoy Gateway Extension for Docker Desktop provides a comprehensive user interface for managing Envoy Gateway resources in a local Kubernetes cluster. The extension now offers full functionality for creating and managing Gateway and HTTPRoute resources, guided templates for common use cases, and integrated testing tools.
 
-This PRD outlines enhancements to the extension that will enable users to easily try common Envoy Gateway use cases directly from the Docker Desktop interface, significantly improving the onboarding experience and reducing the time to value.
+This PRD outlines the completed enhancements to the extension that enable users to easily try common Envoy Gateway use cases directly from the Docker Desktop interface, significantly improving the onboarding experience and reducing the time to value.
 
 ## Background
 
 Envoy Gateway is a powerful API Gateway built on Envoy Proxy and the Kubernetes Gateway API. However, getting started with Envoy Gateway requires knowledge of Kubernetes, Gateway API resources, and YAML configuration. This creates a high barrier to entry for new users who want to evaluate Envoy Gateway's capabilities.
 
-The current Docker Desktop extension allows users to install Envoy Gateway and view resources but doesn't provide guided workflows or templates for common use cases.
+The Docker Desktop extension now provides comprehensive functionality including Envoy Gateway installation, resource creation and management, guided workflows, templates for common use cases, and integrated testing tools.
 
-## Goals
+## Goals ✅ COMPLETED
 
-1. Reduce the time to value for new Envoy Gateway users
-2. Provide guided workflows for common API Gateway use cases
-3. Educate users on Envoy Gateway capabilities through interactive examples
-4. Increase adoption of Envoy Gateway through an improved user experience
-5. Showcase the power of Docker Desktop extensions for Kubernetes tooling
+1. ✅ Reduce the time to value for new Envoy Gateway users
+2. ✅ Provide guided workflows for common API Gateway use cases
+3. ✅ Educate users on Envoy Gateway capabilities through interactive examples
+4. ✅ Increase adoption of Envoy Gateway through an improved user experience
+
 
 ## Non-Goals
 
@@ -76,30 +76,60 @@ The current Docker Desktop extension allows users to install Envoy Gateway and v
 
 ### Use Cases to Support
 
-1. **Basic HTTP Routing**
-   - Deploy a simple web application
-   - Configure HTTP routes
-   - Test routing with sample requests
+1. **Flexible HTTP Routing & Request Matching**
+   - Deploy simple web applications and expose them via Gateways.
+   - Configure `HTTPRoute` resources with rules based on:
+     - URL Paths (prefix, exact, regular expression).
+     - Hostnames.
+     - HTTP Headers (presence, exact match, regular expression).
+     - Query Parameters (exact match).
+   - Test routing with sample requests using the built-in HTTP client.
 
 2. **TLS Termination**
-   - Generate self-signed certificates
-   - Configure TLS termination
-   - Verify secure connections
+   - Secure Gateway listeners with HTTPS.
+   - Configure TLS termination using Kubernetes Secrets containing certificates and keys.
+   - Verify secure connections to backend services.
+   - (Future: Guide users on integrating with `cert-manager` for automated certificate provisioning).
 
-3. **Traffic Splitting**
-   - Deploy multiple versions of an application
-   - Configure weighted routing
-   - Visualize traffic distribution
+3. **Traffic Splitting (Canary & Blue/Green)**
+   - Deploy multiple versions of an application.
+   - Configure weighted routing in `HTTPRoute` to distribute traffic between different backend service versions.
+   - Test and visualize traffic distribution.
 
-4. **Rate Limiting**
-   - Configure rate limits
-   - Test rate limiting behavior
-   - Visualize rate limit metrics
+4. **Resilience Policies: Timeouts & Retries**
+   - Configure request timeouts for Gateway listeners or specific routes.
+   - Implement retry policies for failed requests to backend services (e.g., on 5xx errors or connection failures for idempotent requests).
+   - Test timeout and retry behaviors.
 
-5. **JWT Authentication**
-   - Configure JWT validation
-   - Test with valid and invalid tokens
-   - Visualize authentication flow
+5. **Rate Limiting**
+   - Configure global and per-route rate limits to protect backend services.
+   - Test rate limiting behavior under load.
+   - (Future: Visualize rate limit metrics).
+
+6. **Security Policy: JWT Authentication**
+   - Configure JWT validation for specific routes using Envoy Gateway's `SecurityPolicy` or similar mechanisms.
+   - Define JWT providers, issuers, and JWKS URIs.
+   - Test API access with valid and invalid JWTs.
+   - (Future: Visualize authentication flow).
+
+7. **Security Policy: Basic Authentication**
+   - Protect routes with basic username/password authentication.
+   - Manage credentials via Kubernetes Secrets.
+   - Test access with and without credentials.
+
+8. **Security Policy: CORS (Cross-Origin Resource Sharing)**
+   - Configure CORS policies at the Gateway or Route level.
+   - Define allowed origins, methods, headers, and other CORS parameters.
+   - Enable secure cross-domain requests from web applications.
+
+9. **Security Policy: IP-based Access Control**
+   - Implement IP allow-lists or deny-lists for specific routes or listeners.
+   - Restrict access based on source IP addresses or CIDR ranges.
+
+10. **Security Policy: Mutual TLS (mTLS) Client Authentication**
+    - Configure Gateway listeners to require client certificates for mTLS.
+    - Manage client CA certificates for validation.
+    - Secure service-to-service or B2B communication requiring strong client authentication.
 
 ## User Experience
 
@@ -170,7 +200,8 @@ The current Docker Desktop extension allows users to install Envoy Gateway and v
    - Comprehensive error handling and user feedback
 
 4. **Gateway and HTTPRoute Creation Forms & UI** (Tasks from Iteration 2 & 3)
-   - Form-based interface for creating Gateway and HTTPRoute resources.
+   - Form-based interface for creating Gateway and HTTPRoute resources. UI now reliably reflects success of creation operations, resolving previous misleading error messages.
+   - Support for configuring listeners, advanced path/header/query parameter matching in HTTPRoutes.
    - Configuration validation and YAML preview.
    - Real-time status monitoring for created resources.
    - Dark theme integration for all form components.
@@ -181,10 +212,10 @@ The current Docker Desktop extension allows users to install Envoy Gateway and v
    - Content type detection and JSON formatting.
 
 6. **LoadBalancer Management**
-   - Robust MetalLB installation and configuration.
+   - Robust MetalLB installation and configuration, with improved error handling and feedback in the configuration dialog.
    - Automatic IP range detection for Docker Desktop environments.
-   - Accurate real-time LoadBalancer status monitoring (MetalLB controller and IPAddressPools).
-   - Kubernetes interactions (status checks, initial manifest apply) primarily use the **host's `kubectl`** for reliability. Dynamic YAML for IPAddressPool/L2Advertisement applied via backend's `/apply-yaml` endpoint.
+   - Highly accurate real-time LoadBalancer status monitoring (MetalLB controller and IPAddressPools), with UI correctly reflecting "NOT CONFIGURED" states and providing appropriate configuration options.
+   - Kubernetes interactions (status checks, initial manifest apply) primarily use the **host\'s `kubectl`** for reliability. Dynamic YAML for IPAddressPool/L2Advertisement applied via backend\'s `/apply-yaml` endpoint.
 
 ### 📋 Planned Features
 
