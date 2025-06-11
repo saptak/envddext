@@ -41,6 +41,7 @@ import {
 } from "./services/githubTemplateService";
 import { DeploymentStatusMonitor } from "./components/DeploymentStatusMonitor";
 import { GatewayManagement } from "./components/GatewayManagement";
+import { HTTPRouteManagement } from "./components/HTTPRouteManagement";
 import { HTTPClient } from "./components/HTTPClient";
 import { ProxyManager } from "./components/ProxyManager";
 
@@ -474,6 +475,9 @@ export function App() {
               value={currentTab}
               onChange={handleTabChange}
               aria-label="envoy gateway tabs"
+              variant="scrollable"
+              scrollButtons="auto"
+              allowScrollButtonsMobile
             >
               <Tab label="Resources" id="tab-0" aria-controls="tabpanel-0" />
               <Tab
@@ -482,15 +486,20 @@ export function App() {
                 aria-controls="tabpanel-1"
               />
               <Tab
-                label="Deployment Status"
+                label="HTTPRoute Management"
                 id="tab-2"
                 aria-controls="tabpanel-2"
               />
-              <Tab label="HTTP Testing" id="tab-3" aria-controls="tabpanel-3" />
+              <Tab
+                label="Deployment Status"
+                id="tab-3"
+                aria-controls="tabpanel-3"
+              />
+              <Tab label="HTTP Testing" id="tab-4" aria-controls="tabpanel-4" />
               <Tab
                 label="Proxy Manager"
-                id="tab-4"
-                aria-controls="tabpanel-4"
+                id="tab-5"
+                aria-controls="tabpanel-5"
               />
             </Tabs>
           </Box>
@@ -558,7 +567,7 @@ export function App() {
             )}
           </Box>
 
-          {/* Deployment Status Tab */}
+          {/* HTTPRoute Management Tab */}
           <Box
             role="tabpanel"
             hidden={currentTab !== 2}
@@ -566,6 +575,23 @@ export function App() {
             aria-labelledby="tab-2"
           >
             {currentTab === 2 && (
+              <HTTPRouteManagement
+                onHTTPRouteCreated={(_httpRoute) => {
+                  // Refresh the routes list when a new HTTPRoute is created
+                  fetchData();
+                }}
+              />
+            )}
+          </Box>
+
+          {/* Deployment Status Tab */}
+          <Box
+            role="tabpanel"
+            hidden={currentTab !== 3}
+            id="tabpanel-3"
+            aria-labelledby="tab-3"
+          >
+            {currentTab === 3 && (
               <>
                 <Typography variant="h6" gutterBottom>
                   Deployment Status
@@ -603,11 +629,11 @@ export function App() {
           {/* HTTP Testing Tab */}
           <Box
             role="tabpanel"
-            hidden={currentTab !== 3}
-            id="tabpanel-3"
-            aria-labelledby="tab-3"
+            hidden={currentTab !== 4}
+            id="tabpanel-4"
+            aria-labelledby="tab-4"
           >
-            {currentTab === 3 && (
+            {currentTab === 4 && (
               <>
                 <Typography variant="h6" gutterBottom>
                   HTTP Testing
@@ -625,11 +651,11 @@ export function App() {
           {/* Proxy Manager Tab */}
           <Box
             role="tabpanel"
-            hidden={currentTab !== 4}
-            id="tabpanel-4"
-            aria-labelledby="tab-4"
+            hidden={currentTab !== 5}
+            id="tabpanel-5"
+            aria-labelledby="tab-5"
           >
-            {currentTab === 4 && (
+            {currentTab === 5 && (
               <>
                 <Typography variant="h6" gutterBottom>
                   Proxy Manager

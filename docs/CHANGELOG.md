@@ -5,6 +5,54 @@ All notable changes to the Envoy Gateway Docker Desktop Extension will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2025-06-11
+
+### Fixed
+- **HTTPRoute Creation Form Improvements**:
+    - Resolved form not closing automatically after successful HTTPRoute creation. Form now properly calls `onSuccess` callback with constructed HTTPRoute object.
+    - Fixed validation errors not clearing when corrected. All form change handlers now properly clear validation errors for the corresponding fields.
+    - Removed debug information from UI for production-ready experience (removed namespace loading status, debug logs, and debug UI sections).
+    - Fixed TypeScript build error by removing `resourceVersion` field from HTTPRoute metadata construction (not part of interface).
+
+### Added
+- **Responsive Tab Navigation**: 
+    - Added horizontal scrolling support for tabs when screen width is insufficient
+    - Implemented `variant="scrollable"`, `scrollButtons="auto"`, and `allowScrollButtonsMobile` for Material-UI Tabs component
+    - Enhanced mobile and narrow-screen user experience with automatic navigation arrows
+
+### Changed
+- **UI/UX Enhancements**:
+    - HTTPRoute Management tab now provides clean, production-ready interface without debug clutter
+    - All validation error states properly reset when users correct input
+    - Improved form workflow with automatic closure after successful resource creation
+    - Better responsive design across all screen sizes
+
+## [0.5.1] - 2025-06-08
+
+### Fixed
+- **Gateway Creation UI Reliability & Error Handling**:
+    - Resolved misleading "Failed to create Gateway" UI error when the backend operation was successful. The UI now correctly reflects success for new or existing/unchanged Gateways.
+    - Root cause: The frontend's `createGateway` helper (in `ui/src/helper/kubernetes.ts`) was misinterpreting the structure of success responses from the backend service. The `ddClient.extension.vm.service.post()` call wraps the backend's actual `APIResponse` (e.g., `{success: true, data: "..."}`) inside a top-level `data` property. The frontend helpers were expecting the `success` flag at the top level.
+    - Fix:
+        - Modified `callBackendAPI` in `ui/src/helper/kubernetes.ts` to return the raw response from `ddClient.extension.vm.service.post()` for successful HTTP operations. For errors it catches internally, it forms and returns a standard `APIResponse`-like object (`{ success: false, error: "details" }`).
+        - Updated API helper functions (`createGateway`, `listHostContexts`, `createHTTPRoute`) to correctly inspect the structure of the response from `callBackendAPI`, checking if the `APIResponse` payload is the direct object or nested under a `.data` property, to accurately determine success.
+        - Backend's `s.applyYAML` function (in `backend/main.go`) was also previously enhanced to correctly interpret `kubectl apply` output indicating "unchanged" or "configured" as success, even if `kubectl` returned a non-zero exit code.
+- **Initial Gateway Creation Stability (Kubeconfig/Socket Hang up)**:
+    - Resolved initial "socket hang up" errors during Gateway creation.
+    - Root cause: Backend Go service crashes due to kubeconfig initialization issues (e.g., previous reliance on a hardcoded path, not failing fast if the `KUBECONFIG` environment variable was missing or invalid for the backend service).
+    - Fix:
+        - Backend's `ensureKubeconfig` function in `backend/main.go` now solely relies on the `KUBECONFIG` environment variable and returns a clear error if it's not set or the config is unreadable. Hardcoded paths removed.
+        - Backend's YAML application logic (`applyYAML`, `applyYAMLContent`) now fails fast and propagates errors if kubeconfig setup fails.
+        - Frontend's `callBackendAPI` error extraction was improved to display more detailed error messages from the backend.
+- **LoadBalancer Status and Configuration UI Enhancements**:
+    - **Status Accuracy**: `checkLoadBalancerStatus` logic in `ui/src/services/loadBalancerService.ts` was made stricter. MetalLB is now considered "CONFIGURED" only if its `metallb-system` namespace exists, its controller deployment is ready, and at least one `IPAddressPool` is detected and reported. This resolved misleading "CONFIGURED" states when Gateways were failing with "AddressNotAssigned".
+    - **TypeScript Build Error**: Fixed `TS2339: Property 'servicesWithIPs' does not exist on type 'LoadBalancerStatus'` by adding the `servicesWithIPs` property to the `LoadBalancerStatus` interface and ensuring the `checkLoadBalancerServices` method populates it.
+    - **"Configure LoadBalancer" Button Visibility**: Corrected logic in `ui/src/components/LoadBalancerManager.tsx` so the button to configure MetalLB is displayed when the LoadBalancer status is "NOT CONFIGURED", even if an accompanying error message (like "MetalLB namespace not found") is also present.
+    - **MetalLB Configuration Dialog Robustness**:
+        - Mitigated JavaScript TypeErrors (e.g., ".includes is not a function") within `configureMetalLB` (`ui/src/services/loadBalancerService.ts`) by ensuring variables derived from backend responses are safely coerced to strings before string methods are called.
+        - Improved parsing of responses from the backend's `/apply-yaml` endpoint within `configureMetalLB`. The frontend now correctly extracts nested error messages (e.g., from `response.data.error`) for more reliable keyword checks ("unchanged", "already exists").
+        - Provided clearer user-facing error messages in the configuration dialog for ambiguous backend response patterns (e.g., when `Output` was `[object Object]`), guiding the user that the operation might have succeeded despite the reported hiccup.
+
 ## [Unreleased] - 2025-06-07
 
 ### Changed

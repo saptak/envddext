@@ -933,28 +933,49 @@ export const listNamespaceNames = async (
   ddClient: v1.DockerDesktopClient,
 ): Promise<string[]> => {
   try {
+    // Use a simpler kubectl command that doesn't require shell operators
     const output = await ddClient.extension.host?.cli.exec("kubectl", [
       "get",
       "namespaces",
+      "--no-headers",
       "-o",
-      "jsonpath={.items[*].metadata.name}",
+      "custom-columns=:metadata.name",
     ]);
 
-    if (output?.stderr) {
+    // Only treat stderr as an error if it contains actual error messages
+    // Some kubectl commands may have warnings in stderr but still succeed
+    if (output?.stderr && (
+      output.stderr.includes("Error:") || 
+      output.stderr.includes("error:") ||
+      output.stderr.includes("Unable to connect") ||
+      output.stderr.includes("connection refused") ||
+      output.stderr.includes("not found") ||
+      output.stderr.includes("forbidden")
+    )) {
       console.error("Error listing namespaces:", output.stderr);
       return ["default"];
     }
 
+    // Log stderr as warning if present but not critical
+    if (output?.stderr) {
+      console.warn("Non-critical stderr from kubectl get namespaces:", output.stderr);
+    }
+
     if (!output?.stdout || output.stdout.trim() === "") {
+      console.warn("Empty stdout from kubectl get namespaces, falling back to default");
       return ["default"];
     }
 
-    return output.stdout
+    const namespaces = output.stdout
       .trim()
-      .split(/\s+/)
+      .split(/\n/)
+      .map(line => line.trim())
       .filter((ns) => ns.length > 0);
+
+    console.log("Successfully retrieved namespaces:", namespaces);
+    return namespaces;
   } catch (error: any) {
-    console.error("Error listing namespaces:", error);
+    console.error("Exception when listing namespaces:", error);
     return ["default"];
   }
 };

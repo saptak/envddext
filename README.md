@@ -5,16 +5,24 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 ## Key Features
 
 - **VM Service Backend**: Robust Go backend service that bypasses Docker Desktop extension limitations
-- **Full Gateway/HTTPRoute Creation**: Complete YAML generation and kubectl operations via backend
-- **LoadBalancer Management**: Robust MetalLB integration, configuration (including auto-detection), and accurate real-time status monitoring (leveraging host CLI for K8s interactions).
+- **Gateway Creation & Management**: Create and delete Gateway resources with form-based UI and real-time status monitoring
+- **HTTPRoute Creation & Management**: Create and delete HTTPRoute resources with advanced path matching, header/query parameter support, and backend service configuration
+- **LoadBalancer Management**: Robust MetalLB integration, configuration (including auto-detection), and accurate real-time status monitoring
 - **Reliable Proxy Management**: Process control with PID tracking and proper cleanup
-- **Tabbed Interface**: Organized UI with Overview, Templates, Gateway Management, HTTP Testing, and Proxy Manager tabs
-- **GitHub Templates Integration**: Apply templates directly from GitHub repositories using the **host's `kubectl`** for enhanced reliability.
+- **Responsive Tabbed Interface**: Organized UI with Overview, Templates, Gateway Management, HTTPRoute Management, HTTP Testing, and Proxy Manager tabs with horizontal scrolling support
+- **GitHub Templates Integration**: Apply basic HTTP routing templates directly from GitHub repositories
 - **HTTP Testing Tools**: Built-in HTTP client for testing routes with request/response display
 - **Kubectl Proxy Manager**: Integrated proxy management for accessing Kubernetes services
 - **Enhanced Monitoring**: Real-time status tracking with detailed deployment information
-- **Gateway Management**: Create and configure Gateway resources with form-based UI
-- **Template Library**: Access curated Envoy Gateway configurations for common use cases
+- **Template Library**: Access curated basic routing configurations for common HTTP use cases
+
+## Current Limitations
+
+- **No Resource Editing**: Can create and delete but not modify existing Gateways or HTTPRoutes
+- **No Policy Management**: Security policies, rate limiting, and traffic policies not yet supported  
+- **HTTP Only**: Limited to HTTP/HTTPS routing (no TCP, UDP, or gRPC support)
+- **Basic TLS**: Limited TLS configuration capabilities
+- **No Advanced Envoy Features**: EnvoyProxy custom resources and patches not supported
 
 ## Features
 
@@ -31,10 +39,11 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 - Support for multiple use cases (basic HTTP, TLS termination, traffic splitting)
 
 ### ⚙️ Gateway Management Tab
-- Create Gateway resources with guided forms
+- Create and delete Gateway resources with guided forms
 - Configure listeners, protocols, and ports
-- Real-time status monitoring
-- Visual feedback for resource creation
+- Create and delete HTTPRoute resources with advanced routing rules
+- Real-time status monitoring for all resources
+- Visual feedback for resource creation and deletion
 
 ### 🧪 HTTP Testing Tab
 - Built-in HTTP client for testing deployed routes
@@ -68,7 +77,7 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 
 ## Current Status
 
-**Latest Update: June 8, 2025** - Gateway creation now reliably reflects operational success in the UI, resolving previous misleading error messages. LoadBalancer status UI and MetalLB configuration dialogs have improved reliability and user feedback. VM Service Backend Architecture implemented, with refined Kubernetes interaction patterns (primarily host CLI from frontend services for reliability) and robust LoadBalancer management. All Docker Desktop extension limitations resolved.
+**Latest Update: June 11, 2025** - HTTPRoute creation functionality now fully operational with comprehensive bug fixes. Form validation errors properly clear when corrected, forms close automatically after successful creation, and debug information has been removed for a clean user experience. Added responsive scrollable tabs for better mobile and narrow-screen support. All previous Gateway creation and LoadBalancer management improvements remain stable.
 
 ### ✅ Completed Features (Iteration 1-5)
 
@@ -110,19 +119,24 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 - **Visual Indicators**: Pod readiness and deployment health
 - **Service Endpoints**: Monitor service accessibility
 
-#### HTTPRoute Management (Iteration 3 ✅)
+#### HTTPRoute Management (Iteration 3 ✅) - Enhanced June 11, 2025
 - **Complete Form-based Creation**: Comprehensive HTTPRoute creation with validation
 - **Multiple Routing Rules**: Support for path matching, headers, and query parameters
 - **Backend Configuration**: Service selection with weight-based traffic splitting
 - **Timeout Configuration**: Request and backend timeout settings
 - **Dark Theme Integration**: Complete UI/UX theming for Docker Desktop compatibility
-- **Real-time Validation**: Form validation with detailed error messages
+- **Real-time Validation**: Form validation with detailed error messages and proper error clearing
+- **Form Auto-Close**: Forms automatically close after successful HTTPRoute creation
+- **Clean UI**: Debug information removed for production-ready user experience
+- **Namespace Support**: Proper 'demo' namespace detection alongside 'default'
 
-#### UI/UX Theming Enhancement (Iteration 3 ✅)
+#### UI/UX Theming Enhancement (Iteration 3 ✅) - Enhanced June 11, 2025
 - **Complete Dark Theme**: All form components properly themed for Docker Desktop
 - **Professional Design**: Consistent styling with proper contrast and readability
 - **Enhanced User Experience**: Light borders, white text, and appropriate hover/focus states
 - **Paper Component Fix**: Resolved background issues in form sections
+- **Responsive Design**: Scrollable tabs for narrow screens and mobile devices
+- **Improved Navigation**: Auto-scrolling tabs with navigation arrows when needed
 
 #### HTTP Testing Tools (Iteration 4 ✅)
 - **Built-in HTTP Client**: Comprehensive HTTP testing interface with support for all methods
@@ -146,13 +160,24 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 - Visual diagrams showing Gateway and Route relationships
 - Resource management actions (delete, refresh, edit)
 
-### 📋 Future Features
-- TLS termination configuration and certificate management
-- Traffic splitting with weight-based routing
-- Rate limiting policies and testing tools
-- JWT authentication setup and token management
-- Interactive tutorials and contextual help
-- Performance optimization and marketplace preparation
+### 📋 Planned Features (Roadmap)
+
+#### Next Priority: Resource Management
+- **Resource Editing**: Update existing Gateway and HTTPRoute configurations
+- **Resource Cloning**: Duplicate and modify existing resources
+- **Bulk Operations**: Multi-resource management capabilities
+
+#### Future: Policy Management
+- **Security Policies**: JWT authentication, authorization, and access control
+- **Traffic Policies**: Rate limiting, circuit breakers, and retry policies  
+- **TLS Management**: Advanced certificate management and rotation
+- **Backend Policies**: Load balancing, health checking, and failover
+
+#### Advanced Features
+- **Multi-Protocol Support**: TCP, UDP, and gRPC routing configuration
+- **EnvoyProxy Resources**: Custom Envoy configuration and patches
+- **Observability Integration**: Metrics, tracing, and logging visualization
+- **Interactive Tutorials**: Guided learning experiences for complex scenarios
 
 ## Build and Install
 

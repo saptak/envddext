@@ -67,6 +67,7 @@ export const HTTPRouteCreationForm: React.FC<HTTPRouteCreationFormProps> = ({
   const [availableServices, setAvailableServices] = useState<Array<{ name: string; namespace: string; ports: Array<{ name?: string; port: number; protocol: string }> }>>([]);
   const [gatewayCompatibility, setGatewayCompatibility] = useState<{ compatible: boolean; message?: string; listeners?: string[] } | null>(null);
 
+
   useEffect(() => {
     loadInitialData();
   }, []);
@@ -143,6 +144,7 @@ export const HTTPRouteCreationForm: React.FC<HTTPRouteCreationFormProps> = ({
     // Clear validation errors for this rule field
     const fieldName = `rules[${ruleIndex}].${field}`;
     setValidationErrors(prev => prev.filter(error => error.field !== fieldName));
+    setError(null);
   };
 
   const handleMatchChange = (ruleIndex: number, matchIndex: number, field: keyof HTTPRouteMatchFormData, value: any) => {
@@ -157,6 +159,11 @@ export const HTTPRouteCreationForm: React.FC<HTTPRouteCreationFormProps> = ({
         } : rule
       )
     }));
+    
+    // Clear validation errors for this match field
+    const fieldPath = `rules[${ruleIndex}].matches[${matchIndex}].${field}`;
+    setValidationErrors(prev => prev.filter(error => error.field !== fieldPath));
+    setError(null);
   };
 
   const handleBackendChange = (ruleIndex: number, backendIndex: number, field: keyof HTTPBackendRefFormData, value: any) => {
@@ -171,6 +178,11 @@ export const HTTPRouteCreationForm: React.FC<HTTPRouteCreationFormProps> = ({
         } : rule
       )
     }));
+    
+    // Clear validation errors for this backend field
+    const fieldPath = `rules[${ruleIndex}].backendRefs[${backendIndex}].${field}`;
+    setValidationErrors(prev => prev.filter(error => error.field !== fieldPath));
+    setError(null);
   };
 
   const addRule = () => {
@@ -287,6 +299,10 @@ export const HTTPRouteCreationForm: React.FC<HTTPRouteCreationFormProps> = ({
       ...prev,
       hostnames: prev.hostnames.map((hostname, i) => i === index ? value : hostname)
     }));
+    
+    // Clear validation errors for hostnames
+    setValidationErrors(prev => prev.filter(error => error.field !== 'hostnames'));
+    setError(null);
   };
 
   const handleSubmit = async () => {
@@ -302,6 +318,9 @@ export const HTTPRouteCreationForm: React.FC<HTTPRouteCreationFormProps> = ({
         setError('Please fix the validation errors before submitting.');
         return;
       }
+      
+      // Clear all validation errors since validation passed
+      setValidationErrors([]);
 
       // Create HTTPRoute
       const result = await createHTTPRoute(ddClient, formData);
@@ -313,10 +332,28 @@ export const HTTPRouteCreationForm: React.FC<HTTPRouteCreationFormProps> = ({
 
       setSuccess('HTTPRoute created successfully!');
 
-      // Notify parent component
-      if (result.httpRoute) {
-        onSuccess(result.httpRoute);
-      }
+      // Create a minimal HTTPRoute object for the parent component
+      const createdRoute: HTTPRoute = {
+        apiVersion: 'gateway.networking.k8s.io/v1',
+        kind: 'HTTPRoute',
+        metadata: {
+          name: formData.name,
+          namespace: formData.namespace,
+          uid: '',
+          creationTimestamp: new Date().toISOString()
+        },
+        spec: {
+          parentRefs: [{
+            name: formData.parentGateway,
+            namespace: formData.parentGatewayNamespace
+          }],
+          hostnames: formData.hostnames.filter(h => h.trim() !== ''),
+          rules: formData.rules
+        }
+      };
+
+      // Notify parent component to close the form
+      onSuccess(createdRoute);
     } catch (err: any) {
       setError(typeof err === 'string' ? err : 'An unexpected error occurred');
     } finally {
@@ -428,6 +465,7 @@ export const HTTPRouteCreationForm: React.FC<HTTPRouteCreationFormProps> = ({
             </Select>
           </FormControl>
         </Grid>
+
 
         {/* Parent Gateway Selection */}
         <Grid item xs={12}>

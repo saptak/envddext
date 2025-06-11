@@ -67,3 +67,5 @@ CLAUDE.md
 .cursor/
 .github/copilot-instructions.md
 PROGRESS_MEMORY.md
+*.pdf
+envoygateway.md
