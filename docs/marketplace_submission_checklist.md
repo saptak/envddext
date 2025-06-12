@@ -35,9 +35,17 @@
 #### Visual Assets
 - [ ] **Extension Icon**: 256x256px, SVG or PNG format
 - [ ] **Screenshots**: 5-7 high-quality screenshots (1920x1080+)
-  - [ ] Main dashboard view (reflecting current UI)
-  - [ ] Key feature demonstrations (e.g., LoadBalancer Management, Gateway/HTTPRoute Creation Forms, Template Application, HTTP Testing Tools, Proxy Manager)
-  - [ ] User workflow examples
+  - [ ] Main dashboard view with enhanced resource cards (v0.6.0)
+  - [ ] Resource visualization showing Gateway/HTTPRoute relationships (NEW in v0.6.0)
+  - [ ] Enhanced resource management with delete/view YAML actions (NEW in v0.6.0)
+  - [ ] Key feature demonstrations:
+    - [ ] LoadBalancer Management with auto-configuration
+    - [ ] Gateway creation with visual form validation
+    - [ ] HTTPRoute creation with parent gateway validation
+    - [ ] Template application from GitHub
+    - [ ] HTTP Testing tools with request/response display
+    - [ ] Proxy Manager with process lifecycle control
+  - [ ] User workflow examples showcasing visual interface improvements
 - [ ] **Demo Video** (Optional): 2-3 minute feature overview
 
 #### Documentation

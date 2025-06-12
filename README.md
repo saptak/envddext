@@ -1,6 +1,6 @@
 # Envoy Gateway Docker Desktop Extension
 
-A comprehensive Docker Desktop extension for managing Envoy Gateway resources with an intuitive tabbed interface, GitHub-based templates, HTTP testing tools, and enhanced monitoring capabilities. Built with a robust VM service backend architecture that eliminates Docker Desktop extension limitations.
+A comprehensive Docker Desktop extension for managing Envoy Gateway resources with an intuitive visual interface, GitHub-based templates, HTTP testing tools, and enhanced resource visualization. Built with a robust VM service backend architecture that eliminates Docker Desktop extension limitations.
 
 ## Key Features
 
@@ -14,6 +14,7 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 - **HTTP Testing Tools**: Built-in HTTP client for testing routes with request/response display
 - **Kubectl Proxy Manager**: Integrated proxy management for accessing Kubernetes services
 - **Enhanced Monitoring**: Real-time status tracking with detailed deployment information
+- **Visual Resource Management**: Interactive resource cards with relationship visualization and management actions
 - **Template Library**: Access curated basic routing configurations for common HTTP use cases
 
 ## Current Limitations
@@ -26,11 +27,12 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 
 ## Features
 
-### 🎯 Overview Tab
-- Real-time cluster status monitoring
-- Gateway and HTTPRoute resource overview
-- Deployment health indicators
-- Quick access to common actions
+### 🎯 Resources Tab (Enhanced in v0.6.0)
+- **Visual Resource Cards**: Professional cards displaying Gateway and HTTPRoute information with status indicators
+- **Resource Visualization**: Interactive relationship mapping showing Gateway → HTTPRoute connections
+- **Resource Management**: Delete resources, view YAML configurations, and refresh status
+- **Status Monitoring**: Real-time status with color-coded health indicators and detailed information
+- **Connection Flow**: Visual representation of traffic flow from Gateways through routes to services
 
 ### 📋 Templates Tab
 - Browse templates from GitHub repository
@@ -77,7 +79,7 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 
 ## Current Status
 
-**Latest Update: June 11, 2025** - HTTPRoute creation functionality now fully operational with comprehensive bug fixes. Form validation errors properly clear when corrected, forms close automatically after successful creation, and debug information has been removed for a clean user experience. Added responsive scrollable tabs for better mobile and narrow-screen support. All previous Gateway creation and LoadBalancer management improvements remain stable.
+**Latest Update: June 11, 2025** - **v0.6.0 "Visual Gateway Management" Release Complete!** Major milestone with Iteration 4 completion featuring enhanced resource visualization, professional UI cards, and comprehensive resource management actions. The Resources tab has been completely redesigned with interactive resource cards, relationship visualization, and click-to-manage functionality. All HTTPRoute creation, Gateway management, and LoadBalancer features remain stable and enhanced.
 
 ### ✅ Completed Features (Iteration 1-5)
 
@@ -153,12 +155,20 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 - **Real-time Status**: Live proxy status monitoring and connectivity testing
 - **HTTP Client Integration**: Direct integration with HTTP testing tools
 
+#### Enhanced UI and Resource Management (Iteration 4 ✅) - **v0.6.0 Complete - June 11, 2025**
+- **Professional Resource Cards**: Rich visual cards with status indicators, avatars, detailed Gateway/HTTPRoute information
+- **Interactive Resource Visualization**: Card-based layout showing Gateway → HTTPRoute relationships with connection mapping
+- **Resource Management Actions**: Click-to-delete with confirmation dialogs, view YAML configurations, and refresh capabilities
+- **Enhanced Visual Design**: Material-UI theming, hover effects, professional styling matching Docker Desktop
+- **Status Legend**: Comprehensive legend explaining all visual indicators and connection types
+- **Empty State Guidance**: Helpful instructions when no resources exist with clear next steps
+
 ### 🚧 Next Iterations (Planned)
 
-#### Iteration 6: Enhanced UI and Visualization
-- Resource cards with detailed information
-- Visual diagrams showing Gateway and Route relationships
-- Resource management actions (delete, refresh, edit)
+#### Iteration 5: TLS Termination Example  
+- Certificate generation for testing purposes
+- HTTPS Gateway configuration with TLS termination
+- Enhanced HTTP client with HTTPS support
 
 ### 📋 Planned Features (Roadmap)
 

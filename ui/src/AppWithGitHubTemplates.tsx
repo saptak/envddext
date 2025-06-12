@@ -44,6 +44,10 @@ import { GatewayManagement } from "./components/GatewayManagement";
 import { HTTPRouteManagement } from "./components/HTTPRouteManagement";
 import { HTTPClient } from "./components/HTTPClient";
 import { ProxyManager } from "./components/ProxyManager";
+import { ResourceCard } from "./components/ResourceCard";
+import { ResourceActionDialog } from "./components/ResourceActionDialog";
+import { ResourceVisualization } from "./components/ResourceVisualization";
+import { extractGatewayCardData, extractHTTPRouteCardData } from "./utils/resourceCardHelpers";
 
 const ddClient = createDockerDesktopClient();
 
@@ -97,6 +101,21 @@ export function App() {
       serviceName: "echo-service",
     },
   ]);
+
+  // Resource action dialog state
+  const [actionDialog, setActionDialog] = React.useState<{
+    open: boolean;
+    action: "delete" | "viewYaml";
+    resourceType: "Gateway" | "HTTPRoute";
+    resourceName: string;
+    resourceNamespace: string;
+  }>({
+    open: false,
+    action: "delete",
+    resourceType: "Gateway",
+    resourceName: "",
+    resourceNamespace: "",
+  });
 
   const fetchData = React.useCallback(async () => {
     setLoading(true);
@@ -351,6 +370,31 @@ export function App() {
     }
   };
 
+  // Dialog helper functions
+  const openActionDialog = (
+    action: "delete" | "viewYaml",
+    resourceType: "Gateway" | "HTTPRoute",
+    resourceName: string,
+    resourceNamespace: string,
+  ) => {
+    setActionDialog({
+      open: true,
+      action,
+      resourceType,
+      resourceName,
+      resourceNamespace,
+    });
+  };
+
+  const closeActionDialog = () => {
+    setActionDialog(prev => ({ ...prev, open: false }));
+  };
+
+  const handleActionSuccess = () => {
+    // Refresh data after successful action
+    fetchData();
+  };
+
   return (
     <Box sx={{ p: 4 }}>
       <Typography variant="h4" gutterBottom>
@@ -514,38 +558,77 @@ export function App() {
             {currentTab === 0 && (
               <>
                 {/* Gateways Section */}
-                <Paper sx={{ p: 2, mb: 3 }}>
-                  <Typography variant="h6">Gateways</Typography>
-                  <Divider sx={{ my: 1 }} />
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h6" gutterBottom>
+                    Gateways ({gateways.length})
+                  </Typography>
                   {gateways.length === 0 ? (
-                    <Typography variant="body2" color="text.secondary">
-                      No gateways found
-                    </Typography>
-                  ) : (
-                    gateways.map((gw: any) => (
-                      <Typography key={gw.metadata.uid} variant="body2">
-                        {gw.metadata.name} (ns: {gw.metadata.namespace})
+                    <Paper sx={{ p: 3, textAlign: 'center' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        No gateways found. Create your first gateway in the Gateway Management tab.
                       </Typography>
-                    ))
+                    </Paper>
+                  ) : (
+                    <Box>
+                      {gateways.map((gw: any) => {
+                        const cardData = extractGatewayCardData(gw);
+                        return (
+                          <ResourceCard
+                            key={gw.metadata.uid}
+                            {...cardData}
+                            onRefresh={() => fetchData()}
+                            onViewYaml={() => openActionDialog('viewYaml', 'Gateway', gw.metadata.name, gw.metadata.namespace)}
+                            onDelete={() => openActionDialog('delete', 'Gateway', gw.metadata.name, gw.metadata.namespace)}
+                          />
+                        );
+                      })}
+                    </Box>
                   )}
-                </Paper>
+                </Box>
 
-                {/* Routes Section */}
-                <Paper sx={{ p: 2, mb: 3 }}>
-                  <Typography variant="h6">Routes</Typography>
-                  <Divider sx={{ my: 1 }} />
+                {/* HTTPRoutes Section */}
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h6" gutterBottom>
+                    HTTP Routes ({routes.length})
+                  </Typography>
                   {routes.length === 0 ? (
-                    <Typography variant="body2" color="text.secondary">
-                      No routes found
-                    </Typography>
-                  ) : (
-                    routes.map((rt: any) => (
-                      <Typography key={rt.metadata.uid} variant="body2">
-                        {rt.metadata.name} (ns: {rt.metadata.namespace})
+                    <Paper sx={{ p: 3, textAlign: 'center' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        No HTTP routes found. Create your first route in the HTTPRoute Management tab.
                       </Typography>
-                    ))
+                    </Paper>
+                  ) : (
+                    <Box>
+                      {routes.map((rt: any) => {
+                        const cardData = extractHTTPRouteCardData(rt);
+                        return (
+                          <ResourceCard
+                            key={rt.metadata.uid}
+                            {...cardData}
+                            onRefresh={() => fetchData()}
+                            onViewYaml={() => openActionDialog('viewYaml', 'HTTPRoute', rt.metadata.name, rt.metadata.namespace)}
+                            onDelete={() => openActionDialog('delete', 'HTTPRoute', rt.metadata.name, rt.metadata.namespace)}
+                          />
+                        );
+                      })}
+                    </Box>
                   )}
-                </Paper>
+                </Box>
+
+                {/* Resource Visualization Section */}
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h6" gutterBottom>
+                    Visualization
+                  </Typography>
+                  <ResourceVisualization
+                    gateways={gateways}
+                    httpRoutes={routes}
+                    onResourceClick={(type, name, namespace) => {
+                      // Open view YAML dialog when clicking on a resource in visualization
+                      openActionDialog('viewYaml', type, name, namespace);
+                    }}
+                  />
+                </Box>
               </>
             )}
           </Box>
@@ -975,6 +1058,17 @@ export function App() {
           Template applied successfully!
         </Alert>
       </Snackbar>
+
+      {/* Resource Action Dialog */}
+      <ResourceActionDialog
+        open={actionDialog.open}
+        onClose={closeActionDialog}
+        action={actionDialog.action}
+        resourceType={actionDialog.resourceType}
+        resourceName={actionDialog.resourceName}
+        resourceNamespace={actionDialog.resourceNamespace}
+        onSuccess={handleActionSuccess}
+      />
     </Box>
   );
 }
