@@ -1,8 +1,12 @@
 # Envoy Gateway Extension Implementation Plan
 
-## Current Status: ✅ v0.6.0 "VISUAL GATEWAY MANAGEMENT" COMPLETE (June 11, 2025)
+## Current Status: ✅ v0.6.0 "TLS TERMINATION & VISUAL MANAGEMENT" COMPLETE (June 11, 2025)
 
-### Recently Completed: Enhanced UI and Tab Consolidation (June 11, 2025) - v0.6.0+
+### Recently Completed: TLS Termination & Enhanced UI (June 11, 2025) - v0.6.0
+- ✅ **TLS Certificate Management**: Complete certificate lifecycle with generation, management, and HTTPS testing
+- ✅ **Enhanced Gateway Creation**: Integrated TLS listener configuration with certificate selection
+- ✅ **HTTPS Testing Capabilities**: Advanced HTTP client with TLS options and certificate verification
+- ✅ **TLS Management Tab**: Dedicated interface for certificate operations and security management
 - ✅ **Professional Resource Cards**: Rich visual cards with status indicators, avatars, and detailed Gateway/HTTPRoute information
 - ✅ **Interactive Resource Visualization**: Card-based layout showing Gateway → HTTPRoute relationships with connection mapping
 - ✅ **Resource Management Actions**: Click-to-delete with confirmation dialogs, view YAML configurations, and refresh capabilities
@@ -27,7 +31,6 @@
 - **No Resource Editing**: Cannot modify existing Gateway or HTTPRoute configurations
 - **No Policy Management**: Security policies, rate limiting, traffic policies not supported
 - **HTTP Protocol Only**: Limited to HTTP/HTTPS routing (no TCP, UDP, gRPC)
-- **Basic TLS Support**: Advanced TLS configuration not available
 - **No Advanced Envoy Features**: EnvoyProxy custom resources and patches not supported
 
 ## Overview
@@ -167,28 +170,56 @@ This document outlines the implementation plan for the Envoy Gateway Docker Desk
   - Added proper error handling, success feedback, and automatic resource list refresh
   - Professional confirmation dialogs with detailed resource information and warnings
 
-## Iteration 5: TLS Termination Example
+## Iteration 5: TLS Termination Example ✅ COMPLETED (June 11, 2025)
 
-### Task 5.1: Implement Certificate Generation (2 days)
-- [ ] Add functionality to generate self-signed certificates for testing
-- [ ] Store generated certificates as Kubernetes Secrets
-- [ ] Provide UI for managing test certificates
-- **Enables PRD Use Case**: "TLS Termination" (self-signed certificate part).
-- **Testable Outcome**: Users can generate and store self-signed certificates
+### Task 5.1: Implement Certificate Generation (2 days) ✅ COMPLETED
+- [x] Add functionality to generate self-signed certificates for testing
+- [x] Store generated certificates as Kubernetes Secrets
+- [x] Provide UI for managing test certificates with status monitoring
+- [x] Automatic ClusterIssuer creation for self-signed certificates
+- [x] DNS name management with dynamic form fields
+- [x] **ENHANCED**: Intelligent prerequisite CRD detection and validation
+- [x] **ENHANCED**: One-click cert-manager v1.14.5 installation with comprehensive error handling
+- [x] **ENHANCED**: Smart UI state management preventing operations until prerequisites are met
+- [x] **ENHANCED**: Real-time installation progress feedback with toast notifications
+- **Enables PRD Use Case**: "TLS Termination" (complete infrastructure and certificate management).
+- **Testable Outcome**: Users can automatically install prerequisites and generate certificates ✅
+- **Implementation Details**:
+  - Enhanced `CertificateManager.tsx` component with prerequisite detection and installation workflow
+  - Automatic cert-manager CRD checking (`certificates.cert-manager.io`) with state management
+  - One-click cert-manager installation from GitHub releases with 30-second setup wait
+  - Backend API endpoints for certificate operations (`/create-certificate`, `/list-certificates`, `/delete-certificate`)
+  - Self-signed issuer automation with proper error handling
+  - Professional UI with installation status indicators and certificate management actions
+  - Toast notification integration for installation progress feedback
 
-### Task 5.2: Create TLS Gateway Configuration (2 days)
-- [ ] Update Gateway creation form to support HTTPS listeners
-- [ ] Allow users to select Kubernetes Secrets for TLS termination
-- [ ] Validate TLS configuration settings
+### Task 5.2: Create TLS Gateway Configuration (2 days) ✅ COMPLETED
+- [x] Update Gateway creation form to support HTTPS listeners
+- [x] Allow users to select Kubernetes Secrets for TLS termination
+- [x] Validate TLS configuration settings with real-time feedback
+- [x] Integrated certificate selection dropdown with available certificates
+- [x] Seamless certificate management workflow from Gateway creation
 - **Enables PRD Use Case**: "TLS Termination".
-- **Testable Outcome**: Users can configure Gateways for TLS termination
+- **Testable Outcome**: Users can configure Gateways for TLS termination ✅
+- **Implementation Details**:
+  - Enhanced `GatewayCreationForm.tsx` with TLS listener support
+  - Certificate selection dropdown with status indicators
+  - Integrated certificate management dialog within Gateway creation
+  - Real-time certificate availability checking and auto-population
 
-### Task 5.3: Add HTTPS Testing Tools (1-2 days)
-- [ ] Enhance HTTP client to support HTTPS requests
-- [ ] Allow users to ignore self-signed certificate errors for testing
-- [ ] Display TLS connection details
+### Task 5.3: Add HTTPS Testing Tools (1-2 days) ✅ COMPLETED  
+- [x] Enhance HTTP client to support HTTPS requests
+- [x] Allow users to ignore self-signed certificate errors for testing
+- [x] Display TLS connection details and security options
+- [x] Advanced TLS options including client certificates and CA trust
+- [x] Enhanced cURL generation with TLS options
 - **Enables PRD Use Case**: "TLS Termination" (testing part).
-- **Testable Outcome**: Users can test HTTPS connections to TLS-enabled Gateways
+- **Testable Outcome**: Users can test HTTPS connections to TLS-enabled Gateways ✅
+- **Implementation Details**:
+  - Enhanced `HTTPClient.tsx` with comprehensive TLS options
+  - Certificate verification controls for testing environments
+  - Client certificate authentication support for mutual TLS
+  - Professional security indicators and warnings for TLS configurations
 
 ## Iteration 6: Traffic Splitting Example
 

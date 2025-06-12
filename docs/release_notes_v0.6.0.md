@@ -1,16 +1,31 @@
-# Release Notes v0.6.0 - Enhanced UI and Resource Management
+# Release Notes v0.6.0 - TLS Termination & Visual Management
 
 **Release Date**: June 11, 2025  
 **Version**: 0.6.0  
-**Codename**: "Visual Gateway Management"
+**Codename**: "TLS Termination & Visual Gateway Management"
 
-## 🎉 Major Milestone: Iteration 4 Complete
+## 🎉 Major Milestone: Iterations 4 & 5 Complete
 
-This release marks the completion of **Iteration 4: Enhanced UI and Visualization**, transforming the extension from basic text-based resource display to a rich, interactive visual experience.
+This release marks the completion of **Iteration 4: Enhanced UI and Visualization** and **Iteration 5: TLS Termination Example**, transforming the extension from basic text-based resource display to a comprehensive, security-focused visual experience with complete TLS certificate management.
 
 ## ✨ New Features
 
-### 🎨 **Enhanced Resource Cards**
+### 🔐 **TLS Termination & Certificate Management** (Iteration 5)
+- **Intelligent Prerequisite Management**: Automatic cert-manager CRD detection and installation workflow
+- **One-Click Infrastructure Setup**: Automated cert-manager v1.14.5 installation with comprehensive error handling and 30-second setup wait
+- **Complete Certificate Lifecycle**: Generate, view, manage, and delete TLS certificates with intuitive UI
+- **Self-Signed Certificate Generation**: Automated creation of test certificates with proper CA issuer setup
+- **Prerequisite Validation**: Smart UI state management that prevents operations until cert-manager is ready
+- **Enhanced Gateway Creation**: Integrated TLS listener configuration with certificate selection dropdown
+- **HTTPS Testing Capabilities**: Advanced HTTP client with TLS options, certificate verification controls, and secure connection testing
+- **TLS Management Tab**: Dedicated interface for certificate operations with installation status monitoring
+- **Certificate Status Monitoring**: Real-time status indicators (ready, pending, failed) with expiration tracking
+- **DNS Name Management**: Dynamic multi-domain certificate support with flexible DNS configuration
+- **Security Indicators**: Professional visual feedback with security icons and system readiness status
+- **Backend Certificate API**: Complete REST API for certificate operations with comprehensive error handling
+- **Installation Progress Feedback**: Real-time toast notifications and progress indicators during cert-manager setup
+
+### 🎨 **Enhanced Resource Cards** (Iteration 4)
 - **Rich Visual Display**: Replaced basic text lists with comprehensive resource cards
 - **Status Indicators**: Color-coded status icons (Ready/Warning/Error/Unknown) with detailed status information
 - **Detailed Information**: Gateway classes, listeners, addresses, attached routes, hostnames, backend services, and more
@@ -79,25 +94,27 @@ This release marks the completion of **Iteration 4: Enhanced UI and Visualizatio
 ## 📋 **Updated Capabilities**
 
 ### ✅ **Fully Functional Features**
-1. **Gateway Management**: Create, view, delete, and monitor Gateways with rich visual feedback
-2. **HTTPRoute Management**: Complete HTTPRoute lifecycle with enhanced form validation
-3. **Resource Visualization**: Interactive relationship mapping between Gateways and routes
-4. **LoadBalancer Integration**: Accurate status detection and auto-configuration
-5. **HTTP Testing**: Built-in client with request/response display and cURL generation
-6. **Proxy Management**: kubectl proxy lifecycle with proper PID tracking
-7. **Template System**: GitHub-based templates with reliable deployment
+1. **TLS Certificate Management**: Complete certificate lifecycle with generation, management, and HTTPS testing
+2. **Gateway Management**: Create, view, delete, and monitor Gateways with TLS support and rich visual feedback
+3. **HTTPRoute Management**: Complete HTTPRoute lifecycle with enhanced form validation
+4. **Resource Visualization**: Interactive relationship mapping between Gateways and routes
+5. **LoadBalancer Integration**: Accurate status detection and auto-configuration
+6. **HTTPS Testing**: Advanced HTTP client with TLS options and certificate verification
+7. **Proxy Management**: kubectl proxy lifecycle with proper PID tracking
+8. **Template System**: GitHub-based templates with reliable deployment
 
 ### 🎨 **UI/UX Improvements**
+- **TLS Management Tab**: New dedicated tab for certificate operations and security management
 - **Resources Tab**: Complete redesign with resource cards and visualization
 - **Navigation**: Scrollable tabs with responsive design
-- **Status Display**: Professional status indicators throughout
+- **Status Display**: Professional status indicators throughout with security-focused feedback
 - **Error Handling**: User-friendly error messages with resolution guidance
-- **Theme Integration**: Consistent Docker Desktop dark theme
+- **Theme Integration**: Consistent Docker Desktop dark theme with security visual elements
 
 ## 🔮 **What's Next**
 
 ### 🛣️ **Roadmap Preview**
-- **Iteration 5**: TLS Termination with certificate generation and HTTPS Gateway configuration
+- **Iteration 6**: Traffic Splitting with canary and blue/green deployment examples
 - **Resource Editing**: Update existing Gateway and HTTPRoute configurations
 - **Policy Management**: Security policies, rate limiting, and traffic management
 - **Advanced Protocols**: TCP, UDP, and gRPC routing support

@@ -2,12 +2,21 @@
  * HTTP Client Types for Envoy Gateway Extension Testing Tools
  */
 
+export interface TLSOptions {
+  verifySSL: boolean;
+  ignoreCertErrors: boolean;
+  clientCertificate?: string;
+  clientKey?: string;
+  caCertificate?: string;
+}
+
 export interface HTTPRequest {
   method: HTTPMethod;
   url: string;
   headers: Record<string, string>;
   body?: string;
   timeout?: number;
+  tlsOptions?: TLSOptions;
 }
 
 export interface HTTPResponse {
@@ -38,6 +47,7 @@ export interface HTTPClientState {
   error: string | null;
   response: HTTPResponse | null;
   history: TestResult[];
+  tlsOptions: TLSOptions;
 }
 
 export interface HeaderPair {
@@ -87,6 +97,14 @@ export interface HTTPTestPreset {
   category: 'health' | 'crud' | 'auth' | 'custom';
 }
 
+export const DEFAULT_TLS_OPTIONS: TLSOptions = {
+  verifySSL: true,
+  ignoreCertErrors: false,
+  clientCertificate: undefined,
+  clientKey: undefined,
+  caCertificate: undefined,
+};
+
 export const DEFAULT_HTTP_CLIENT_STATE: HTTPClientState = {
   method: 'GET',
   url: '',
@@ -95,7 +113,8 @@ export const DEFAULT_HTTP_CLIENT_STATE: HTTPClientState = {
   loading: false,
   error: null,
   response: null,
-  history: []
+  history: [],
+  tlsOptions: { ...DEFAULT_TLS_OPTIONS }
 };
 
 export interface RouteTestingContext {

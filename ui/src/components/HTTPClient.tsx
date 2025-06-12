@@ -16,12 +16,21 @@ import {
   CircularProgress,
   Divider,
   IconButton,
-  Tooltip
+  Tooltip,
+  FormControlLabel,
+  Switch,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Chip
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import ClearIcon from '@mui/icons-material/Clear';
 import HistoryIcon from '@mui/icons-material/History';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import SecurityIcon from '@mui/icons-material/Security';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import HttpsIcon from '@mui/icons-material/Https';
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 import {
   HTTPClientState,
@@ -99,6 +108,13 @@ export const HTTPClient: React.FC<HTTPClientProps> = ({
     setState(prev => ({ ...prev, body }));
   };
 
+  const handleTLSOptionChange = (field: keyof typeof state.tlsOptions, value: any) => {
+    setState(prev => ({
+      ...prev,
+      tlsOptions: { ...prev.tlsOptions, [field]: value }
+    }));
+  };
+
   const handleHeaderChange = (index: number, field: keyof HeaderPair, value: string | boolean) => {
     setState(prev => ({
       ...prev,
@@ -142,7 +158,8 @@ export const HTTPClient: React.FC<HTTPClientProps> = ({
         method: state.method,
         url: state.url.trim(),
         headers,
-        body: state.body || undefined
+        body: state.body || undefined,
+        tlsOptions: state.url.startsWith('https://') ? state.tlsOptions : undefined
       };
 
       const result = await httpService.makeRequest(request);
@@ -187,7 +204,8 @@ export const HTTPClient: React.FC<HTTPClientProps> = ({
       method: state.method,
       url: state.url,
       headers,
-      body: state.body || undefined
+      body: state.body || undefined,
+      tlsOptions: state.url.startsWith('https://') ? state.tlsOptions : undefined
     };
 
     const curlCommand = generateFormattedCurlCommand(request);
@@ -221,9 +239,12 @@ export const HTTPClient: React.FC<HTTPClientProps> = ({
       method: state.method,
       url: state.url,
       headers,
-      body: state.body || undefined
+      body: state.body || undefined,
+      tlsOptions: state.url.startsWith('https://') ? state.tlsOptions : undefined
     });
   })();
+
+  const isHttpsUrl = state.url.startsWith('https://');
 
   return (
     <Paper
@@ -330,6 +351,121 @@ export const HTTPClient: React.FC<HTTPClientProps> = ({
             </Button>
           </Grid>
         </Grid>
+
+        {/* TLS/HTTPS Options */}
+        {isHttpsUrl && (
+          <Box sx={{ mt: 3 }}>
+            <Accordion>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <HttpsIcon color="primary" />
+                  <Typography variant="subtitle2">TLS/HTTPS Options</Typography>
+                  <Chip 
+                    label="HTTPS" 
+                    size="small" 
+                    color="primary" 
+                    icon={<SecurityIcon />}
+                  />
+                </Box>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={6}>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={!state.tlsOptions.ignoreCertErrors}
+                          onChange={(e) => handleTLSOptionChange('ignoreCertErrors', !e.target.checked)}
+                          color="primary"
+                        />
+                      }
+                      label="Verify SSL Certificate"
+                    />
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Validate the server's SSL certificate
+                    </Typography>
+                  </Grid>
+                  
+                  <Grid item xs={12} md={6}>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={state.tlsOptions.ignoreCertErrors}
+                          onChange={(e) => handleTLSOptionChange('ignoreCertErrors', e.target.checked)}
+                          color="warning"
+                        />
+                      }
+                      label="Ignore Certificate Errors"
+                    />
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Bypass SSL certificate validation (for testing)
+                    </Typography>
+                  </Grid>
+
+                  <Grid item xs={12}>
+                    <Alert severity="info" icon={<SecurityIcon />}>
+                      <Typography variant="subtitle2" gutterBottom>
+                        TLS Certificate Testing
+                      </Typography>
+                      <Typography variant="body2">
+                        For testing self-signed certificates or development environments, 
+                        you can ignore certificate errors. For production, always verify SSL certificates.
+                      </Typography>
+                    </Alert>
+                  </Grid>
+
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Client Certificate (Optional)
+                    </Typography>
+                  </Grid>
+
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="Client Certificate"
+                      value={state.tlsOptions.clientCertificate || ''}
+                      onChange={(e) => handleTLSOptionChange('clientCertificate', e.target.value)}
+                      placeholder="-----BEGIN CERTIFICATE-----"
+                      multiline
+                      rows={3}
+                      helperText="PEM format client certificate for mutual TLS"
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="Client Private Key"
+                      value={state.tlsOptions.clientKey || ''}
+                      onChange={(e) => handleTLSOptionChange('clientKey', e.target.value)}
+                      placeholder="-----BEGIN PRIVATE KEY-----"
+                      multiline
+                      rows={3}
+                      helperText="PEM format private key for client certificate"
+                    />
+                  </Grid>
+
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="CA Certificate (Optional)"
+                      value={state.tlsOptions.caCertificate || ''}
+                      onChange={(e) => handleTLSOptionChange('caCertificate', e.target.value)}
+                      placeholder="-----BEGIN CERTIFICATE-----"
+                      multiline
+                      rows={3}
+                      helperText="Custom CA certificate to trust"
+                    />
+                  </Grid>
+                </Grid>
+              </AccordionDetails>
+            </Accordion>
+          </Box>
+        )}
 
         {state.error && (
           <Alert severity="error" sx={{ mt: 2 }}>

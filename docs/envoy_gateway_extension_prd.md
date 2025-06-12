@@ -85,11 +85,13 @@ The Docker Desktop extension now provides comprehensive functionality including 
      - Query Parameters (exact match).
    - Test routing with sample requests using the built-in HTTP client.
 
-2. **TLS Termination**
+2. **TLS Termination** ✅ COMPLETED (v0.6.0)
    - Secure Gateway listeners with HTTPS.
+   - Generate self-signed certificates for testing purposes.
    - Configure TLS termination using Kubernetes Secrets containing certificates and keys.
-   - Verify secure connections to backend services.
-   - (Future: Guide users on integrating with `cert-manager` for automated certificate provisioning).
+   - Comprehensive certificate lifecycle management with creation, viewing, and deletion.
+   - Integrated cert-manager installation and management.
+   - Verify secure connections to backend services with advanced HTTPS testing tools.
 
 3. **Traffic Splitting (Canary & Blue/Green)**
    - Deploy multiple versions of an application.
@@ -177,7 +179,7 @@ The Docker Desktop extension now provides comprehensive functionality including 
 
 ## Implementation Status
 
-### ✅ Completed Features (as of June 7, 2025)
+### ✅ Completed Features (as of June 11, 2025)
 
 1. **Foundation and Basic Functionality**
    - Docker Desktop extension framework integration
@@ -217,21 +219,40 @@ The Docker Desktop extension now provides comprehensive functionality including 
    - Highly accurate real-time LoadBalancer status monitoring (MetalLB controller and IPAddressPools), with UI correctly reflecting "NOT CONFIGURED" states and providing appropriate configuration options.
    - Kubernetes interactions (status checks, initial manifest apply) primarily use the **host\'s `kubectl`** for reliability. Dynamic YAML for IPAddressPool/L2Advertisement applied via backend\'s `/apply-yaml` endpoint.
 
+7. **TLS Termination & Certificate Management** ✅ COMPLETED (v0.6.0 - June 11, 2025)
+   - **Intelligent Prerequisite Management**: Automatic cert-manager CRD detection and installation workflow
+   - **One-Click Infrastructure Setup**: Automated cert-manager v1.14.5 installation with comprehensive error handling and 30-second setup wait
+   - **Complete Certificate Lifecycle**: Generate, view, manage, and delete TLS certificates with intuitive UI
+   - **Self-Signed Certificate Generation**: Automated creation of test certificates with proper CA issuer setup
+   - **Prerequisite Validation**: Smart UI state management that prevents operations until cert-manager is ready
+   - **Enhanced Gateway Creation**: Integrated TLS listener configuration with certificate selection dropdown
+   - **HTTPS Testing Capabilities**: Advanced HTTP client with TLS options, certificate verification controls, and secure connection testing
+   - **TLS Management Tab**: Dedicated interface for certificate operations with installation status monitoring
+   - **Certificate Status Monitoring**: Real-time status indicators (ready, pending, failed) with expiration tracking
+   - **DNS Name Management**: Dynamic multi-domain certificate support with flexible DNS configuration
+   - **Security Indicators**: Professional visual feedback with security icons and system readiness status
+   - **Backend Certificate API**: Complete REST API for certificate operations with comprehensive error handling
+   - **Installation Progress Feedback**: Real-time toast notifications and progress indicators during cert-manager setup
+
+8. **Enhanced UI and Resource Management** ✅ COMPLETED (v0.6.0 - June 11, 2025)
+   - **Professional Resource Cards**: Rich visual cards with status indicators, avatars, detailed Gateway/HTTPRoute information
+   - **Interactive Resource Visualization**: Card-based layout showing Gateway → HTTPRoute relationships with connection mapping
+   - **Resource Management Actions**: Click-to-delete with confirmation dialogs, view YAML configurations, and refresh capabilities
+   - **Enhanced Visual Design**: Material-UI theming, hover effects, professional styling matching Docker Desktop
+   - **Status Legend**: Comprehensive legend explaining all visual indicators and connection types
+   - **Empty State Guidance**: Helpful instructions when no resources exist with clear next steps
+
 ### 📋 Planned Features
 
-1. **TLS Termination Configuration**
-   - Self-signed certificate generation
-   - TLS Gateway configuration forms
-
-2. **Traffic Splitting Examples**
+1. **Traffic Splitting Examples**
    - Multi-version application deployment
    - Weighted routing configuration
 
-3. **Rate Limiting and JWT Authentication**
+2. **Rate Limiting and JWT Authentication**
    - Policy configuration interfaces
    - Testing tools for security features
 
-4. **Interactive Tutorials and Documentation**
+3. **Interactive Tutorials and Documentation**
    - Step-by-step guided workflows
    - Contextual help and explanations
 

@@ -7,9 +7,10 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 - **VM Service Backend**: Robust Go backend service that bypasses Docker Desktop extension limitations
 - **Gateway Creation & Management**: Create and delete Gateway resources with form-based UI and real-time status monitoring
 - **HTTPRoute Creation & Management**: Create and delete HTTPRoute resources with advanced path matching, header/query parameter support, and backend service configuration
+- **TLS Certificate Management**: Comprehensive TLS termination support with certificate generation, management, and HTTPS testing
 - **LoadBalancer Management**: Robust MetalLB integration, configuration (including auto-detection), and accurate real-time status monitoring
 - **Reliable Proxy Management**: Process control with PID tracking and proper cleanup
-- **Responsive Tabbed Interface**: Organized UI with Resources, Gateway Management, HTTPRoute Management, Deployment Status, and Testing & Proxy tabs with horizontal scrolling support
+- **Responsive Tabbed Interface**: Organized UI with Resources, Gateway Management, HTTPRoute Management, Deployment Status, Testing & Proxy, and TLS Management tabs with horizontal scrolling support
 - **GitHub Templates Integration**: Apply basic HTTP routing templates directly from GitHub repositories
 - **HTTP Testing Tools**: Built-in HTTP client for testing routes with request/response display
 - **Kubectl Proxy Manager**: Integrated proxy management for accessing Kubernetes services
@@ -22,7 +23,6 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 - **No Resource Editing**: Can create and delete but not modify existing Gateways or HTTPRoutes
 - **No Policy Management**: Security policies, rate limiting, and traffic policies not yet supported  
 - **HTTP Only**: Limited to HTTP/HTTPS routing (no TCP, UDP, or gRPC support)
-- **Basic TLS**: Limited TLS configuration capabilities
 - **No Advanced Envoy Features**: EnvoyProxy custom resources and patches not supported
 
 ## Features
@@ -50,10 +50,23 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 ### 🧪 Testing & Proxy Tab
 - **Proxy Manager**: Integrated kubectl proxy management with one-click start/stop functionality
 - **HTTP Testing**: Built-in HTTP client for testing deployed routes with all HTTP methods
+- **HTTPS Support**: Advanced TLS options for testing secure connections with certificate verification controls
 - **Request/Response Display**: Syntax highlighting and comprehensive response analysis
-- **cURL Generation**: Automatic cURL command generation and copy functionality
+- **cURL Generation**: Automatic cURL command generation and copy functionality with TLS options
 - **Request History**: Save and replay previous requests for easy testing
 - **Service Integration**: Direct proxy-to-testing workflow for seamless endpoint validation
+
+### 🔐 TLS Management Tab (Enhanced in v0.6.0)
+- **Automatic Prerequisite Detection**: Intelligent cert-manager CRD checking and installation status monitoring
+- **One-Click Cert-manager Installation**: Automated cert-manager v1.14.5 installation with comprehensive error handling
+- **Certificate Generation**: Create self-signed certificates for testing and development
+- **Certificate Lifecycle**: View, manage, and delete TLS certificates with status monitoring
+- **Prerequisite Validation**: Prevents certificate operations until cert-manager is properly installed
+- **Issuer Management**: Support for self-signed and custom CA issuers with automatic issuer creation
+- **DNS Configuration**: Multi-domain certificate support with dynamic DNS name management
+- **Gateway Integration**: Seamless certificate selection during Gateway creation
+- **Security Indicators**: Clear visual feedback for certificate status, expiration, and system readiness
+- **Installation Progress**: Real-time feedback during cert-manager installation with toast notifications
 
 ### ⚖️ LoadBalancer Manager
 - MetalLB LoadBalancer controller integration
@@ -71,11 +84,27 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 
 ## Current Status
 
-**Latest Update: June 11, 2025** - **v0.6.0 "Visual Gateway Management" Release Complete!** Major milestone with Iteration 4 completion featuring enhanced resource visualization, professional UI cards, and comprehensive resource management actions. The Resources tab has been completely redesigned with interactive resource cards, relationship visualization, and click-to-manage functionality. All HTTPRoute creation, Gateway management, and LoadBalancer features remain stable and enhanced.
+**Latest Update: June 11, 2025** - **v0.6.0 "TLS Termination & Visual Management" Release Complete!** Major milestone with Iteration 5 completion featuring comprehensive TLS certificate management, HTTPS testing capabilities, and enhanced Gateway creation with TLS support. Additionally includes the enhanced resource visualization from Iteration 4 with professional UI cards and comprehensive resource management actions. The extension now provides complete end-to-end TLS termination workflows alongside the redesigned Resources tab with interactive resource cards and relationship visualization.
 
 ### ✅ Completed Features (Iteration 1-5)
 
-#### VM Service Backend Architecture (Iteration 5 ✅)
+#### TLS Termination & Certificate Management (Iteration 5 ✅ - June 11, 2025)
+- **Intelligent Prerequisite Management**: Automatic cert-manager CRD detection and installation workflow
+- **One-Click Infrastructure Setup**: Automated cert-manager v1.14.5 installation with comprehensive error handling
+- **Complete Certificate Lifecycle**: Generate, view, manage, and delete TLS certificates with intuitive UI
+- **Self-Signed Certificate Generation**: Automated creation of test certificates with proper CA issuer setup
+- **Prerequisite Validation**: Smart UI state management that prevents operations until cert-manager is ready
+- **Enhanced Gateway Creation**: Integrated TLS listener configuration with certificate selection dropdown
+- **HTTPS Testing Capabilities**: Advanced HTTP client with TLS options, certificate verification controls, and secure connection testing
+- **TLS Management Tab**: Dedicated interface for certificate operations with installation status monitoring
+- **Certificate Status Monitoring**: Real-time status indicators (ready, pending, failed) with expiration tracking
+- **DNS Name Management**: Dynamic multi-domain certificate support with flexible DNS configuration
+- **Security Indicators**: Professional visual feedback with security icons and system readiness status
+- **Backend Certificate API**: Complete REST API for certificate operations with comprehensive error handling
+- **Installation Progress Feedback**: Real-time toast notifications and progress indicators during setup
+- **Gateway-Certificate Integration**: Seamless workflow from infrastructure setup to Gateway TLS configuration
+
+#### VM Service Backend Architecture (Iteration 1-4 ✅)
 - **Go Backend Service**: Complete backend rewrite with HTTP API server
 - **File System Access**: Full `/tmp/` access and temporary file operations (by backend service)
 - **Process Management**: Proper kubectl proxy lifecycle with PID tracking (by backend service)
@@ -151,29 +180,26 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 
 ### 🚧 Next Iterations (Planned)
 
-#### Iteration 5: TLS Termination Example  
-- Certificate generation for testing purposes
-- HTTPS Gateway configuration with TLS termination
-- Enhanced HTTP client with HTTPS support
+#### Iteration 6: Advanced Resource Management
+- **Resource Editing**: Update existing Gateway and HTTPRoute configurations
+- **Resource Cloning**: Duplicate and modify existing resources  
+- **Bulk Operations**: Multi-resource management capabilities
+- **Resource Templates**: Save and reuse custom configurations
 
 ### 📋 Planned Features (Roadmap)
 
-#### Next Priority: Resource Management
-- **Resource Editing**: Update existing Gateway and HTTPRoute configurations
-- **Resource Cloning**: Duplicate and modify existing resources
-- **Bulk Operations**: Multi-resource management capabilities
-
-#### Future: Policy Management
+#### Next Priority: Policy Management
 - **Security Policies**: JWT authentication, authorization, and access control
 - **Traffic Policies**: Rate limiting, circuit breakers, and retry policies  
-- **TLS Management**: Advanced certificate management and rotation
+- **Advanced TLS**: Certificate rotation, CA management, and mutual TLS
 - **Backend Policies**: Load balancing, health checking, and failover
 
-#### Advanced Features
+#### Future: Advanced Features
 - **Multi-Protocol Support**: TCP, UDP, and gRPC routing configuration
 - **EnvoyProxy Resources**: Custom Envoy configuration and patches
 - **Observability Integration**: Metrics, tracing, and logging visualization
 - **Interactive Tutorials**: Guided learning experiences for complex scenarios
+
 
 ## Build and Install
 

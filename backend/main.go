@@ -121,6 +121,25 @@ type APIResponse struct {
 	Error   string      `json:"error,omitempty"`
 }
 
+type CertificateFormData struct {
+	Name       string   `json:"name"`
+	Namespace  string   `json:"namespace"`
+	DNSNames   []string `json:"dnsNames"`
+	IssuerType string   `json:"issuerType"` // "self-signed" or "ca-issuer"
+	IssuerName string   `json:"issuerName,omitempty"`
+}
+
+type Certificate struct {
+	Name           string   `json:"name"`
+	Namespace      string   `json:"namespace"`
+	SecretName     string   `json:"secretName"`
+	DNSNames       []string `json:"dnsNames"`
+	Issuer         string   `json:"issuer"`
+	Status         string   `json:"status"`
+	ExpirationDate string   `json:"expirationDate,omitempty"`
+	CreatedAt      string   `json:"createdAt"`
+}
+
 func NewServer() *Server {
 	s := &Server{
 		router: mux.NewRouter(),
@@ -140,6 +159,9 @@ func (s *Server) setupRoutes() {
 	s.router.HandleFunc("/apply-template", s.handleApplyTemplate).Methods("POST")
 	s.router.HandleFunc("/apply-yaml", s.handleApplyYAML).Methods("POST")
 	s.router.HandleFunc("/kubectl", s.handleKubectl).Methods("POST")
+	s.router.HandleFunc("/create-certificate", s.handleCreateCertificate).Methods("POST")
+	s.router.HandleFunc("/list-certificates", s.handleListCertificates).Methods("GET")
+	s.router.HandleFunc("/delete-certificate", s.handleDeleteCertificate).Methods("DELETE")
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
@@ -736,6 +758,170 @@ func (s *Server) getProxyStatus(port int) ProxyStatus {
 	}
 
 	return status
+}
+
+func (s *Server) handleCreateCertificate(w http.ResponseWriter, r *http.Request) {
+	var certData CertificateFormData
+	if err := json.NewDecoder(r.Body).Decode(&certData); err != nil {
+		s.sendError(w, "Invalid JSON payload", http.StatusBadRequest)
+		return
+	}
+
+	// Create self-signed issuer if needed
+	if certData.IssuerType == "self-signed" {
+		issuerYAML := `apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-issuer
+spec:
+  selfSigned: {}
+`
+		if err := s.applyYAML(issuerYAML, "cluster-issuer"); err != nil {
+			log.Printf("Warning: Failed to create self-signed issuer (might already exist): %v", err)
+		}
+	}
+
+	// Generate certificate YAML
+	yamlContent, err := s.generateCertificateYAML(certData)
+	if err != nil {
+		s.sendError(w, fmt.Sprintf("Failed to generate Certificate YAML: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	if err := s.applyYAML(yamlContent, "certificate"); err != nil {
+		s.sendError(w, fmt.Sprintf("Failed to apply Certificate: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	response := APIResponse{
+		Success: true,
+		Data:    fmt.Sprintf("Certificate %s created successfully in namespace %s", certData.Name, certData.Namespace),
+	}
+	json.NewEncoder(w).Encode(response)
+}
+
+func (s *Server) handleListCertificates(w http.ResponseWriter, r *http.Request) {
+	cmd := exec.Command("kubectl", "get", "certificates", "--all-namespaces", "-o", "json")
+	output, err := cmd.Output()
+	if err != nil {
+		s.sendError(w, fmt.Sprintf("Failed to list certificates: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	var kubeList struct {
+		Items []struct {
+			Metadata struct {
+				Name              string `json:"name"`
+				Namespace         string `json:"namespace"`
+				CreationTimestamp string `json:"creationTimestamp"`
+			} `json:"metadata"`
+			Spec struct {
+				DNSNames   []string `json:"dnsNames"`
+				SecretName string   `json:"secretName"`
+				IssuerRef  struct {
+					Name string `json:"name"`
+				} `json:"issuerRef"`
+			} `json:"spec"`
+			Status struct {
+				Conditions []struct {
+					Type   string `json:"type"`
+					Status string `json:"status"`
+				} `json:"conditions"`
+				ExpirationTime string `json:"expirationTime,omitempty"`
+			} `json:"status"`
+		} `json:"items"`
+	}
+
+	if err := json.Unmarshal(output, &kubeList); err != nil {
+		s.sendError(w, fmt.Sprintf("Failed to parse certificate list: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	var certificates []Certificate
+	for _, item := range kubeList.Items {
+		status := "pending"
+		for _, condition := range item.Status.Conditions {
+			if condition.Type == "Ready" && condition.Status == "True" {
+				status = "ready"
+				break
+			}
+		}
+
+		cert := Certificate{
+			Name:           item.Metadata.Name,
+			Namespace:      item.Metadata.Namespace,
+			SecretName:     item.Spec.SecretName,
+			DNSNames:       item.Spec.DNSNames,
+			Issuer:         item.Spec.IssuerRef.Name,
+			Status:         status,
+			ExpirationDate: item.Status.ExpirationTime,
+			CreatedAt:      item.Metadata.CreationTimestamp,
+		}
+		certificates = append(certificates, cert)
+	}
+
+	response := APIResponse{Success: true, Data: certificates}
+	json.NewEncoder(w).Encode(response)
+}
+
+func (s *Server) handleDeleteCertificate(w http.ResponseWriter, r *http.Request) {
+	name := r.URL.Query().Get("name")
+	namespace := r.URL.Query().Get("namespace")
+
+	if name == "" || namespace == "" {
+		s.sendError(w, "Name and namespace parameters are required", http.StatusBadRequest)
+		return
+	}
+
+	// Delete certificate
+	cmd := exec.Command("kubectl", "delete", "certificate", name, "-n", namespace)
+	if err := cmd.Run(); err != nil {
+		s.sendError(w, fmt.Sprintf("Failed to delete certificate: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	response := APIResponse{
+		Success: true,
+		Data:    fmt.Sprintf("Certificate %s deleted successfully from namespace %s", name, namespace),
+	}
+	json.NewEncoder(w).Encode(response)
+}
+
+func (s *Server) generateCertificateYAML(certData CertificateFormData) (string, error) {
+	issuerKind := "ClusterIssuer"
+	issuerName := "selfsigned-issuer"
+	
+	if certData.IssuerType == "ca-issuer" {
+		issuerKind = "Issuer"
+		issuerName = certData.IssuerName
+	}
+
+	dnsNamesYAML := ""
+	for _, dns := range certData.DNSNames {
+		dnsNamesYAML += fmt.Sprintf("  - %s\n", dns)
+	}
+
+	yamlTemplate := `apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: %s
+  namespace: %s
+spec:
+  dnsNames:
+%s  secretName: %s-tls
+  issuerRef:
+    name: %s
+    kind: %s
+`
+
+	return fmt.Sprintf(yamlTemplate,
+		certData.Name,
+		certData.Namespace,
+		dnsNamesYAML,
+		certData.Name,
+		issuerName,
+		issuerKind,
+	), nil
 }
 
 func (s *Server) sendError(w http.ResponseWriter, message string, statusCode int) {
