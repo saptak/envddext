@@ -1,6 +1,6 @@
 # Envoy Gateway Docker Desktop Extension
 
-A comprehensive Docker Desktop extension for managing Envoy Gateway resources with an intuitive visual interface, GitHub-based templates, HTTP testing tools, and enhanced resource visualization. Built with a robust VM service backend architecture that eliminates Docker Desktop extension limitations.
+A comprehensive Docker Desktop extension for managing Envoy Gateway resources with an intuitive visual interface, GitHub-based templates, HTTP testing tools, synthetic traffic generation, and enhanced resource visualization. Built with a robust VM service backend architecture that eliminates Docker Desktop extension limitations.
 
 ## Key Features
 
@@ -9,10 +9,11 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 - **HTTPRoute Creation & Management**: Create and delete HTTPRoute resources with advanced path matching, header/query parameter support, and backend service configuration
 - **TLS Certificate Management**: Comprehensive TLS termination support with certificate generation, management, and HTTPS testing
 - **LoadBalancer Management**: Robust MetalLB integration, configuration (including auto-detection), and accurate real-time status monitoring
-- **Reliable Proxy Management**: Process control with PID tracking and proper cleanup
-- **Responsive Tabbed Interface**: Organized UI with Resources, Gateway Management, HTTPRoute Management, Deployment Status, Testing & Proxy, and TLS Management tabs with horizontal scrolling support
+- **Reliable Kubectl Proxy Management**: Robust proxy startup with enhanced error handling, automatic kubeconfig detection, and proper process lifecycle management
+- **Responsive Tabbed Interface**: Organized UI with consolidated Dashboard, Gateway Management, HTTPRoute Management, Testing & Proxy, TLS Management, and Traffic Splitting tabs with horizontal scrolling support
 - **GitHub Templates Integration**: Apply basic HTTP routing templates directly from GitHub repositories
 - **HTTP Testing Tools**: Built-in HTTP client for testing routes with request/response display
+- **Synthetic Traffic Generation**: Advanced traffic generator with real-time metrics, visualization, and traffic splitting validation
 - **Kubectl Proxy Manager**: Integrated proxy management for accessing Kubernetes services
 - **Enhanced Monitoring**: Real-time status tracking with detailed deployment information
 - **Visual Resource Management**: Interactive resource cards with relationship visualization and management actions
@@ -27,10 +28,13 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 
 ## Features
 
-### 🎯 Resources Tab (Enhanced in v0.6.0)
+### 📊 Dashboard Tab (Enhanced in v0.8.1)
+- **System Overview**: Consolidated view showing system health with Gateway, HTTPRoute, and Service counts
+- **Health Monitoring**: Intelligent status detection with color-coded alerts (healthy/warning/critical)
 - **Visual Resource Cards**: Professional cards displaying Gateway and HTTPRoute information with status indicators
-- **Resource Visualization**: Interactive relationship mapping showing Gateway → HTTPRoute connections
-- **Resource Management**: Delete resources, view YAML configurations, and refresh status
+- **Resource Visualization**: Interactive relationship mapping showing Gateway → HTTPRoute connections (collapsible)
+- **Deployment Status**: Real-time service monitoring with pod and container information (collapsible)
+- **Resource Management**: Delete resources, view YAML configurations, and unified refresh functionality
 - **Status Monitoring**: Real-time status with color-coded health indicators and detailed information
 - **Connection Flow**: Visual representation of traffic flow from Gateways through routes to services
 
@@ -47,10 +51,14 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 - Real-time status monitoring for all resources
 - Visual feedback for resource creation and deletion
 
-### 🧪 Testing & Proxy Tab
-- **Proxy Manager**: Integrated kubectl proxy management with one-click start/stop functionality
+### 🧪 Testing & Proxy Tab (Enhanced in v0.8.1)
+- **Proxy Manager**: Robust kubectl proxy management with enhanced error handling, automatic kubeconfig detection, and reliable startup process
 - **HTTP Testing**: Built-in HTTP client for testing deployed routes with all HTTP methods
 - **HTTPS Support**: Advanced TLS options for testing secure connections with certificate verification controls
+- **Synthetic Traffic Generator**: Advanced traffic generation with configurable RPS, duration, concurrent connections, and HTTP methods
+- **Real-time Metrics**: Live traffic metrics with response times, success rates, status code distribution, and error tracking
+- **Traffic Visualization**: Interactive charts showing response time distribution, RPS trends, and performance analytics
+- **Traffic Splitting Validation**: Test and validate traffic splitting configurations with synthetic load
 - **Request/Response Display**: Syntax highlighting and comprehensive response analysis
 - **cURL Generation**: Automatic cURL command generation and copy functionality with TLS options
 - **Request History**: Save and replay previous requests for easy testing
@@ -84,9 +92,51 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 
 ## Current Status
 
-**Latest Update: June 11, 2025** - **v0.6.0 "TLS Termination & Visual Management" Release Complete!** Major milestone with Iteration 5 completion featuring comprehensive TLS certificate management, HTTPS testing capabilities, and enhanced Gateway creation with TLS support. Additionally includes the enhanced resource visualization from Iteration 4 with professional UI cards and comprehensive resource management actions. The extension now provides complete end-to-end TLS termination workflows alongside the redesigned Resources tab with interactive resource cards and relationship visualization.
+**Latest Update: December 12, 2025** - **v0.8.1 "Kubectl Proxy Reliability & Error Handling" Release Complete!** Major kubectl proxy improvements including enhanced error handling, automatic kubeconfig detection, proper response parsing, and robust process management. Resolves hardcoded path dependencies and Docker VM service communication issues. This builds on v0.8.0's synthetic traffic generation capabilities, consolidated dashboard, v0.7.0's traffic splitting features, and v0.6.0's TLS management to provide a fully reliable testing environment.
 
-### ✅ Completed Features (Iteration 1-5)
+### ✅ Completed Features (Iteration 1-8)
+
+#### Kubectl Proxy Reliability & Error Handling (Iteration 8 ✅ - December 12, 2025)
+- **Enhanced Error Handling**: Comprehensive error reporting with detailed backend logs and frontend error propagation
+- **Automatic Kubeconfig Detection**: Dynamic kubeconfig path resolution eliminating hardcoded user paths
+- **Robust Response Parsing**: Proper Docker VM service communication with correct response structure handling
+- **Process Management**: Reliable kubectl proxy startup with PID tracking and proper cleanup
+- **Connectivity Testing**: Pre-flight kubectl cluster-info validation before proxy startup
+- **Enhanced Logging**: Detailed logging throughout proxy lifecycle for troubleshooting
+- **Fallback Mechanisms**: Graceful handling of kubeconfig and connectivity issues
+- **User-Friendly Messages**: Clear error messages replacing generic "Unknown error" responses
+
+#### Dashboard Consolidation & UI Enhancement (Previous v0.8.0 ✅ - December 12, 2025)
+- **Consolidated Dashboard**: Combined Resources and Deployment Status tabs into unified system overview
+- **System Health Monitoring**: Intelligent health detection with color-coded status alerts (healthy/warning/critical)
+- **Overview Cards**: Visual count display for Gateways, HTTP Routes, and Services with status summaries
+- **Collapsible Sections**: User-controlled expansion of Resource Relationships and Deployment Status sections
+- **Unified Resource Management**: Single interface for all resource operations (view YAML, delete, refresh)
+- **Streamlined Navigation**: Reduced from 7 tabs to 6 tabs while maintaining all functionality
+- **Enhanced User Experience**: Professional dashboard design with Material-UI theming and responsive layout
+- **Real-time Status Integration**: Live updates for both resource status and deployment monitoring
+
+#### Synthetic Traffic Generation & Performance Testing (Iteration 7 ✅ - December 12, 2025)
+- **Advanced Traffic Generator**: Comprehensive synthetic traffic generation with configurable RPS (1-1000), duration, HTTP methods, headers, and request bodies
+- **Real-time Metrics Collection**: Live performance monitoring with response times (min/avg/max), success rates, status code distribution, and error tracking
+- **Interactive Visualization**: Professional charts showing response time distribution, RPS trends, and performance analytics with SVG-based rendering
+- **Concurrent Request Management**: Configurable concurrent connections (1-100) with connection limiting and timeout management
+- **Traffic Splitting Integration**: Dedicated traffic testing tab in Traffic Splitting Manager with gateway address auto-detection
+- **Testing & Proxy Enhancement**: Integrated traffic generator in existing HTTP Testing tab for comprehensive testing workflows
+- **Professional UI**: Tabbed interface with Configuration and Live Visualization tabs, advanced settings panel, and Material-UI theming
+- **Backend API**: Robust Go backend with `/start-traffic-test`, `/stop-traffic-test`, and `/traffic-metrics` endpoints
+- **Thread-safe Operations**: Concurrent metrics collection with proper synchronization and graceful test lifecycle management
+- **Comprehensive Analytics**: Status code breakdown, error analysis, historical trending, and detailed performance reports
+
+#### Traffic Splitting & Canary Deployments (Iteration 6 ✅ - June 11, 2025)
+- **Comprehensive Traffic Splitting Wizard**: Step-by-step guided setup for traffic management with deployment patterns
+- **Deployment Pattern Support**: Pre-configured Canary, Blue-Green, and A/B Testing patterns with scenario-based workflows
+- **Multi-Version Application Deployment**: Automated deployment of multiple service versions with real-time status monitoring
+- **Dynamic Traffic Distribution**: Real-time traffic weight adjustment with slider controls and one-click scenario application
+- **Advanced Management Interface**: Professional tabbed interface with Quick Start Wizard and Advanced Management
+- **Traffic Simulation**: Built-in traffic simulator with configurable RPS and real-time distribution visualization
+- **Deployment Status Monitoring**: Real-time tracking of deployment, gateway, and HTTPRoute resource status
+- **Professional UI Integration**: Material-UI components with Docker Desktop theming and responsive design
 
 #### TLS Termination & Certificate Management (Iteration 5 ✅ - June 11, 2025)
 - **Intelligent Prerequisite Management**: Automatic cert-manager CRD detection and installation workflow
@@ -180,7 +230,7 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 
 ### 🚧 Next Iterations (Planned)
 
-#### Iteration 6: Advanced Resource Management
+#### Iteration 8: Advanced Resource Management
 - **Resource Editing**: Update existing Gateway and HTTPRoute configurations
 - **Resource Cloning**: Duplicate and modify existing resources  
 - **Bulk Operations**: Multi-resource management capabilities

@@ -22,9 +22,17 @@ This guide provides step-by-step instructions to demonstrate the key capabilitie
     *   [Step 4.1: Certificate Management and Infrastructure Setup](#step-41-certificate-management-and-infrastructure-setup)
     *   [Step 4.2: HTTPS Gateway with TLS Termination](#step-42-https-gateway-with-tls-termination)
     *   [Step 4.3: Testing HTTPS Connectivity](#step-43-testing-https-connectivity)
-6.  [Demo 5: Monitoring and Observability](#demo-5-monitoring-and-observability)
-    *   [Step 5.1: Gateway and HTTPRoute Status Monitoring](#step-51-gateway-and-httproute-status-monitoring)
-    *   [Step 5.2: Deployment Status and Troubleshooting](#step-52-deployment-status-and-troubleshooting)
+6.  [Demo 5: Traffic Splitting & Canary Deployments](#demo-5-traffic-splitting--canary-deployments)
+    *   [Step 5.1: Traffic Splitting Wizard Setup](#step-51-traffic-splitting-wizard-setup)
+    *   [Step 5.2: Deployment Pattern Implementation](#step-52-deployment-pattern-implementation)
+    *   [Step 5.3: Advanced Traffic Management](#step-53-advanced-traffic-management)
+7.  [Demo 6: Synthetic Traffic Generation & Performance Testing](#demo-6-synthetic-traffic-generation--performance-testing)
+    *   [Step 6.1: Advanced Traffic Generator Configuration](#step-61-advanced-traffic-generator-configuration)
+    *   [Step 6.2: Performance Testing and Metrics Collection](#step-62-performance-testing-and-metrics-collection)
+    *   [Step 6.3: Traffic Splitting Validation with Load Testing](#step-63-traffic-splitting-validation-with-load-testing)
+8.  [Demo 7: Monitoring and Observability](#demo-7-monitoring-and-observability)
+    *   [Step 7.1: Gateway and HTTPRoute Status Monitoring](#step-71-gateway-and-httproute-status-monitoring)
+    *   [Step 7.2: Deployment Status and Troubleshooting](#step-72-deployment-status-and-troubleshooting)
 
 ---
 
@@ -36,14 +44,15 @@ Before starting the demos, ensure you have the following components properly con
 *   **Docker Desktop**: Version 4.0+ with Kubernetes enabled
     *   Enable Kubernetes: Docker Desktop → Settings → Kubernetes → Enable Kubernetes
     *   Ensure adequate resource allocation (4GB RAM minimum recommended)
-*   **Envoy Gateway Extension**: Latest version from Docker Desktop Extension Marketplace (v0.6.0+)
-    *   The extension features a modern responsive tabbed interface with 6 main sections:
+*   **Envoy Gateway Extension**: Latest version from Docker Desktop Extension Marketplace (v0.7.0+)
+    *   The extension features a modern responsive tabbed interface with 7 main sections:
         - **Resources**: Enhanced visual resource cards, relationship visualization, and resource management actions
         - **Gateway Management**: Gateway creation and configuration
         - **HTTPRoute Management**: HTTPRoute creation and routing rules
         - **Deployment Status**: Real-time deployment monitoring
         - **Testing & Proxy**: Integrated HTTP testing and kubectl proxy management for seamless endpoint validation
         - **TLS Management**: Complete certificate lifecycle management with intelligent prerequisite detection and automated cert-manager installation
+        - **Traffic Splitting**: Comprehensive canary deployment and traffic management with wizard-based setup and advanced controls
 
 ### 2. LoadBalancer Configuration (Critical)
 The extension offers to configure MetalLB for Gateway IP assignment in Docker Desktop environments if it does not detect an exisiting load balancer:
@@ -582,11 +591,300 @@ Test HTTPS functionality using the extension's enhanced HTTP testing capabilitie
 
 ---
 
-## Demo 5: Monitoring and Observability
+## Demo 5: Traffic Splitting & Canary Deployments
+
+This demo showcases the extension's comprehensive traffic splitting capabilities, enabling sophisticated canary deployments, blue-green deployments, and A/B testing through an intuitive wizard-based interface with real-time traffic management controls.
+
+### Step 5.1: Traffic Splitting Wizard Setup
+
+The Traffic Splitting tab provides a guided wizard for implementing advanced deployment patterns with minimal complexity.
+
+1.  **Access Traffic Splitting Management**:
+    *   Navigate to the **Traffic Splitting** tab in the extension
+    *   **Interface Options**: Choose between Quick Start Wizard and Advanced Management
+    *   **Tabbed Design**: Professional interface with integrated deployment monitoring
+
+2.  **Quick Start Wizard - Pattern Selection**:
+    *   Click the **"Quick Start Wizard"** tab to begin guided setup
+    *   **Choose Deployment Strategy** (Step 1 of 4):
+        - **Canary Deployment** 🐤: Gradual traffic shift from old to new version
+            - Initial: 90% v1, 10% v2 → Testing: 70% v1, 30% v2 → Final: 0% v1, 100% v2
+            - Best for: Risk-averse deployments with gradual validation
+        - **Blue-Green Deployment** 🔄: Instant switch between complete environments
+            - Active: 100% Blue → Ready: Green deployed but not serving → Switch: 100% Green
+            - Best for: Zero-downtime deployments with instant rollback capability
+        - **A/B Testing** ⚖️: Equal or weighted traffic for comparison
+            - Equal: 50% v1, 50% v2 → Weighted: 70% v1, 30% v2 → Winner: 100% best performing
+            - Best for: Feature comparison and performance testing
+
+3.  **Service Configuration** (Step 2 of 4):
+    *   **Route Configuration**:
+        - **Route Name**: `traffic-split-route` (customizable)
+        - **Gateway Name**: `demo-gateway` (selects from existing gateways)
+        - **Namespace**: `demo` (matches your existing resources)
+    *   **Service Version Configuration**:
+        - **Service V1**: `echo-service-v1` with weight assignment
+        - **Service V2**: `echo-service-v2` with complementary weight
+        - **Replicas**: Configure replica count for each version (1-10)
+        - **Images**: Specify container images (defaults to `ealen/echo-server:latest`)
+    *   **Weight Validation**: Total weights must equal 100% to proceed
+
+### Step 5.2: Deployment Pattern Implementation
+
+Deploy the multi-version infrastructure and implement traffic splitting patterns.
+
+1.  **Infrastructure Deployment** (Step 3 of 4):
+    *   **Automated Deployment Process**:
+        - **Namespace Creation**: Creates or verifies `demo` namespace
+        - **Service Deployment**: Deploys both v1 and v2 services with specified configurations
+        - **Gateway Configuration**: Configures or updates the specified gateway
+        - **HTTPRoute Creation**: Creates weighted routing rules for traffic splitting
+    *   **Real-time Progress Monitoring**:
+        - **Visual Indicators**: Check marks, loading spinners, and error states
+        - **Status Messages**: Detailed progress information for each deployment step
+        - **Error Handling**: Comprehensive error messages with resolution guidance
+
+2.  **Deployment Status Verification**:
+    *   **Service Status Cards**: Real-time status for v1 and v2 deployments
+        - **Ready Status**: Green indicators when services are operational
+        - **Replica Information**: Current ready/total replica counts
+        - **Health Monitoring**: Continuous health status updates
+    *   **Gateway Integration**: Verify gateway readiness and IP assignment
+    *   **HTTPRoute Configuration**: Confirm traffic splitting rule implementation
+
+3.  **Template Integration**:
+    *   **GitHub Template Application**: Leverages existing traffic-splitting template
+    *   **YAML Generation**: Dynamic HTTPRoute creation with weighted backend references
+    *   **Infrastructure Validation**: Ensures complete deployment before traffic management
+
+### Step 5.3: Advanced Traffic Management
+
+Control and monitor traffic distribution with real-time adjustment capabilities.
+
+1.  **Traffic Distribution Control** (Step 4 of 4):
+    *   **Current Distribution Display**:
+        - **Visual Progress Bars**: Linear progress indicators showing traffic percentages
+        - **Percentage Cards**: Clear display of current v1/v2 traffic allocation
+        - **Real-time Updates**: Live traffic distribution visualization
+    *   **Dynamic Weight Adjustment**:
+        - **Slider Control**: Intuitive slider for adjusting v1/v2 traffic split
+        - **Percentage Display**: Real-time percentage calculation (v1: X%, v2: Y%)
+        - **Apply Changes**: One-click application of new traffic weights
+        - **Validation**: Automatic validation ensures weights total 100%
+
+2.  **Deployment Pattern Scenarios**:
+    *   **Scenario Management**: Expandable accordion with pre-configured scenarios
+    *   **Pattern-Specific Stages**:
+        - **Canary Scenarios**: Progressive rollout stages with recommended percentages
+        - **Blue-Green Scenarios**: Environment preparation and switching stages
+        - **A/B Testing Scenarios**: Equal split and result evaluation stages
+    *   **One-Click Application**: Apply any scenario with single click
+    *   **Custom Adjustments**: Fine-tune weights between scenario applications
+
+3.  **Advanced Management Interface**:
+    *   **Switch to Advanced Tab**: Access direct deployment and traffic controls
+    *   **Deployment Status Dashboard**:
+        - **Service Cards**: Detailed status for each service version
+        - **Gateway Status**: External IP and configuration verification
+        - **HTTPRoute Status**: Traffic splitting rule verification
+    *   **Manual Traffic Control**:
+        - **Weight Slider**: Direct traffic percentage adjustment
+        - **Apply Changes**: Immediate traffic rule updates
+        - **Status Monitoring**: Real-time deployment health checking
+
+4.  **Traffic Simulation and Testing**:
+    *   **Built-in Traffic Simulator**: Generate test traffic to verify distribution
+    *   **Configurable RPS**: Set requests per second for simulation load
+    *   **Distribution Verification**: Monitor actual vs. expected traffic patterns
+    *   **Integration with HTTP Testing**: Use Testing & Proxy tab for endpoint validation
+
+5.  **Operational Features**:
+    *   **Auto-refresh**: Toggle automatic status updates every 5 seconds
+    *   **Manual Refresh**: On-demand status updates with refresh button
+    *   **Reset Demo**: Complete cleanup and restoration to initial state
+    *   **Error Handling**: Comprehensive error feedback with resolution guidance
+
+**Expected Results**:
+- Multiple service versions deployed and operational
+- Gateway configured with appropriate IP assignment
+- HTTPRoute implementing weighted traffic distribution
+- Real-time traffic control with immediate weight updates
+- Successful traffic splitting verification through testing
+
+**Integration with Other Features**:
+- **TLS Support**: Combine with TLS Management for secure traffic splitting
+- **HTTP Testing**: Validate traffic distribution using built-in HTTP client
+- **Resource Visualization**: Monitor traffic splitting resources in Resources tab
+- **LoadBalancer Integration**: Ensure proper IP assignment for traffic splitting endpoints
+
+---
+
+## Demo 6: Synthetic Traffic Generation & Performance Testing
+
+This demo showcases the extension's comprehensive synthetic traffic generation and performance testing capabilities, enabling developers to validate gateway configurations under realistic load conditions, test traffic splitting scenarios, and analyze performance metrics through advanced visualization tools.
+
+### Step 6.1: Advanced Traffic Generator Configuration
+
+The extension provides a powerful traffic generator that enables realistic load testing with configurable parameters and real-time monitoring capabilities.
+
+1.  **Access Traffic Generation Tools**:
+    *   Navigate to the **Testing & Proxy** tab in the extension
+    *   Locate the **Synthetic Traffic Generator** section
+    *   **Interface Design**: Professional tabbed interface with Configuration and Live Visualization tabs
+
+2.  **Basic Traffic Configuration**:
+    *   **Target URL Configuration**:
+        - **URL**: Enter your gateway endpoint (e.g., `http://172.18.200.1/`)
+        - **Auto-detection**: Extension detects gateway addresses from deployed resources
+        - **URL Validation**: Real-time validation ensures proper URL format
+    *   **Request Parameters**:
+        - **HTTP Method**: Select from GET, POST, PUT, DELETE, PATCH
+        - **Requests Per Second (RPS)**: Configure 1-1000 RPS with slider control
+        - **Duration**: Set test duration in seconds (default: 60 seconds)
+        - **Concurrent Connections**: Configure 1-100 concurrent connections
+
+3.  **Advanced Configuration Options**:
+    *   **Expand Advanced Settings** panel for detailed configuration:
+    *   **Custom Headers Management**:
+        - **Add Headers**: Click "Add Header" to include custom HTTP headers
+        - **Header Examples**: Host headers for hostname routing, API keys, authentication tokens
+        - **Dynamic Values**: Support for both static values and test-specific headers
+    *   **Request Body Configuration**:
+        - **Content Type**: Automatic content-type header management
+        - **Body Data**: Custom request bodies for POST/PUT operations
+        - **JSON Support**: Proper formatting and validation for JSON payloads
+    *   **Connection Management**:
+        - **Timeout Settings**: Configure request timeout (default: 10 seconds)
+        - **Connection Limiting**: Semaphore-based connection management
+        - **Keep-Alive**: Efficient connection reuse for realistic load patterns
+
+4.  **Configuration Validation**:
+    *   **Real-time Validation**: Form validates all inputs before enabling start button
+    *   **Error Feedback**: Clear error messages for invalid configurations
+    *   **Smart Defaults**: Sensible default values for quick testing scenarios
+    *   **Configuration Persistence**: Settings maintained during session
+
+### Step 6.2: Performance Testing and Metrics Collection
+
+Execute load tests and monitor comprehensive performance metrics with real-time visualization and analytics.
+
+1.  **Start Traffic Generation**:
+    *   **Configuration Review**: Verify all settings in the Configuration tab
+    *   **Start Test**: Click "Start Traffic Test" to begin synthetic traffic generation
+    *   **Real-time Feedback**: Immediate status updates and progress indicators
+    *   **Live Controls**: Start/stop functionality with graceful test lifecycle management
+
+2.  **Real-time Metrics Monitoring**:
+    *   **Switch to Live Visualization Tab** to monitor performance in real-time
+    *   **Key Performance Indicators**:
+        - **Response Times**: Live min/avg/max response time tracking
+        - **Success Rate**: Percentage of successful requests (2xx status codes)
+        - **Requests Per Second**: Actual RPS vs. configured RPS comparison
+        - **Total Requests**: Running count of completed requests
+        - **Error Rate**: Percentage and count of failed requests
+
+3.  **Interactive Performance Visualization**:
+    *   **Response Time Distribution Chart**:
+        - **SVG-based Visualization**: Custom charts without external dependencies
+        - **Real-time Updates**: Chart updates every 2 seconds with new data points
+        - **Data Points**: Maintains last 50 data points for trend analysis
+        - **Visual Indicators**: Color-coded performance zones and trend lines
+    *   **RPS Trend Analysis**:
+        - **Throughput Monitoring**: Real-time RPS tracking with target comparison
+        - **Performance Correlation**: Visual correlation between RPS and response times
+        - **Trend Detection**: Identify performance degradation or improvement patterns
+
+4.  **Comprehensive Status Code Analytics**:
+    *   **Status Code Breakdown**: Color-coded distribution of HTTP status codes
+        - **2xx Success**: Green indicators for successful requests
+        - **4xx Client Errors**: Yellow indicators for client-side errors
+        - **5xx Server Errors**: Red indicators for server-side errors
+    *   **Progress Bar Visualization**: Visual representation of status code percentages
+    *   **Error Analysis**: Detailed breakdown of error types and frequencies
+    *   **Success Rate Monitoring**: Real-time success rate calculation and display
+
+5.  **Advanced Analytics Features**:
+    *   **Performance Statistics**:
+        - **Response Time Analysis**: Min, average, max response time tracking
+        - **Percentile Analysis**: P50, P95, P99 response time percentiles
+        - **Error Categorization**: Breakdown of errors by type and frequency
+        - **Throughput Analysis**: Actual vs. target RPS comparison
+    *   **Historical Trending**:
+        - **Time Series Data**: Maintains performance history during test execution
+        - **Trend Visualization**: Charts show performance trends over time
+        - **Performance Correlation**: Identify relationships between metrics
+
+### Step 6.3: Traffic Splitting Validation with Load Testing
+
+Combine synthetic traffic generation with traffic splitting scenarios to validate canary deployments and load distribution under realistic conditions.
+
+1.  **Traffic Splitting Integration**:
+    *   **Navigate to Traffic Splitting Tab** in the extension
+    *   **Access Traffic Testing Sub-tab**: Dedicated testing interface for traffic splitting scenarios
+    *   **Context-Aware Configuration**: Traffic generator automatically detects gateway addresses and routing configurations
+
+2.  **Load Testing Traffic Distribution**:
+    *   **Configure Traffic Split**: Use the traffic splitting wizard to set up canary deployment (e.g., 80% v1, 20% v2)
+    *   **Generate Realistic Load**: Configure traffic generator for realistic testing:
+        - **Target URL**: Use the gateway address from traffic splitting configuration
+        - **Load Pattern**: 100-500 RPS for meaningful distribution validation
+        - **Duration**: 2-5 minutes for comprehensive validation
+        - **Headers**: Include routing headers if using header-based splitting
+
+3.  **Distribution Validation**:
+    *   **Real-time Monitoring**: Monitor traffic distribution across service versions
+    *   **Performance Comparison**: Compare response times between service versions
+        - **Version-specific Metrics**: Track performance for each service version
+        - **Load Impact Analysis**: Understand how traffic distribution affects performance
+        - **Error Rate Comparison**: Monitor error rates across different versions
+    *   **Visual Confirmation**: Use status code and response data to verify routing
+
+4.  **Advanced Testing Scenarios**:
+    *   **Canary Validation Workflow**:
+        - **Initial Split**: Test with 90% v1, 10% v2 distribution
+        - **Load Generation**: Generate 200-500 RPS to validate routing accuracy
+        - **Performance Validation**: Confirm v2 performs acceptably under load
+        - **Progressive Rollout**: Adjust traffic split to 70% v1, 30% v2 and re-test
+        - **Final Validation**: Test 100% v2 traffic before complete rollout
+    *   **A/B Testing Scenarios**:
+        - **Equal Distribution**: Configure 50%/50% traffic split for A/B comparison
+        - **Performance Comparison**: Generate sustained load to compare performance metrics
+        - **Statistical Significance**: Run tests for sufficient duration to gather meaningful data
+        - **Winner Selection**: Use performance data to determine optimal version
+
+5.  **Performance Under Load**:
+    *   **Stress Testing**: Generate high RPS (500-1000) to test gateway performance under load
+    *   **Scalability Validation**: Monitor how traffic splitting performs as load increases
+    *   **Resource Monitoring**: Track CPU, memory, and network usage during load tests
+    *   **Failure Scenarios**: Test traffic splitting behavior during service failures
+
+6.  **Integration with Existing Features**:
+    *   **TLS Testing**: Combine traffic generation with HTTPS endpoints for secure load testing
+    *   **Certificate Validation**: Test TLS performance under load conditions
+    *   **Multi-Protocol Testing**: Validate both HTTP and HTTPS endpoint performance
+    *   **Resource Visualization**: Monitor gateway and route status during load testing
+
+**Expected Results**:
+- Successful generation of synthetic traffic with configurable RPS and realistic load patterns
+- Real-time performance metrics showing response times, success rates, and status code distribution
+- Interactive visualizations providing insights into performance trends and bottlenecks
+- Validation of traffic splitting configurations under load with accurate distribution verification
+- Comprehensive analytics enabling data-driven decisions about service deployments and performance optimization
+
+**Use Cases Demonstrated**:
+- **Performance Baseline Establishment**: Create performance baselines for API endpoints before production deployment
+- **Canary Deployment Validation**: Verify that new service versions perform acceptably under realistic load
+- **Traffic Distribution Accuracy**: Confirm that traffic splitting configurations work correctly with actual load
+- **Performance Regression Testing**: Detect performance regressions when deploying new versions
+- **Load Testing Integration**: Combine gateway configuration with comprehensive load testing workflows
+
+---
+
+## Demo 7: Monitoring and Observability
 
 This final demo covers the extension's monitoring capabilities and operational best practices.
 
-### Step 5.1: Gateway and HTTPRoute Status Monitoring
+### Step 7.1: Gateway and HTTPRoute Status Monitoring
 
 The extension provides comprehensive status monitoring for all Gateway API resources through enhanced visual interfaces.
 
@@ -615,7 +913,7 @@ The extension provides comprehensive status monitoring for all Gateway API resou
     *   **Status Refresh**: Individual and bulk resource status updates
     *   **Error Diagnostics**: Detailed error messages with resolution guidance
 
-### Step 5.2: Deployment Status and Troubleshooting
+### Step 7.2: Deployment Status and Troubleshooting
 
 Leverage the extension's troubleshooting tools for operational excellence.
 
@@ -652,16 +950,22 @@ This comprehensive demo guide demonstrates the full capabilities of the Envoy Ga
 - **Advanced Routing**: Header matching, method-based routing, and traffic splitting  
 - **Infrastructure Management**: LoadBalancer configuration and proxy management
 - **Complete TLS Management (v0.6.0)**: Intelligent prerequisite detection, automated cert-manager installation, certificate lifecycle management, and advanced HTTPS testing
+- **Traffic Splitting & Canary Deployments (v0.7.0)**: Comprehensive traffic management with wizard-based setup, deployment patterns, and real-time traffic control
+- **Synthetic Traffic Generation & Performance Testing (v0.8.0)**: Advanced traffic generator with configurable RPS, real-time metrics collection, interactive visualizations, and traffic splitting validation under load
 - **Visual Resource Management (v0.6.0)**: Enhanced resource cards, relationship visualization, and interactive management actions
 - **Monitoring & Troubleshooting**: Real-time status monitoring and diagnostic tools
 
-The extension's enhanced tabbed interface provides intuitive visual access to core Envoy Gateway features while maintaining the power and flexibility of the underlying Gateway API. The new v0.6.0 capabilities include a complete TLS management workflow that automatically handles infrastructure prerequisites, provides one-click cert-manager installation, and offers sophisticated certificate lifecycle management. Combined with enhanced resource visualization, this transforms both security and resource management from complex manual processes to streamlined, visual experiences.
+The extension's enhanced tabbed interface provides intuitive visual access to core Envoy Gateway features while maintaining the power and flexibility of the underlying Gateway API. The latest v0.8.0 capabilities include comprehensive synthetic traffic generation and performance testing that validates gateway configurations under realistic load conditions. Combined with v0.7.0 traffic splitting management, v0.6.0 TLS management workflow, and enhanced resource visualization, this transforms complex deployment patterns and performance validation from manual processes to streamlined, guided experiences with real-time analytics.
 
 ### Next Steps
 
+- **Explore v0.8.0 Synthetic Traffic Generation**: Master comprehensive load testing and performance validation with configurable RPS, real-time metrics, and advanced visualizations
+- **Performance Testing Workflows**: Establish performance baselines, conduct canary validation, and implement data-driven deployment decisions
+- **Traffic Splitting with Load Testing**: Combine traffic splitting patterns with realistic load testing for complete deployment validation
+- **Advanced Traffic Patterns**: Experiment with high RPS scenarios, concurrent connection management, and complex load testing scenarios
+- **Explore v0.7.0 Traffic Splitting**: Experience the comprehensive traffic management wizard with canary deployments, blue-green deployments, and A/B testing
 - **Explore v0.6.0 TLS Features**: Experience the complete certificate lifecycle management with automated cert-manager installation
-- **Advanced Certificate Management**: Experiment with custom CA issuers and multi-domain certificates
-- **HTTPS Testing**: Utilize the enhanced HTTP client with TLS options for comprehensive security testing
+- **HTTPS Load Testing**: Combine TLS management with synthetic traffic generation for secure endpoint performance validation
 - **Visual Resource Management**: Leverage the new resource cards and relationship visualization for efficient gateway management
 - **Use GitHub Templates**: Apply additional templates for complex scenarios
 - **Advanced Configuration**: Experiment with Gateway API features through YAML configuration

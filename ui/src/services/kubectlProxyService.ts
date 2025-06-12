@@ -48,13 +48,19 @@ export class KubectlProxyService {
 
       // Use the VM backend to start the proxy
       const response = await this.ddClient.extension.vm?.service?.post('/start-proxy', { port }) as any;
+      
+      console.log('Backend response:', response);
 
-      if (response?.success) {
+      // The Docker Desktop VM service wraps the response in a data property
+      const backendResponse = response?.data || response;
+      console.log('Backend data:', backendResponse);
+
+      if (backendResponse?.success) {
         this.proxyStatus = {
-          isRunning: response.data?.isRunning || true,
-          port: response.data?.port || port,
+          isRunning: backendResponse.data?.isRunning || true,
+          port: backendResponse.data?.port || port,
           startTime: new Date(),
-          pid: response.data?.pid
+          pid: backendResponse.data?.pid
         };
 
         // Start status monitoring
@@ -63,7 +69,7 @@ export class KubectlProxyService {
         console.log(`Kubectl proxy started successfully on port ${port}`);
         return this.proxyStatus;
       } else {
-        throw new Error(response?.error || 'Unknown error starting proxy');
+        throw new Error(backendResponse?.error || 'Unknown error starting proxy');
       }
 
     } catch (error: any) {
@@ -92,11 +98,13 @@ export class KubectlProxyService {
 
       // Use the VM backend to stop the proxy
       const response = await this.ddClient.extension.vm?.service?.post('/stop-proxy', { port: this.proxyStatus.port }) as any;
+      
+      const backendResponse = response?.data || response;
 
-      if (response?.success) {
+      if (backendResponse?.success) {
         console.log('Kubectl proxy stopped successfully via backend');
       } else {
-        console.warn('Backend stop proxy returned error:', response?.error);
+        console.warn('Backend stop proxy returned error:', backendResponse?.error);
         // Continue anyway - we still want to update our local status
       }
 
@@ -126,20 +134,22 @@ export class KubectlProxyService {
     try {
       // Use the VM backend to check proxy status
       const response = await this.ddClient.extension.vm?.service?.get(`/proxy-status?port=${this.proxyStatus.port}`) as any;
+      
+      const backendResponse = response?.data || response;
 
-      if (response?.success && response.data) {
+      if (backendResponse?.success && backendResponse.data) {
         this.proxyStatus = {
           ...this.proxyStatus,
-          isRunning: response.data.isRunning,
-          port: response.data.port,
-          pid: response.data.pid,
+          isRunning: backendResponse.data.isRunning,
+          port: backendResponse.data.port,
+          pid: backendResponse.data.pid,
           error: undefined
         };
       } else {
         // Fallback to local check if backend fails
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 2000);
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
 
           const httpResponse = await fetch(`http://localhost:${this.proxyStatus.port}/api/v1`, {
             method: 'GET',
@@ -284,9 +294,11 @@ export class KubectlProxyService {
 
       // Use the VM backend to test proxy connectivity
       const response = await this.ddClient.extension.vm?.service?.get(`/test-proxy?port=${this.proxyStatus.port}`) as any;
+      
+      const backendResponse = response?.data || response;
 
-      if (response?.success && response.data) {
-        const testData = response.data;
+      if (backendResponse?.success && backendResponse.data) {
+        const testData = backendResponse.data;
         
         if (testData.connectivity) {
           return {
@@ -302,7 +314,7 @@ export class KubectlProxyService {
       } else {
         return {
           success: false,
-          message: response?.error || 'Backend test failed'
+          message: backendResponse?.error || 'Backend test failed'
         };
       }
 

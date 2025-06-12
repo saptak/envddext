@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -19,7 +20,8 @@ import (
 )
 
 type Server struct {
-	router *mux.Router
+	router      *mux.Router
+	trafficTest *TrafficTestState
 }
 
 type GatewayFormData struct {
@@ -47,28 +49,28 @@ type CertRef struct {
 }
 
 type HTTPRouteFormData struct {
-	Name                   string               `json:"name"`
-	Namespace              string               `json:"namespace"`
-	ParentGateway          string               `json:"parentGateway"`
-	ParentGatewayNamespace string               `json:"parentGatewayNamespace"`
-	Hostnames              []string             `json:"hostnames"`
-	Rules                  []HTTPRuleFormData   `json:"rules"`
+	Name                   string             `json:"name"`
+	Namespace              string             `json:"namespace"`
+	ParentGateway          string             `json:"parentGateway"`
+	ParentGatewayNamespace string             `json:"parentGatewayNamespace"`
+	Hostnames              []string           `json:"hostnames"`
+	Rules                  []HTTPRuleFormData `json:"rules"`
 }
 
 type HTTPRuleFormData struct {
-	Name                   string                     `json:"name,omitempty"`
-	Matches                []HTTPRouteMatchFormData   `json:"matches"`
-	BackendRefs            []HTTPBackendRefFormData   `json:"backendRefs"`
-	RequestTimeout         string                     `json:"requestTimeout,omitempty"`
-	BackendRequestTimeout  string                     `json:"backendRequestTimeout,omitempty"`
+	Name                  string                   `json:"name,omitempty"`
+	Matches               []HTTPRouteMatchFormData `json:"matches"`
+	BackendRefs           []HTTPBackendRefFormData `json:"backendRefs"`
+	RequestTimeout        string                   `json:"requestTimeout,omitempty"`
+	BackendRequestTimeout string                   `json:"backendRequestTimeout,omitempty"`
 }
 
 type HTTPRouteMatchFormData struct {
-	PathType     string                           `json:"pathType"`
-	PathValue    string                           `json:"pathValue"`
-	Method       string                           `json:"method,omitempty"`
-	Headers      []HTTPRouteHeaderMatchFormData   `json:"headers"`
-	QueryParams  []HTTPRouteQueryParamFormData    `json:"queryParams"`
+	PathType    string                         `json:"pathType"`
+	PathValue   string                         `json:"pathValue"`
+	Method      string                         `json:"method,omitempty"`
+	Headers     []HTTPRouteHeaderMatchFormData `json:"headers"`
+	QueryParams []HTTPRouteQueryParamFormData  `json:"queryParams"`
 }
 
 type HTTPRouteHeaderMatchFormData struct {
@@ -140,6 +142,46 @@ type Certificate struct {
 	CreatedAt      string   `json:"createdAt"`
 }
 
+type TrafficTestConfig struct {
+	TargetURL   string            `json:"targetUrl"`
+	RPS         int               `json:"rps"`
+	Duration    int               `json:"duration"`
+	Headers     map[string]string `json:"headers,omitempty"`
+	Method      string            `json:"method"`
+	Body        string            `json:"body,omitempty"`
+	Timeout     int               `json:"timeout"`
+	Connections int               `json:"connections"`
+}
+
+type TrafficMetrics struct {
+	StartTime       time.Time      `json:"startTime"`
+	ElapsedTime     string         `json:"elapsedTime"`
+	TotalRequests   int            `json:"totalRequests"`
+	SuccessRequests int            `json:"successRequests"`
+	FailedRequests  int            `json:"failedRequests"`
+	AvgResponseTime float64        `json:"avgResponseTime"`
+	MinResponseTime float64        `json:"minResponseTime"`
+	MaxResponseTime float64        `json:"maxResponseTime"`
+	SuccessRate     float64        `json:"successRate"`
+	ErrorRate       float64        `json:"errorRate"`
+	StatusCodes     map[string]int `json:"statusCodes"`
+	Errors          []string       `json:"errors"`
+	RPS             float64        `json:"rps"`
+	IsRunning       bool           `json:"isRunning"`
+}
+
+type TrafficTestState struct {
+	config      TrafficTestConfig
+	startTime   time.Time
+	stopChan    chan bool
+	metrics     TrafficMetrics
+	mutex       sync.RWMutex
+	isRunning   bool
+	responses   []time.Duration
+	statusCodes map[string]int
+	errors      []string
+}
+
 func NewServer() *Server {
 	s := &Server{
 		router: mux.NewRouter(),
@@ -162,6 +204,9 @@ func (s *Server) setupRoutes() {
 	s.router.HandleFunc("/create-certificate", s.handleCreateCertificate).Methods("POST")
 	s.router.HandleFunc("/list-certificates", s.handleListCertificates).Methods("GET")
 	s.router.HandleFunc("/delete-certificate", s.handleDeleteCertificate).Methods("DELETE")
+	s.router.HandleFunc("/start-traffic-test", s.handleStartTrafficTest).Methods("POST")
+	s.router.HandleFunc("/stop-traffic-test", s.handleStopTrafficTest).Methods("POST")
+	s.router.HandleFunc("/traffic-metrics", s.handleTrafficMetrics).Methods("GET")
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
@@ -229,19 +274,51 @@ func (s *Server) handleStartProxy(w http.ResponseWriter, r *http.Request) {
 		req.Port = 8001
 	}
 
+	log.Printf("Starting kubectl proxy on port %d", req.Port)
+
 	// Check if proxy is already running
 	if status := s.getProxyStatus(req.Port); status.IsRunning {
+		log.Printf("Proxy already running on port %d", req.Port)
 		response := APIResponse{Success: true, Data: status}
 		json.NewEncoder(w).Encode(response)
 		return
 	}
 
+	// Ensure kubeconfig is properly configured
+	if err := s.ensureKubeconfig(); err != nil {
+		log.Printf("Kubeconfig setup failed: %v", err)
+		s.sendError(w, fmt.Sprintf("Kubeconfig setup failed: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Test kubectl connectivity first
+	testCmd := exec.Command("kubectl", "cluster-info")
+	// Set the same environment as proxy command
+	kubeconfigPath := os.Getenv("KUBECONFIG")
+	if kubeconfigPath == "" {
+		kubeconfigPath = "/host/.kube/config"
+	}
+	testCmd.Env = append(os.Environ(), "KUBECONFIG="+kubeconfigPath)
+	
+	if output, err := testCmd.CombinedOutput(); err != nil {
+		log.Printf("kubectl cluster-info failed: %v, output: %s", err, string(output))
+		s.sendError(w, fmt.Sprintf("Cannot connect to Kubernetes cluster: %v. Output: %s", err, string(output)), http.StatusInternalServerError)
+		return
+	}
+
 	// Start kubectl proxy
 	cmd := exec.Command("kubectl", "proxy", "--port="+strconv.Itoa(req.Port))
+	// Set the same kubeconfig environment
+	cmd.Env = append(os.Environ(), "KUBECONFIG="+kubeconfigPath)
+	
+	log.Printf("Starting kubectl proxy with command: %v", cmd.Args)
 	if err := cmd.Start(); err != nil {
+		log.Printf("Failed to start kubectl proxy process: %v", err)
 		s.sendError(w, fmt.Sprintf("Failed to start kubectl proxy: %v", err), http.StatusInternalServerError)
 		return
 	}
+
+	log.Printf("kubectl proxy started with PID: %d", cmd.Process.Pid)
 
 	// Save PID for later termination
 	pidFile := fmt.Sprintf("/tmp/kubectl-proxy-%d.pid", req.Port)
@@ -253,6 +330,13 @@ func (s *Server) handleStartProxy(w http.ResponseWriter, r *http.Request) {
 	time.Sleep(2 * time.Second)
 
 	status := s.getProxyStatus(req.Port)
+	log.Printf("Proxy status after start: running=%v, port=%d", status.IsRunning, status.Port)
+	
+	if !status.IsRunning {
+		s.sendError(w, "Kubectl proxy started but is not responding on the expected port", http.StatusInternalServerError)
+		return
+	}
+
 	response := APIResponse{Success: true, Data: status}
 	json.NewEncoder(w).Encode(response)
 }
@@ -423,7 +507,13 @@ func (s *Server) handleKubectl(w http.ResponseWriter, r *http.Request) {
 	cmd := exec.Command("kubectl", req.Args...)
 
 	// Set environment to use the mounted kubeconfig
-	cmd.Env = append(os.Environ(), "KUBECONFIG=/host_users/saptak/.kube/config")
+	// Use KUBECONFIG environment variable if set, otherwise use default Docker Desktop path
+	kubeconfigPath := os.Getenv("KUBECONFIG")
+	if kubeconfigPath == "" {
+		// Default Docker Desktop kubeconfig path in container
+		kubeconfigPath = "/host/.kube/config"
+	}
+	cmd.Env = append(os.Environ(), "KUBECONFIG="+kubeconfigPath)
 
 	output, err := cmd.CombinedOutput()
 
@@ -529,12 +619,12 @@ func (s *Server) convertHTTPRulesFromFormData(rules []HTTPRuleFormData) []map[st
 					"value": match.PathValue,
 				},
 			}
-			
+
 			// Add method if specified
 			if match.Method != "" {
 				matchMap["method"] = match.Method
 			}
-			
+
 			// Add headers if any
 			if len(match.Headers) > 0 {
 				headers := make([]map[string]interface{}, len(match.Headers))
@@ -547,7 +637,7 @@ func (s *Server) convertHTTPRulesFromFormData(rules []HTTPRuleFormData) []map[st
 				}
 				matchMap["headers"] = headers
 			}
-			
+
 			// Add query params if any
 			if len(match.QueryParams) > 0 {
 				queryParams := make([]map[string]interface{}, len(match.QueryParams))
@@ -560,7 +650,7 @@ func (s *Server) convertHTTPRulesFromFormData(rules []HTTPRuleFormData) []map[st
 				}
 				matchMap["queryParams"] = queryParams
 			}
-			
+
 			matches[j] = matchMap
 		}
 
@@ -570,12 +660,12 @@ func (s *Server) convertHTTPRulesFromFormData(rules []HTTPRuleFormData) []map[st
 				"name": ref.Name,
 				"port": ref.Port,
 			}
-			
+
 			// Add weight if specified and not default
 			if ref.Weight > 0 && ref.Weight != 100 {
 				backendRef["weight"] = ref.Weight
 			}
-			
+
 			backendRefs[j] = backendRef
 		}
 
@@ -583,7 +673,7 @@ func (s *Server) convertHTTPRulesFromFormData(rules []HTTPRuleFormData) []map[st
 			"matches":     matches,
 			"backendRefs": backendRefs,
 		}
-		
+
 		// Add timeouts if specified
 		if rule.RequestTimeout != "" {
 			if ruleMap["timeouts"] == nil {
@@ -591,7 +681,7 @@ func (s *Server) convertHTTPRulesFromFormData(rules []HTTPRuleFormData) []map[st
 			}
 			ruleMap["timeouts"].(map[string]interface{})["request"] = rule.RequestTimeout
 		}
-		
+
 		if rule.BackendRequestTimeout != "" {
 			if ruleMap["timeouts"] == nil {
 				ruleMap["timeouts"] = map[string]interface{}{}
@@ -890,7 +980,7 @@ func (s *Server) handleDeleteCertificate(w http.ResponseWriter, r *http.Request)
 func (s *Server) generateCertificateYAML(certData CertificateFormData) (string, error) {
 	issuerKind := "ClusterIssuer"
 	issuerName := "selfsigned-issuer"
-	
+
 	if certData.IssuerType == "ca-issuer" {
 		issuerKind = "Issuer"
 		issuerName = certData.IssuerName
@@ -922,6 +1012,274 @@ spec:
 		issuerName,
 		issuerKind,
 	), nil
+}
+
+func (s *Server) handleStartTrafficTest(w http.ResponseWriter, r *http.Request) {
+	var config TrafficTestConfig
+	if err := json.NewDecoder(r.Body).Decode(&config); err != nil {
+		s.sendError(w, "Invalid JSON payload", http.StatusBadRequest)
+		return
+	}
+
+	// Validate required fields
+	if config.TargetURL == "" {
+		s.sendError(w, "Target URL is required", http.StatusBadRequest)
+		return
+	}
+	if config.RPS <= 0 {
+		config.RPS = 10 // Default RPS
+	}
+	if config.Duration <= 0 {
+		config.Duration = 60 // Default duration in seconds
+	}
+	if config.Method == "" {
+		config.Method = "GET"
+	}
+	if config.Timeout <= 0 {
+		config.Timeout = 30 // Default timeout in seconds
+	}
+	if config.Connections <= 0 {
+		config.Connections = 10 // Default concurrent connections
+	}
+
+	// Stop any existing traffic test
+	if s.trafficTest != nil && s.trafficTest.isRunning {
+		s.stopTrafficTest()
+	}
+
+	// Initialize new traffic test
+	s.trafficTest = &TrafficTestState{
+		config:      config,
+		startTime:   time.Now(),
+		stopChan:    make(chan bool, 1),
+		isRunning:   true,
+		responses:   make([]time.Duration, 0),
+		statusCodes: make(map[string]int),
+		errors:      make([]string, 0),
+		metrics: TrafficMetrics{
+			StartTime:   time.Now(),
+			StatusCodes: make(map[string]int),
+			Errors:      make([]string, 0),
+			IsRunning:   true,
+		},
+	}
+
+	// Start traffic generation in background
+	go s.runTrafficTest()
+
+	response := APIResponse{
+		Success: true,
+		Data:    "Traffic test started successfully",
+	}
+	json.NewEncoder(w).Encode(response)
+}
+
+func (s *Server) handleStopTrafficTest(w http.ResponseWriter, r *http.Request) {
+	if s.trafficTest == nil || !s.trafficTest.isRunning {
+		s.sendError(w, "No traffic test is currently running", http.StatusBadRequest)
+		return
+	}
+
+	s.stopTrafficTest()
+
+	response := APIResponse{
+		Success: true,
+		Data:    "Traffic test stopped successfully",
+	}
+	json.NewEncoder(w).Encode(response)
+}
+
+func (s *Server) handleTrafficMetrics(w http.ResponseWriter, r *http.Request) {
+	if s.trafficTest == nil {
+		s.sendError(w, "No traffic test has been started", http.StatusNotFound)
+		return
+	}
+
+	s.trafficTest.mutex.RLock()
+	metrics := s.calculateMetrics()
+	s.trafficTest.mutex.RUnlock()
+
+	response := APIResponse{
+		Success: true,
+		Data:    metrics,
+	}
+	json.NewEncoder(w).Encode(response)
+}
+
+func (s *Server) runTrafficTest() {
+	config := s.trafficTest.config
+	interval := time.Duration(1000/config.RPS) * time.Millisecond
+	timeout := time.Duration(config.Duration) * time.Second
+
+	// Create HTTP client with timeout
+	client := &http.Client{
+		Timeout: time.Duration(config.Timeout) * time.Second,
+	}
+
+	// Create semaphore for connection limiting
+	semaphore := make(chan struct{}, config.Connections)
+
+	// Start timer for test duration
+	testTimer := time.NewTimer(timeout)
+	ticker := time.NewTicker(interval)
+
+	defer ticker.Stop()
+	defer testTimer.Stop()
+
+	for {
+		select {
+		case <-s.trafficTest.stopChan:
+			log.Printf("Traffic test stopped by user")
+			s.trafficTest.mutex.Lock()
+			s.trafficTest.isRunning = false
+			s.trafficTest.mutex.Unlock()
+			return
+
+		case <-testTimer.C:
+			log.Printf("Traffic test completed after %d seconds", config.Duration)
+			s.trafficTest.mutex.Lock()
+			s.trafficTest.isRunning = false
+			s.trafficTest.mutex.Unlock()
+			return
+
+		case <-ticker.C:
+			// Acquire semaphore
+			select {
+			case semaphore <- struct{}{}:
+				go s.makeRequest(client, semaphore)
+			default:
+				// Skip this request if we've hit connection limit
+				continue
+			}
+		}
+	}
+}
+
+func (s *Server) makeRequest(client *http.Client, semaphore chan struct{}) {
+	defer func() { <-semaphore }() // Release semaphore
+
+	config := s.trafficTest.config
+	startTime := time.Now()
+
+	// Prepare request
+	var req *http.Request
+	var err error
+
+	if config.Body != "" {
+		req, err = http.NewRequest(config.Method, config.TargetURL, strings.NewReader(config.Body))
+	} else {
+		req, err = http.NewRequest(config.Method, config.TargetURL, nil)
+	}
+
+	if err != nil {
+		s.recordError(fmt.Sprintf("Failed to create request: %v", err))
+		return
+	}
+
+	// Add headers
+	for key, value := range config.Headers {
+		req.Header.Set(key, value)
+	}
+
+	// Make request
+	resp, err := client.Do(req)
+	duration := time.Since(startTime)
+
+	s.trafficTest.mutex.Lock()
+	defer s.trafficTest.mutex.Unlock()
+
+	// Record response time
+	s.trafficTest.responses = append(s.trafficTest.responses, duration)
+
+	if err != nil {
+		s.trafficTest.errors = append(s.trafficTest.errors, err.Error())
+		return
+	}
+	defer resp.Body.Close()
+
+	// Record status code
+	statusCode := fmt.Sprintf("%d", resp.StatusCode)
+	s.trafficTest.statusCodes[statusCode]++
+
+	// Count as success if 2xx or 3xx
+	if resp.StatusCode >= 200 && resp.StatusCode < 400 {
+		// Success recorded implicitly
+	} else {
+		s.trafficTest.errors = append(s.trafficTest.errors, fmt.Sprintf("HTTP %d", resp.StatusCode))
+	}
+}
+
+func (s *Server) recordError(errMsg string) {
+	s.trafficTest.mutex.Lock()
+	defer s.trafficTest.mutex.Unlock()
+	s.trafficTest.errors = append(s.trafficTest.errors, errMsg)
+}
+
+func (s *Server) stopTrafficTest() {
+	if s.trafficTest != nil && s.trafficTest.isRunning {
+		s.trafficTest.stopChan <- true
+		s.trafficTest.mutex.Lock()
+		s.trafficTest.isRunning = false
+		s.trafficTest.mutex.Unlock()
+	}
+}
+
+func (s *Server) calculateMetrics() TrafficMetrics {
+	if len(s.trafficTest.responses) == 0 {
+		return TrafficMetrics{
+			StartTime:   s.trafficTest.startTime,
+			ElapsedTime: time.Since(s.trafficTest.startTime).String(),
+			IsRunning:   s.trafficTest.isRunning,
+			StatusCodes: s.trafficTest.statusCodes,
+			Errors:      s.trafficTest.errors,
+		}
+	}
+
+	// Calculate response time statistics
+	var total time.Duration
+	min := s.trafficTest.responses[0]
+	max := s.trafficTest.responses[0]
+
+	for _, duration := range s.trafficTest.responses {
+		total += duration
+		if duration < min {
+			min = duration
+		}
+		if duration > max {
+			max = duration
+		}
+	}
+
+	totalRequests := len(s.trafficTest.responses)
+	failedRequests := len(s.trafficTest.errors)
+	successRequests := totalRequests - failedRequests
+
+	elapsedTime := time.Since(s.trafficTest.startTime)
+	avgResponseTime := float64(total.Nanoseconds()) / float64(totalRequests) / 1e6 // Convert to milliseconds
+
+	var successRate, errorRate, rps float64
+	if totalRequests > 0 {
+		successRate = float64(successRequests) / float64(totalRequests) * 100
+		errorRate = float64(failedRequests) / float64(totalRequests) * 100
+		rps = float64(totalRequests) / elapsedTime.Seconds()
+	}
+
+	return TrafficMetrics{
+		StartTime:       s.trafficTest.startTime,
+		ElapsedTime:     elapsedTime.String(),
+		TotalRequests:   totalRequests,
+		SuccessRequests: successRequests,
+		FailedRequests:  failedRequests,
+		AvgResponseTime: avgResponseTime,
+		MinResponseTime: float64(min.Nanoseconds()) / 1e6,
+		MaxResponseTime: float64(max.Nanoseconds()) / 1e6,
+		SuccessRate:     successRate,
+		ErrorRate:       errorRate,
+		StatusCodes:     s.trafficTest.statusCodes,
+		Errors:          s.trafficTest.errors,
+		RPS:             rps,
+		IsRunning:       s.trafficTest.isRunning,
+	}
 }
 
 func (s *Server) sendError(w http.ResponseWriter, message string, statusCode int) {

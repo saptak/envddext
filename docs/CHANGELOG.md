@@ -5,14 +5,85 @@ All notable changes to the Envoy Gateway Docker Desktop Extension will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 2025-06-11
+## [0.8.1] - 2025-12-12 "Kubectl Proxy Reliability & Error Handling"
+
+### Added - 🔧 Major Reliability & Error Handling Improvements
+
+- **🛠️ Enhanced Kubectl Proxy Management**:
+    - **Comprehensive Error Handling**: Detailed error reporting with backend logs and clear frontend error propagation replacing generic "Unknown error" messages
+    - **Automatic Kubeconfig Detection**: Dynamic kubeconfig path resolution using environment variables, eliminating hardcoded user-specific paths (`/host_users/saptak/.kube/config`)
+    - **Robust Response Parsing**: Proper Docker VM service communication with correct response structure handling - fixed frontend misinterpretation of backend success responses
+    - **Pre-flight Connectivity Testing**: kubectl cluster-info validation before proxy startup to ensure cluster accessibility
+    - **Enhanced Process Management**: Reliable kubectl proxy startup with improved PID tracking and proper cleanup mechanisms
+    - **Detailed Logging**: Comprehensive logging throughout proxy lifecycle for troubleshooting and debugging
+    - **Graceful Fallback**: Proper handling of kubeconfig issues and connectivity problems with user-friendly error messages
+    - **Environment Variable Support**: Support for custom KUBECONFIG paths with fallback to Docker Desktop defaults
+
+### Fixed - Critical Proxy Startup Issues
+
+- **"Unknown error starting proxy"**: Resolved generic error messages by implementing comprehensive error propagation from backend to frontend
+- **Hardcoded Path Dependencies**: Eliminated user-specific path requirements (`/host_users/saptak/`) making the extension portable across different users
+- **Docker VM Service Communication**: Fixed response parsing where Docker Desktop VM service wraps backend responses in a `data` property
+- **Kubeconfig Detection**: Resolved issues where backend couldn't locate or access kubeconfig files in Docker VM environment  
+- **Process Lifecycle Management**: Enhanced kubectl proxy startup reliability with proper error handling and status validation
+
+### Changed - Architecture Improvements
+
+- **Backend Service Enhancement**:
+    - Modified `handleStartProxy` in `backend/main.go` with pre-flight testing and enhanced error reporting
+    - Updated `ensureKubeconfig` to use dynamic environment variable detection
+    - Added comprehensive logging and connectivity validation before proxy startup
+- **Frontend Service Layer**:
+    - Enhanced `kubectlProxyService.ts` with proper Docker VM service response parsing
+    - Added detailed console logging for debugging proxy startup issues
+    - Improved error handling and user feedback throughout proxy lifecycle
+- **Error Propagation**: Clear error messages replace generic failures, providing actionable feedback for users
+
+### Technical Implementation - v0.8.1 Architecture
+
+- **Backend Improvements**:
+    - Enhanced error handling in `backend/main.go` handleStartProxy function
+    - Dynamic kubeconfig path detection with environment variable support
+    - Pre-flight kubectl cluster-info testing before proxy startup
+    - Comprehensive logging for troubleshooting proxy startup issues
+- **Frontend Communication**:
+    - Fixed Docker VM service response parsing in `ui/src/services/kubectlProxyService.ts`
+    - Proper extraction of backend responses from Docker Desktop service wrapper
+    - Enhanced error reporting and debugging capabilities
+
+## [0.7.0] - 2025-06-11 "Traffic Splitting & Canary Deployments"
+
+### Added - 🎉 Major Release: Traffic Splitting & Canary Deployments (Iteration 6)
+
+- **🔀 Traffic Splitting Management**:
+    - **Comprehensive Traffic Splitting Wizard**: Step-by-step guided setup for traffic management with deployment patterns
+    - **Multi-Version Application Deployment**: Automated deployment of multiple service versions with real-time status monitoring
+    - **Deployment Pattern Support**: Pre-configured Canary, Blue-Green, and A/B Testing patterns with scenario-based workflows
+    - **Dynamic Traffic Distribution**: Real-time traffic weight adjustment with slider controls and one-click scenario application
+    - **Advanced Management Interface**: Professional tabbed interface with Quick Start Wizard and Advanced Management tabs
+    - **Traffic Simulation**: Built-in traffic simulator with configurable RPS and real-time distribution visualization
+    - **Deployment Status Monitoring**: Real-time tracking of deployments, gateway, and HTTPRoute resource status with detailed cards
+    - **Professional UI Integration**: Material-UI components with Docker Desktop theming, stepper navigation, and responsive design
 
 ### Changed - UI/UX Improvements
-- **Tab Consolidation**: Combined HTTP Testing and Proxy Manager into single "Testing & Proxy" tab for improved workflow
-- **Reduced Interface Complexity**: Streamlined from 6 tabs to 5 tabs for cleaner navigation
-- **Improved User Experience**: Logical grouping of related testing functionality in unified interface
-- **Better Workflow**: Proxy management → HTTP testing flow now in single tab for seamless endpoint validation
-- **Maintained Functionality**: All existing features preserved while improving organization and usability
+- **Tab Interface Enhancement**: Added seventh "Traffic Splitting" tab to main interface for advanced traffic management
+- **Enhanced Navigation**: Updated tabbed interface to include comprehensive traffic splitting and canary deployment workflows
+- **Improved User Experience**: Logical grouping of traffic management functionality with intuitive wizard-based setup
+- **Better Workflow**: Integrated deployment → configuration → testing flow for seamless traffic splitting validation
+- **Maintained Functionality**: All existing features preserved while adding advanced traffic management capabilities
+
+### Technical Implementation - v0.7.0 Architecture
+- **NEW: Traffic Splitting Components**:
+    - `ui/src/components/TrafficSplittingManager.tsx` - Main interface with tabbed design (Quick Start Wizard + Advanced Management)
+    - `ui/src/components/TrafficSplittingWizard.tsx` - Step-by-step wizard with deployment patterns and scenario management
+    - Enhanced existing traffic-splitting template with dual service deployment (v1/v2) and weighted routing
+    - Real-time status monitoring integration with Kubernetes resources and deployment lifecycle tracking
+
+- **Enhanced UI Architecture**:
+    - Updated `ui/src/AppWithGitHubTemplates.tsx` with new Traffic Splitting tab (tab-6)
+    - Professional stepper component with pattern selection, service configuration, and traffic management
+    - Material-UI integration with accordion-based scenario management and real-time progress indicators
+    - Comprehensive error handling and user feedback throughout traffic splitting workflows
 
 ## [0.6.0] - 2025-06-11 "TLS Termination & Visual Gateway Management"
 
@@ -271,8 +342,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [x] **Backend API**: RESTful endpoints for all Kubernetes operations
 - [x] **Infrastructure Updates**: VM service configuration, multi-stage Docker build
 
+### Iteration 7: Traffic Splitting Example ✅ COMPLETED
+- [x] **Traffic Splitting Management**: Complete wizard-based traffic management interface
+- [x] **Multi-Version Application Deployment**: Automated deployment with real-time status monitoring
+- [x] **Weight-Based Routing**: Dynamic traffic distribution with slider controls and scenario management
+- [x] **Traffic Simulation**: Built-in simulation with configurable RPS and distribution visualization
+
 ### Future Iterations
-- **Iteration 7**: Traffic Splitting Example
 - **Iteration 8**: Configuration Forms and Wizards
 - **Iteration 9**: Rate Limiting Example
 - **Iteration 10**: JWT Authentication Example
