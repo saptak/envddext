@@ -1,6 +1,6 @@
 # Troubleshooting Guide - Envoy Gateway Extension
 
-This guide helps troubleshoot common issues with the Envoy Gateway extension. **Note**: Previous Docker Desktop extension limitations have been resolved with the VM service backend architecture!
+This guide helps troubleshoot common issues with the Envoy Gateway extension (v0.7.0). **Note**: Previous Docker Desktop extension limitations have been resolved with the VM service backend architecture!
 
 ## Common Error Messages and Solutions
 
@@ -42,12 +42,15 @@ This guide helps troubleshoot common issues with the Envoy Gateway extension. **
 - **Kubernetes Cluster Health**: Verify your Kubernetes cluster in Docker Desktop is running and healthy.
 - **Extension Logs**: Check Docker Desktop extension logs for detailed output.
 - **Resource YAML**: If possible, inspect the YAML being applied (e.g., from console logs if the UI outputs it) and try applying it manually on your host using `kubectl apply -f -` to see detailed errors.
-### Kubectl Proxy Management - **Now Fully Functional!**
+### Kubectl Proxy Management - **Enhanced in v0.8.1!**
 
-#### ✅ Complete Proxy Lifecycle Management
+#### ✅ Complete Proxy Lifecycle Management with Enhanced Error Handling
 
-**Current Status:**
-- ✅ Start proxy works perfectly via backend
+**Current Status (v0.8.1):**
+- ✅ Start proxy works reliably with enhanced error handling and automatic kubeconfig detection
+- ✅ Comprehensive error reporting replaces generic "Unknown error" messages
+- ✅ Automatic kubeconfig path detection eliminates hardcoded user dependencies
+- ✅ Pre-flight connectivity testing ensures cluster accessibility before startup
 - ✅ Stop proxy works perfectly with PID tracking
 - ✅ Real-time status monitoring
 - ✅ Automatic cleanup on extension restart
@@ -58,27 +61,60 @@ This guide helps troubleshoot common issues with the Envoy Gateway extension. **
 3. **Stop**: Backend uses stored PID for reliable process termination
 4. **Cleanup**: Automatic PID file cleanup and process management
 
-#### Troubleshooting Proxy Issues
+#### Troubleshooting Proxy Issues (v0.8.1 Enhanced)
+
+**Common Issues & Solutions:**
+
+**1. "Unknown error starting proxy" (RESOLVED in v0.8.1)**
+- **Previous Issue**: Generic error messages with no actionable feedback
+- **Resolution**: Enhanced error handling now provides specific error messages:
+  - Kubeconfig detection issues
+  - Kubernetes cluster connectivity problems
+  - Docker VM service communication failures
+  - Process management errors
+
+**2. Hardcoded Path Dependencies (RESOLVED in v0.8.1)**
+- **Previous Issue**: Extension failed for users without `/host_users/saptak/` directory
+- **Resolution**: Dynamic kubeconfig path detection using environment variables
+
+**3. Docker VM Service Communication (RESOLVED in v0.8.1)**
+- **Previous Issue**: Frontend misinterpreted backend success responses
+- **Resolution**: Proper response structure handling for Docker Desktop service wrapper
+
+**Current Troubleshooting Steps:**
 
 **If Proxy Won't Start:**
-1. Check if port 8001 is already in use: `lsof -i :8001`
-2. Check Kubernetes cluster connectivity: `kubectl cluster-info`
-3. Verify Docker Desktop VM service is running
+1. Check detailed error message in UI (now provides specific feedback)
+2. Verify Kubernetes cluster connectivity: `kubectl cluster-info`
+3. Check if port 8001 is already in use: `lsof -i :8001`
+4. Verify Docker Desktop VM service is running
+5. Check browser console for detailed error logs
 
 **If Proxy Won't Stop:**
-1. Backend should handle this automatically now
+1. Backend handles this automatically with PID tracking
 2. If needed, manual cleanup: `pkill -f "kubectl proxy"`
 3. Check Docker Desktop extension logs for backend errors
 
-**Proxy Status Verification:**
+**Enhanced Debugging (v0.8.1):**
 ```bash
 # Check if proxy is responding
 curl -s http://localhost:8001/api/v1 --connect-timeout 2
 
 # Check for proxy processes
 ps aux | grep "kubectl proxy"
+
+# Verify kubeconfig accessibility
+kubectl cluster-info
+
+# Check Docker Desktop extension logs
+docker logs $(docker ps --filter "ancestor=envoyproxy/envoy-gateway-extension" --format "{{.ID}}")
 ```
-3. Try starting proxy again from UI
+
+**Error Message Interpretation:**
+- **"Kubeconfig setup failed"**: KUBECONFIG environment variable issues
+- **"Cannot connect to Kubernetes cluster"**: Cluster connectivity problems  
+- **"Kubectl proxy started but is not responding"**: Process started but not accessible
+- **Specific kubectl errors**: Direct output from kubectl with actionable feedback
 
 ### GitHub Templates - **Applied via Host CLI**
 
@@ -150,6 +186,82 @@ ps aux | grep "kubectl proxy"
     *   Check Docker Desktop extension logs for detailed output from both host CLI commands and backend service operations. This is crucial for diagnosing `kubectl` command failures.
 6.  **UI Status Refresh**:
     *   After attempting configuration or manual `kubectl` checks, click the "Refresh" button for the LoadBalancer status in the UI to trigger a fresh status assessment.
+
+### Traffic Splitting & Canary Deployments - **v0.7.0 Features**
+
+#### ✅ Comprehensive Traffic Management
+
+**Current Status:**
+- ✅ Traffic Splitting Wizard with step-by-step setup
+- ✅ Deployment pattern support (Canary, Blue-Green, A/B Testing)
+- ✅ Real-time traffic distribution control
+- ✅ Multi-version application deployment with status monitoring
+
+**Common Issues & Solutions:**
+
+**Traffic Splitting Wizard Issues:**
+
+- **Wizard stuck on deployment step or shows deployment failure**:
+  * **Cause**: Infrastructure deployment via GitHub template may fail due to cluster issues or namespace conflicts
+  * **Solution**:
+    1. Check that the demo namespace is clean: `kubectl get all -n demo`
+    2. Delete conflicting resources if needed: `kubectl delete namespace demo`
+    3. Verify LoadBalancer is configured (see LoadBalancer section)
+    4. Retry deployment from Step 3 in wizard
+    5. Check extension logs for detailed error messages
+
+- **Services show "Not Ready" status after deployment**:
+  * **Cause**: Pods may be pending or failing to start
+  * **Solution**:
+    1. Check pod status: `kubectl get pods -n demo`
+    2. Describe failing pods: `kubectl describe pod <pod-name> -n demo`
+    3. Check for image pull issues or resource constraints
+    4. Verify Docker Desktop has sufficient resources (4GB+ RAM recommended)
+
+- **Traffic distribution not updating**:
+  * **Cause**: HTTPRoute update may fail or backend API issues
+  * **Solution**:
+    1. Check HTTPRoute status: `kubectl get httproute -n demo -o yaml`
+    2. Verify backend service connectivity in extension logs
+    3. Use Advanced Management tab to manually verify and update weights
+    4. Check that total weights equal 100%
+
+**Advanced Management Issues:**
+
+- **Deployment status cards show incorrect information**:
+  * **Cause**: Status polling may be delayed or cluster connectivity issues
+  * **Solution**:
+    1. Toggle auto-refresh off and on to force status update
+    2. Click manual refresh button
+    3. Check that Kubernetes cluster is responsive: `kubectl get nodes`
+    4. Verify services exist: `kubectl get svc -n demo`
+
+- **Traffic simulation not working**:
+  * **Cause**: Gateway IP not assigned or services not ready
+  * **Solution**:
+    1. Verify Gateway has external IP: `kubectl get gateway -n demo`
+    2. Check LoadBalancer configuration (see LoadBalancer section)
+    3. Ensure all services are ready before starting simulation
+    4. Try manual testing with HTTP Testing tab first
+
+**Troubleshooting Commands for Traffic Splitting:**
+
+```bash
+# Check traffic splitting deployment status
+kubectl get all -n demo
+
+# Verify HTTPRoute traffic weights
+kubectl get httproute -n demo -o yaml | grep -A 10 "backendRefs"
+
+# Check service endpoints
+kubectl get endpoints -n demo
+
+# Test traffic distribution manually
+curl -H "Host: demo.local" http://<GATEWAY_IP>/
+
+# Check Gateway status and IP assignment
+kubectl get gateway -n demo -o wide
+```
 
 ### General Extension Issues
 

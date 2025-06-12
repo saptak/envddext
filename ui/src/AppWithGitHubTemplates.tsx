@@ -39,16 +39,15 @@ import {
   TemplateMetadata,
   checkDeploymentStatus,
 } from "./services/githubTemplateService";
-import { DeploymentStatusMonitor } from "./components/DeploymentStatusMonitor";
 import { GatewayManagement } from "./components/GatewayManagement";
 import { HTTPRouteManagement } from "./components/HTTPRouteManagement";
 import { HTTPClient } from "./components/HTTPClient";
 import { ProxyManager } from "./components/ProxyManager";
-import { ResourceCard } from "./components/ResourceCard";
 import { ResourceActionDialog } from "./components/ResourceActionDialog";
-import { ResourceVisualization } from "./components/ResourceVisualization";
-import { extractGatewayCardData, extractHTTPRouteCardData } from "./utils/resourceCardHelpers";
 import { CertificateManager } from "./components/CertificateManager";
+import { TrafficSplittingManager } from "./components/TrafficSplittingManager";
+import { TrafficGenerator } from "./components/TrafficGenerator";
+import { Dashboard } from "./components/Dashboard";
 
 const ddClient = createDockerDesktopClient();
 
@@ -298,8 +297,8 @@ export function App() {
             ]);
           }
 
-          // Switch to the Deployment Status tab
-          setCurrentTab(2);
+          // Switch to the Dashboard tab
+          setCurrentTab(0);
         }
       } else {
         setTemplateError(result.error || "Failed to apply template");
@@ -356,8 +355,8 @@ export function App() {
             ]);
           }
 
-          // Switch to the Deployment Status tab
-          setCurrentTab(2);
+          // Switch to the Dashboard tab
+          setCurrentTab(0);
         }
       } else {
         setTemplateError(result.error || "Failed to apply template from URL");
@@ -524,7 +523,7 @@ export function App() {
               scrollButtons="auto"
               allowScrollButtonsMobile
             >
-              <Tab label="Resources" id="tab-0" aria-controls="tabpanel-0" />
+              <Tab label="Dashboard" id="tab-0" aria-controls="tabpanel-0" />
               <Tab
                 label="Gateway Management"
                 id="tab-1"
@@ -535,17 +534,13 @@ export function App() {
                 id="tab-2"
                 aria-controls="tabpanel-2"
               />
-              <Tab
-                label="Deployment Status"
-                id="tab-3"
-                aria-controls="tabpanel-3"
-              />
-              <Tab label="Testing & Proxy" id="tab-4" aria-controls="tabpanel-4" />
-              <Tab label="TLS Management" id="tab-5" aria-controls="tabpanel-5" />
+              <Tab label="Testing & Proxy" id="tab-3" aria-controls="tabpanel-3" />
+              <Tab label="TLS Management" id="tab-4" aria-controls="tabpanel-4" />
+              <Tab label="Traffic Splitting" id="tab-5" aria-controls="tabpanel-5" />
             </Tabs>
           </Box>
 
-          {/* Resources Tab */}
+          {/* Dashboard Tab */}
           <Box
             role="tabpanel"
             hidden={currentTab !== 0}
@@ -553,80 +548,15 @@ export function App() {
             aria-labelledby="tab-0"
           >
             {currentTab === 0 && (
-              <>
-                {/* Gateways Section */}
-                <Box sx={{ mb: 4 }}>
-                  <Typography variant="h6" gutterBottom>
-                    Gateways ({gateways.length})
-                  </Typography>
-                  {gateways.length === 0 ? (
-                    <Paper sx={{ p: 3, textAlign: 'center' }}>
-                      <Typography variant="body2" color="text.secondary">
-                        No gateways found. Create your first gateway in the Gateway Management tab.
-                      </Typography>
-                    </Paper>
-                  ) : (
-                    <Box>
-                      {gateways.map((gw: any) => {
-                        const cardData = extractGatewayCardData(gw);
-                        return (
-                          <ResourceCard
-                            key={gw.metadata.uid}
-                            {...cardData}
-                            onRefresh={() => fetchData()}
-                            onViewYaml={() => openActionDialog('viewYaml', 'Gateway', gw.metadata.name, gw.metadata.namespace)}
-                            onDelete={() => openActionDialog('delete', 'Gateway', gw.metadata.name, gw.metadata.namespace)}
-                          />
-                        );
-                      })}
-                    </Box>
-                  )}
-                </Box>
-
-                {/* HTTPRoutes Section */}
-                <Box sx={{ mb: 4 }}>
-                  <Typography variant="h6" gutterBottom>
-                    HTTP Routes ({routes.length})
-                  </Typography>
-                  {routes.length === 0 ? (
-                    <Paper sx={{ p: 3, textAlign: 'center' }}>
-                      <Typography variant="body2" color="text.secondary">
-                        No HTTP routes found. Create your first route in the HTTPRoute Management tab.
-                      </Typography>
-                    </Paper>
-                  ) : (
-                    <Box>
-                      {routes.map((rt: any) => {
-                        const cardData = extractHTTPRouteCardData(rt);
-                        return (
-                          <ResourceCard
-                            key={rt.metadata.uid}
-                            {...cardData}
-                            onRefresh={() => fetchData()}
-                            onViewYaml={() => openActionDialog('viewYaml', 'HTTPRoute', rt.metadata.name, rt.metadata.namespace)}
-                            onDelete={() => openActionDialog('delete', 'HTTPRoute', rt.metadata.name, rt.metadata.namespace)}
-                          />
-                        );
-                      })}
-                    </Box>
-                  )}
-                </Box>
-
-                {/* Resource Visualization Section */}
-                <Box sx={{ mb: 4 }}>
-                  <Typography variant="h6" gutterBottom>
-                    Visualization
-                  </Typography>
-                  <ResourceVisualization
-                    gateways={gateways}
-                    httpRoutes={routes}
-                    onResourceClick={(type, name, namespace) => {
-                      // Open view YAML dialog when clicking on a resource in visualization
-                      openActionDialog('viewYaml', type, name, namespace);
-                    }}
-                  />
-                </Box>
-              </>
+              <Dashboard
+                gateways={gateways}
+                routes={routes}
+                deployedServices={deployedServices}
+                loading={loading}
+                onRefresh={fetchData}
+                onResourceAction={openActionDialog}
+                ddClient={ddClient}
+              />
             )}
           </Box>
 
@@ -664,7 +594,7 @@ export function App() {
             )}
           </Box>
 
-          {/* Deployment Status Tab */}
+          {/* Testing & Proxy Tab */}
           <Box
             role="tabpanel"
             hidden={currentTab !== 3}
@@ -672,48 +602,6 @@ export function App() {
             aria-labelledby="tab-3"
           >
             {currentTab === 3 && (
-              <>
-                <Typography variant="h6" gutterBottom>
-                  Deployment Status
-                </Typography>
-                <Typography variant="body2" color="text.secondary" paragraph>
-                  Monitor the status of your deployed services. This view
-                  provides detailed information about pods, containers, and
-                  troubleshooting guidance.
-                </Typography>
-
-                {deployedServices.map((service, index) => (
-                  <DeploymentStatusMonitor
-                    key={index}
-                    ddClient={ddClient}
-                    namespace={service.namespace}
-                    deploymentName={service.deploymentName}
-                    serviceName={service.serviceName}
-                    autoRefresh={true}
-                    refreshInterval={5000}
-                  />
-                ))}
-
-                {deployedServices.length === 0 && (
-                  <Paper sx={{ p: 2, textAlign: "center" }}>
-                    <Typography variant="body1" color="text.secondary">
-                      No deployments found. Apply a template to create
-                      deployments.
-                    </Typography>
-                  </Paper>
-                )}
-              </>
-            )}
-          </Box>
-
-          {/* Testing & Proxy Tab */}
-          <Box
-            role="tabpanel"
-            hidden={currentTab !== 4}
-            id="tabpanel-4"
-            aria-labelledby="tab-4"
-          >
-            {currentTab === 4 && (
               <>
                 <Typography variant="h6" gutterBottom>
                   Testing & Proxy
@@ -736,7 +624,7 @@ export function App() {
                 </Box>
 
                 {/* HTTP Testing Section */}
-                <Box>
+                <Box sx={{ mb: 4 }}>
                   <Typography variant="h6" gutterBottom>
                     HTTP Testing
                   </Typography>
@@ -747,6 +635,19 @@ export function App() {
                   </Typography>
                   <HTTPClient />
                 </Box>
+
+                {/* Traffic Generator Section */}
+                <Box>
+                  <Typography variant="h6" gutterBottom>
+                    Synthetic Traffic Generator
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" paragraph>
+                    Generate synthetic traffic to test traffic splitting, performance,
+                    and load balancing configurations. Create realistic load patterns
+                    to validate your Gateway and HTTPRoute setups.
+                  </Typography>
+                  <TrafficGenerator />
+                </Box>
               </>
             )}
           </Box>
@@ -754,11 +655,11 @@ export function App() {
           {/* TLS Management Tab */}
           <Box
             role="tabpanel"
-            hidden={currentTab !== 5}
-            id="tabpanel-5"
-            aria-labelledby="tab-5"
+            hidden={currentTab !== 4}
+            id="tabpanel-4"
+            aria-labelledby="tab-4"
           >
-            {currentTab === 5 && (
+            {currentTab === 4 && (
               <>
                 <Typography variant="h6" gutterBottom>
                   TLS Certificate Management
@@ -774,6 +675,16 @@ export function App() {
                 }} />
               </>
             )}
+          </Box>
+
+          {/* Traffic Splitting Tab */}
+          <Box
+            role="tabpanel"
+            hidden={currentTab !== 5}
+            id="tabpanel-5"
+            aria-labelledby="tab-5"
+          >
+            {currentTab === 5 && <TrafficSplittingManager />}
           </Box>
         </>
       )}

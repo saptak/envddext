@@ -9,11 +9,16 @@ Absolutely! This extension was designed specifically for developers who want API
 ### What will I be able to do in the first 5 minutes?
 
 - Install and configure Envoy Gateway
+- Monitor your complete system status from the unified Dashboard with health indicators
 - Create basic Gateway resources with visual forms
 - Set up HTTP routing rules (HTTPRoutes) with path matching and validation
 - Deploy a working example application from templates
-- Test your routes with the built-in HTTP client
-- See real-time status of your Gateways and routes
+- Set up traffic splitting between service versions with the guided wizard
+- Configure TLS certificates with automatic cert-manager installation
+- Test your routes and HTTPS endpoints with the built-in HTTP client
+- Generate synthetic traffic with the advanced traffic generator and view real-time performance metrics
+- Validate traffic splitting configurations with load testing and visualization
+- See real-time status of your Gateways and routes with enhanced visual cards in the consolidated Dashboard
 - Access everything from responsive tabs that work on any screen size
 
 ### I'm already using Kubernetes tools. Why switch?
@@ -98,11 +103,10 @@ The extension currently supports HTTP routing with:
 
 ### What's not supported yet?
 
-Currently, the extension focuses on basic Gateway and HTTPRoute management. Not yet supported:
+The extension now supports comprehensive Gateway and HTTPRoute management, TLS termination, and traffic splitting. Not yet supported:
 - **Policy management**: Security policies, rate limiting, authentication
 - **Resource editing**: You can create and delete but not edit existing resources
 - **Advanced protocols**: TCP, UDP, or gRPC routing (HTTP only)
-- **TLS configuration**: Beyond basic listener setup
 - **Advanced Envoy features**: EnvoyProxy custom resources or patches
 
 ## Common Questions
@@ -137,7 +141,19 @@ The extension is doing real Kubernetes operations, which can take a moment. Look
 
 ### The tabs don't fit on my screen
 
-The extension now includes responsive design with scrollable tabs. When there are too many tabs for your screen width, you'll see left/right arrow buttons to scroll through them. This works on mobile devices and narrow windows automatically.
+The extension includes responsive design with scrollable tabs. With the new consolidated Dashboard (reducing from 7 to 6 tabs), there's more space for each tab. When tabs don't fit your screen width, you'll see left/right arrow buttons to scroll through them. This works on mobile devices and narrow windows automatically.
+
+### What's new about the Dashboard?
+
+The Dashboard consolidates what used to be separate Resources and Deployment Status tabs into a single comprehensive view:
+
+- **System Overview**: See counts and health status for all your Gateways, HTTP Routes, and Services at a glance
+- **Health Monitoring**: Intelligent status detection with color-coded alerts (healthy/warning/critical) 
+- **Collapsible Sections**: Expand or collapse Resource Relationships and Deployment Status sections as needed
+- **Unified Management**: All resource actions (view YAML, delete, refresh) accessible from one place
+- **Better Organization**: Related functionality grouped logically with professional Material-UI design
+
+This reduces navigation and provides a more intuitive overview of your entire system state.
 
 ## What Else Can I Do?
 
@@ -150,7 +166,7 @@ The extension is perfect for basic HTTP routing scenarios in development and lea
 - **Learn routing patterns** you can apply in any Kubernetes environment
 - **Prototype basic configurations** before production deployment
 
-However, production environments typically need additional features not yet supported like security policies, rate limiting, and advanced traffic management.
+However, production environments typically need additional features not yet supported like security policies, rate limiting, and advanced traffic management policies.
 
 ### What if I need to modify existing resources?
 
@@ -175,11 +191,10 @@ However, for complex production scenarios requiring policies and advanced featur
 
 ### What about advanced gateway features?
 
-The extension currently focuses on foundational Gateway and HTTPRoute management. For advanced features like:
+The extension now provides comprehensive Gateway and HTTPRoute management, TLS termination with certificate management, traffic splitting capabilities, and synthetic traffic generation with performance testing. For additional advanced features like:
 
 - **Security policies** (JWT, authentication, authorization)
 - **Rate limiting** and traffic policies
-- **Advanced TLS configuration**
 - **Protocol routing** beyond HTTP
 - **EnvoyProxy custom resources**
 
@@ -193,7 +208,7 @@ Consider using kubectl, Helm, or other tools when you need:
 - **Resource editing**: Modifying existing configurations
 - **Production deployments**: Complex multi-environment scenarios
 - **Advanced protocols**: TCP, UDP, or gRPC routing
-- **Complex TLS scenarios**: Certificate management and rotation
+- **Complex TLS scenarios**: Certificate rotation and advanced CA management
 
 The extension excels at basic HTTP routing scenarios and learning Gateway API concepts.
 
