@@ -48,6 +48,7 @@ import { ResourceCard } from "./components/ResourceCard";
 import { ResourceActionDialog } from "./components/ResourceActionDialog";
 import { ResourceVisualization } from "./components/ResourceVisualization";
 import { extractGatewayCardData, extractHTTPRouteCardData } from "./utils/resourceCardHelpers";
+import { CertificateManager } from "./components/CertificateManager";
 
 const ddClient = createDockerDesktopClient();
 
@@ -540,6 +541,7 @@ export function App() {
                 aria-controls="tabpanel-3"
               />
               <Tab label="Testing & Proxy" id="tab-4" aria-controls="tabpanel-4" />
+              <Tab label="TLS Management" id="tab-5" aria-controls="tabpanel-5" />
             </Tabs>
           </Box>
 
@@ -745,6 +747,31 @@ export function App() {
                   </Typography>
                   <HTTPClient />
                 </Box>
+              </>
+            )}
+          </Box>
+
+          {/* TLS Management Tab */}
+          <Box
+            role="tabpanel"
+            hidden={currentTab !== 5}
+            id="tabpanel-5"
+            aria-labelledby="tab-5"
+          >
+            {currentTab === 5 && (
+              <>
+                <Typography variant="h6" gutterBottom>
+                  TLS Certificate Management
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  Generate and manage TLS certificates for secure HTTPS connections.
+                  Create self-signed certificates for testing or manage existing certificates.
+                </Typography>
+                
+                <CertificateManager onCertificateCreated={() => {
+                  // Refresh data when a certificate is created
+                  fetchData();
+                }} />
               </>
             )}
           </Box>

@@ -19,8 +19,9 @@ This guide provides step-by-step instructions to demonstrate the key capabilitie
     *   [Step 3.2: Gateway IP Assignment and Troubleshooting](#step-32-gateway-ip-assignment-and-troubleshooting)
     *   [Step 3.3: Proxy Manager for Advanced Operations](#step-33-proxy-manager-for-advanced-operations)
 5.  [Demo 4: TLS Configuration and HTTPS](#demo-4-tls-configuration-and-https)
-    *   [Step 4.1: HTTPS Gateway with TLS Termination](#step-41-https-gateway-with-tls-termination)
-    *   [Step 4.2: Testing HTTPS Connectivity](#step-42-testing-https-connectivity)
+    *   [Step 4.1: Certificate Management and Infrastructure Setup](#step-41-certificate-management-and-infrastructure-setup)
+    *   [Step 4.2: HTTPS Gateway with TLS Termination](#step-42-https-gateway-with-tls-termination)
+    *   [Step 4.3: Testing HTTPS Connectivity](#step-43-testing-https-connectivity)
 6.  [Demo 5: Monitoring and Observability](#demo-5-monitoring-and-observability)
     *   [Step 5.1: Gateway and HTTPRoute Status Monitoring](#step-51-gateway-and-httproute-status-monitoring)
     *   [Step 5.2: Deployment Status and Troubleshooting](#step-52-deployment-status-and-troubleshooting)
@@ -36,12 +37,13 @@ Before starting the demos, ensure you have the following components properly con
     *   Enable Kubernetes: Docker Desktop → Settings → Kubernetes → Enable Kubernetes
     *   Ensure adequate resource allocation (4GB RAM minimum recommended)
 *   **Envoy Gateway Extension**: Latest version from Docker Desktop Extension Marketplace (v0.6.0+)
-    *   The extension features a modern responsive tabbed interface with 5 main sections:
+    *   The extension features a modern responsive tabbed interface with 6 main sections:
         - **Resources**: Enhanced visual resource cards, relationship visualization, and resource management actions
         - **Gateway Management**: Gateway creation and configuration
         - **HTTPRoute Management**: HTTPRoute creation and routing rules
         - **Deployment Status**: Real-time deployment monitoring
         - **Testing & Proxy**: Integrated HTTP testing and kubectl proxy management for seamless endpoint validation
+        - **TLS Management**: Complete certificate lifecycle management with intelligent prerequisite detection and automated cert-manager installation
 
 ### 2. LoadBalancer Configuration (Critical)
 The extension offers to configure MetalLB for Gateway IP assignment in Docker Desktop environments if it does not detect an exisiting load balancer:
@@ -403,81 +405,174 @@ The Proxy Manager tab provides kubectl proxy lifecycle management for advanced d
 
 ## Demo 4: TLS Configuration and HTTPS
 
-This demo explores configuring secure HTTPS endpoints using Envoy Gateway's TLS termination capabilities through the extension's interface.
+This demo showcases the extension's comprehensive TLS Management capabilities, including intelligent prerequisite detection, automated cert-manager installation, and complete certificate lifecycle management for secure HTTPS endpoints.
 
-### Step 4.1: HTTPS Gateway with TLS Termination
+### Step 4.1: Certificate Management and Infrastructure Setup
 
-Configure secure HTTPS endpoints with TLS certificate management using the extension's built-in TLS support.
+The extension provides end-to-end certificate management with automatic prerequisite detection and installation.
 
-1.  **Deploy TLS Template**:
-    *   Navigate to the **Templates** tab
-    *   Locate the **"TLS Termination"** template
-    *   Click **"Apply Template"** to deploy TLS infrastructure
-    *   This template sets up necessary certificates for HTTPS demos
+1.  **Access TLS Management Tab**:
+    *   Navigate to the **TLS Management** tab in the extension
+    *   The extension automatically checks for cert-manager prerequisites
 
-2.  **Create HTTPS Gateway via Extension**:
+2.  **Automatic Prerequisite Detection**:
+    *   **CRD Detection**: Extension checks for `certificates.cert-manager.io` CRD
+    *   **Status Indicators**: Visual feedback showing cert-manager installation status:
+        - ⏳ **Checking**: "Checking for cert-manager..." with loading indicator
+        - ⚠️ **Missing**: "Cert-manager Not Found" with installation option
+        - ✅ **Ready**: "Certificate Management" interface with full functionality
+
+3.  **One-Click Cert-manager Installation** (if needed):
+    *   If cert-manager is not detected, you'll see an installation card:
+        - **Warning Icon**: Clear indication that cert-manager is required
+        - **Version Info**: "Cert-manager is required... Version v1.14.5 will be installed"
+        - **Install Button**: "Install Cert-manager (v1.14.5)" button
+    *   Click **"Install Cert-manager (v1.14.5)"** to begin automated installation:
+        - **Progress Feedback**: "Installing cert-manager v1.14.5... This may take a few moments"
+        - **Toast Notifications**: Real-time installation progress updates
+        - **30-Second Wait**: Automatic wait for CRD registration
+        - **Status Re-check**: Automatic verification of successful installation
+
+4.  **Generate Self-Signed Certificate**:
+    *   Once cert-manager is ready, the interface shows certificate management options
+    *   Click **"Generate Certificate"** to open the certificate creation dialog
+    *   **Certificate Configuration**:
+        - **Certificate Name**: `demo-tls-cert`
+        - **Namespace**: `demo` (matches your services)
+        - **Issuer Type**: Select `Self-Signed (for testing)`
+        - **DNS Names**: Add multiple domains as needed:
+            - `secure.local.demo`
+            - `api.local.demo`
+            - `*.local.demo` (wildcard for subdomains)
+    *   Click **"Generate Certificate"** to create the certificate
+    *   **Status Monitoring**: Watch certificate status transition from `PENDING` → `READY`
+
+5.  **Certificate Status Verification**:
+    *   **Visual Indicators**: Color-coded status chips (READY = green, PENDING = yellow, FAILED = red)
+    *   **Certificate Details**: View namespace, secret name, DNS names, and issuer information
+    *   **Actions Available**: View certificate YAML or delete if needed
+
+### Step 4.2: HTTPS Gateway with TLS Termination
+
+Create secure HTTPS endpoints using the certificates generated in the TLS Management tab.
+
+1.  **Create HTTPS Gateway with Certificate Integration**:
     *   Navigate to **Gateway Management** tab
     *   Click **"+ Create Gateway"**
     *   **Basic Configuration**:
         - **Gateway Name**: `secure-gateway`
         - **Namespace**: `demo`
         - **Gateway Class**: `envoy-gateway`
-    
-3.  **Configure HTTPS Listener**:
-    *   In the Gateway creation form, configure listeners:
+
+2.  **Configure HTTPS Listener with Certificate Selection**:
+    *   Add a new listener or modify the default one:
     *   **HTTPS Listener Settings**:
         - **Name**: `https-listener`
         - **Port**: `443`
-        - **Protocol**: `HTTPS` (select from dropdown)
-        - **TLS Mode**: `Terminate`
-        - **Certificate Name**: Enter certificate name from template
-        - **Hostname**: `secure.local.demo` (optional)
+        - **Protocol**: Select `HTTPS` from dropdown
+        - **TLS Mode**: Select `Terminate`
+    *   **Certificate Selection** (Enhanced Integration):
+        - **Certificate Secret**: Dropdown shows available certificates from TLS Management tab
+        - Select `demo-tls-cert-tls` (the secret created by your certificate)
+        - **Visual Indicators**: Certificates show status (Ready/Pending) with security icons
+        - **Quick Access**: "Manage Certificates" button opens TLS Management directly
 
-4.  **Create HTTPS HTTPRoute**:
-    *   After Gateway creation, create HTTPRoute:
+3.  **Alternative Certificate Management from Gateway Form**:
+    *   **Integrated Workflow**: Click the security icon next to certificate selection
+    *   **Direct Access**: Opens TLS Management dialog within Gateway creation
+    *   **Seamless Experience**: Create certificates without leaving Gateway configuration
+
+4.  **Complete Gateway Creation**:
+    *   **Route Configuration**: Set `Allowed Routes From` to `Same`
+    *   **Route Kinds**: Ensure `HTTPRoute` is selected
+    *   Click **"Create Gateway"** and monitor creation progress
+    *   **Expected Status**: Gateway transitions to `Ready` with assigned IP
+
+5.  **Create HTTPS HTTPRoute**:
+    *   Navigate to **HTTPRoute Management** tab
+    *   Click **"+ Create HTTPRoute"**
     *   **Route Configuration**:
         - **Route Name**: `secure-echo-route`
         - **Parent Gateway**: `secure-gateway`
-        - **Hostname**: `secure.local.demo`
-        - **Path**: `/` (PathPrefix)
+        - **Hostname**: `secure.local.demo` (matches certificate DNS names)
+        - **Path Matching**: PathPrefix `/`
         - **Backend Service**: `echo-service`
         - **Port**: `80`
 
-### Step 4.2: Testing HTTPS Connectivity
+### Step 4.3: Testing HTTPS Connectivity
 
-Verify HTTPS functionality using the extension's HTTP testing capabilities and external tools.
+Test HTTPS functionality using the extension's enhanced HTTP testing capabilities with TLS support.
 
-1.  **Using Extension Testing & Proxy Tab**:
+1.  **Advanced HTTPS Testing with TLS Options**:
     *   Navigate to **Testing & Proxy** tab
-    *   **Test HTTPS Endpoint**:
+    *   **Configure HTTPS Request**:
         - **URL**: `https://<GATEWAY_HTTPS_IP>/` (use the secure gateway's IP)
         - **Method**: `GET`
         - **Headers**: Add `Host: secure.local.demo` if using hostname
-    *   Click **"Send Request"** and verify successful HTTPS response
+    *   **TLS Configuration Options** (Enhanced in v0.6.0):
+        - **Expand TLS Options accordion** for advanced HTTPS testing
+        - **Verify SSL**: Toggle to enable/disable certificate verification
+        - **Ignore Certificate Errors**: Enable for self-signed certificates
+        - **Client Certificate**: Optional client certificate for mutual TLS
+        - **CA Certificate**: Custom CA for certificate validation
+    *   Click **"Send Request"** and examine HTTPS response
 
-2.  **External Testing with cURL**:
+2.  **Certificate Testing Scenarios**:
+    *   **Self-Signed Certificate Test**:
+        - Enable **"Ignore Certificate Errors"** for self-signed certificates
+        - Verify successful HTTPS connection with warning indicators
+    *   **Strict Certificate Validation**:
+        - Disable **"Ignore Certificate Errors"** to test certificate validation
+        - Observe certificate validation errors for self-signed certificates
+    *   **Custom CA Testing** (Advanced):
+        - Upload custom CA certificate for validation
+        - Test certificate chain validation
+
+3.  **Enhanced cURL Generation with TLS Options**:
+    *   **Automatic cURL Generation**: Extension generates HTTPS-aware cURL commands
+    *   **TLS Flags Included**: Generated commands include appropriate TLS flags:
+        ```bash
+        # Generated cURL with TLS options
+        curl -k https://172.18.200.2/ \
+          -H "Host: secure.local.demo" \
+          --insecure  # For self-signed certificates
+        ```
+    *   **Copy to Clipboard**: One-click copy of generated HTTPS commands
+
+4.  **HTTPS Response Analysis**:
+    *   **Security Headers**: Examine HTTPS-specific headers and security information
+    *   **TLS Connection Details**: View TLS handshake and certificate information
+    *   **Performance Metrics**: Monitor HTTPS request/response times
+    *   **Error Diagnostics**: Detailed TLS error messages and resolution guidance
+
+5.  **External Testing with cURL**:
     ```bash
     # Test HTTPS endpoint (allow self-signed certificates)
     curl -k https://172.18.200.2/
     
     # Test with hostname
     curl -k -H "Host: secure.local.demo" https://172.18.200.2/
+    
+    # Strict certificate validation (will fail for self-signed)
+    curl https://172.18.200.2/
     ```
 
-3.  **Certificate Verification**:
+6.  **Certificate Verification and Troubleshooting**:
     ```bash
     # Verify certificate information
     openssl s_client -connect 172.18.200.2:443 -servername secure.local.demo -showcerts
     
     # Check certificate details
     echo | openssl s_client -connect 172.18.200.2:443 2>/dev/null | openssl x509 -noout -text
+    
+    # Test certificate expiration
+    echo | openssl s_client -connect 172.18.200.2:443 2>/dev/null | openssl x509 -noout -dates
     ```
 
-4.  **Extension Features for HTTPS Testing**:
-    *   **Built-in cURL Generation**: Use the extension's cURL tab to generate HTTPS commands
-    *   **Request History**: Track HTTPS requests and responses
-    *   **Response Analysis**: Examine HTTPS response headers and body
-    *   **Certificate Troubleshooting**: Monitor Gateway status for TLS-related issues
+7.  **Integration with TLS Management**:
+    *   **Certificate Status Monitoring**: Use TLS Management tab to monitor certificate health
+    *   **Certificate Renewal**: Generate new certificates when needed
+    *   **Multi-Domain Testing**: Test different DNS names from the same certificate
 
 **Expected Results**:
 - HTTPS Gateway shows `Ready` status with assigned IP address
@@ -556,17 +651,19 @@ This comprehensive demo guide demonstrates the full capabilities of the Envoy Ga
 - **Basic Operations**: Gateway and HTTPRoute creation with template deployment
 - **Advanced Routing**: Header matching, method-based routing, and traffic splitting  
 - **Infrastructure Management**: LoadBalancer configuration and proxy management
-- **Security Features**: TLS termination and HTTPS endpoint configuration
+- **Complete TLS Management (v0.6.0)**: Intelligent prerequisite detection, automated cert-manager installation, certificate lifecycle management, and advanced HTTPS testing
 - **Visual Resource Management (v0.6.0)**: Enhanced resource cards, relationship visualization, and interactive management actions
 - **Monitoring & Troubleshooting**: Real-time status monitoring and diagnostic tools
 
-The extension's enhanced tabbed interface provides intuitive visual access to core Envoy Gateway features while maintaining the power and flexibility of the underlying Gateway API. The new v0.6.0 resource visualization transforms resource management from text-based lists to rich, interactive visual experiences with professional card layouts, relationship mapping, and comprehensive resource actions.
+The extension's enhanced tabbed interface provides intuitive visual access to core Envoy Gateway features while maintaining the power and flexibility of the underlying Gateway API. The new v0.6.0 capabilities include a complete TLS management workflow that automatically handles infrastructure prerequisites, provides one-click cert-manager installation, and offers sophisticated certificate lifecycle management. Combined with enhanced resource visualization, this transforms both security and resource management from complex manual processes to streamlined, visual experiences.
 
 ### Next Steps
 
-- **Explore v0.6.0 Features**: Discover the enhanced resource visualization and management capabilities
+- **Explore v0.6.0 TLS Features**: Experience the complete certificate lifecycle management with automated cert-manager installation
+- **Advanced Certificate Management**: Experiment with custom CA issuers and multi-domain certificates
+- **HTTPS Testing**: Utilize the enhanced HTTP client with TLS options for comprehensive security testing
+- **Visual Resource Management**: Leverage the new resource cards and relationship visualization for efficient gateway management
 - **Use GitHub Templates**: Apply additional templates for complex scenarios
 - **Advanced Configuration**: Experiment with Gateway API features through YAML configuration
 - **Operational Excellence**: Review the troubleshooting guide for best practices
 - **Custom Development**: Build custom templates for your specific use cases
-- **Resource Management**: Leverage the new visual resource cards for efficient gateway management

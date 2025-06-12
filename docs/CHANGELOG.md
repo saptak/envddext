@@ -14,9 +14,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Better Workflow**: Proxy management → HTTP testing flow now in single tab for seamless endpoint validation
 - **Maintained Functionality**: All existing features preserved while improving organization and usability
 
-## [0.6.0] - 2025-06-11 "Visual Gateway Management"
+## [0.6.0] - 2025-06-11 "TLS Termination & Visual Gateway Management"
 
-### Added - 🎉 Major Release: Enhanced UI and Resource Management
+### Added - 🎉 Major Release: TLS Termination & Enhanced UI and Resource Management
+
+- **🔐 TLS Termination & Certificate Management (Iteration 5)**:
+    - **Intelligent Prerequisite Management**: Automatic cert-manager CRD detection and installation workflow
+    - **One-Click Infrastructure Setup**: Automated cert-manager v1.14.5 installation with comprehensive error handling and 30-second setup wait
+    - **Complete Certificate Lifecycle**: Generate, view, manage, and delete TLS certificates with intuitive UI
+    - **Self-Signed Certificate Generation**: Automated creation of test certificates with proper CA issuer setup
+    - **Prerequisite Validation**: Smart UI state management that prevents operations until cert-manager is ready
+    - **Enhanced Gateway Creation**: Integrated TLS listener configuration with certificate selection dropdown
+    - **HTTPS Testing Capabilities**: Advanced HTTP client with TLS options, certificate verification controls, and secure connection testing
+    - **TLS Management Tab**: New dedicated interface for certificate operations with installation status monitoring
+    - **Certificate Status Monitoring**: Real-time status indicators (ready, pending, failed) with expiration tracking
+    - **DNS Name Management**: Dynamic multi-domain certificate support with flexible DNS configuration
+    - **Security Indicators**: Professional visual feedback with security icons and system readiness status
+    - **Backend Certificate API**: Complete REST API for certificate operations (/create-certificate, /list-certificates, /delete-certificate) with comprehensive error handling
+    - **Installation Progress Feedback**: Real-time toast notifications and progress indicators during cert-manager setup
 - **🎨 Professional Resource Cards**:
     - Rich visual cards with status indicators, avatars, and detailed Gateway/HTTPRoute information
     - Color-coded status icons (Ready/Warning/Error/Unknown) with comprehensive details
@@ -239,7 +254,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [x] **Kubectl Proxy Manager**: Integrated proxy management with service URL generation
 - [x] **Real-time Monitoring**: Live proxy status and connectivity testing
 
-### Iteration 5: VM Service Backend Architecture ✅ COMPLETED
+### Iteration 5: TLS Termination & Certificate Management ✅ COMPLETED
+- [x] **TLS Certificate Management**: Complete certificate lifecycle with generation, management, and deletion
+- [x] **Self-Signed Certificate Generation**: Automated creation of test certificates with proper CA issuer setup
+- [x] **Cert-manager Integration**: Automatic cert-manager v1.14.5 installation with comprehensive error handling
+- [x] **Enhanced Gateway Creation**: Integrated TLS listener configuration with certificate selection
+- [x] **HTTPS Testing Tools**: Advanced HTTP client with TLS options and certificate verification controls
+- [x] **TLS Management Tab**: Dedicated interface for certificate operations with security indicators
+- [x] **Backend Certificate API**: RESTful endpoints for certificate operations
+
+### Iteration 6: VM Service Backend Architecture ✅ COMPLETED
 - [x] **Complete Architecture Rewrite**: Go backend service in Docker Desktop VM
 - [x] **All Limitations Resolved**: File system, process management, and shell operation restrictions eliminated
 - [x] **Gateway/HTTPRoute Creation**: Native UI creation with backend YAML generation and kubectl operations
@@ -248,8 +272,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [x] **Infrastructure Updates**: VM service configuration, multi-stage Docker build
 
 ### Future Iterations
-- **Iteration 6**: Enhanced UI and Visualization
-- **Iteration 6**: TLS Termination Example
 - **Iteration 7**: Traffic Splitting Example
 - **Iteration 8**: Configuration Forms and Wizards
 - **Iteration 9**: Rate Limiting Example

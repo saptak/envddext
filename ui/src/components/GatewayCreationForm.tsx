@@ -20,10 +20,17 @@ import {
   Alert,
   CircularProgress,
   Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Tooltip,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import SecurityIcon from "@mui/icons-material/Security";
+import InfoIcon from "@mui/icons-material/Info";
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 import {
   GatewayFormData,
@@ -44,6 +51,7 @@ import {
   listGatewayClasses,
   listNamespaceNames,
 } from "../helper/kubernetes";
+import { CertificateManager, Certificate } from "./CertificateManager";
 
 const ddClient = createDockerDesktopClient();
 
@@ -63,6 +71,9 @@ export const GatewayCreationForm: React.FC<GatewayCreationFormProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [certificateDialogOpen, setCertificateDialogOpen] = useState(false);
+  const [selectedListenerIndex, setSelectedListenerIndex] = useState<number | null>(null);
+  const [availableCertificates, setAvailableCertificates] = useState<Certificate[]>([]);
 
   // Available options
   const [gatewayClasses, setGatewayClasses] = useState<string[]>([
@@ -73,7 +84,40 @@ export const GatewayCreationForm: React.FC<GatewayCreationFormProps> = ({
 
   useEffect(() => {
     loadFormOptions();
+    loadAvailableCertificates();
   }, []);
+
+  const loadAvailableCertificates = async () => {
+    try {
+      if (!ddClient?.extension?.host?.cli?.exec) {
+        console.warn("Docker Desktop CLI interface not available for certificate loading");
+        return;
+      }
+
+      const result = await ddClient.extension.host.cli.exec("kubectl", [
+        "get", "certificates", 
+        "--all-namespaces", 
+        "-o", "json"
+      ]);
+
+      if (!result.stderr) {
+        const response = JSON.parse(result.stdout);
+        const certs: Certificate[] = response.items?.map((cert: any) => ({
+          name: cert.metadata.name,
+          namespace: cert.metadata.namespace,
+          secretName: cert.spec.secretName,
+          dnsNames: cert.spec.dnsNames || [],
+          issuer: cert.spec.issuerRef?.name || "unknown",
+          status: cert.status?.conditions?.find((c: any) => c.type === "Ready")?.status === "True" ? "ready" : "pending",
+          expirationDate: cert.status?.expirationTime,
+          createdAt: cert.metadata.creationTimestamp,
+        })) || [];
+        setAvailableCertificates(certs);
+      }
+    } catch (error) {
+      console.error("Error loading certificates:", error);
+    }
+  };
 
   const loadFormOptions = async () => {
     try {
@@ -163,6 +207,32 @@ export const GatewayCreationForm: React.FC<GatewayCreationFormProps> = ({
     }
 
     handleListenerChange(listenerIndex, "allowedRouteKinds", newKinds);
+  };
+
+  const handleOpenCertificateManager = (listenerIndex: number) => {
+    setSelectedListenerIndex(listenerIndex);
+    setCertificateDialogOpen(true);
+  };
+
+  const handleCertificateCreated = (certificate: Certificate) => {
+    // Refresh available certificates
+    loadAvailableCertificates();
+    
+    // Auto-fill the certificate name if a listener is selected
+    if (selectedListenerIndex !== null) {
+      handleListenerChange(selectedListenerIndex, "certificateName", certificate.secretName);
+      if (certificate.namespace !== formData.namespace) {
+        handleListenerChange(selectedListenerIndex, "certificateNamespace", certificate.namespace);
+      }
+    }
+    
+    setCertificateDialogOpen(false);
+  };
+
+  const getAvailableCertificatesForNamespace = (namespace: string) => {
+    return availableCertificates.filter(cert => 
+      cert.namespace === namespace || cert.namespace === formData.namespace
+    );
   };
 
   const handleSubmit = async () => {
@@ -415,6 +485,17 @@ export const GatewayCreationForm: React.FC<GatewayCreationFormProps> = ({
 
                   {listener.protocol === "HTTPS" && (
                     <>
+                      <Grid item xs={12}>
+                        <Alert severity="info" icon={<SecurityIcon />} sx={{ mb: 2 }}>
+                          <Typography variant="subtitle2" gutterBottom>
+                            HTTPS Configuration Required
+                          </Typography>
+                          <Typography variant="body2">
+                            HTTPS listeners require TLS certificates. You can use existing certificates or generate new ones.
+                          </Typography>
+                        </Alert>
+                      </Grid>
+
                       <Grid item xs={12} md={4}>
                         <FormControl fullWidth>
                           <InputLabel>TLS Mode</InputLabel>
@@ -440,27 +521,72 @@ export const GatewayCreationForm: React.FC<GatewayCreationFormProps> = ({
 
                       {listener.tlsMode === "Terminate" && (
                         <>
-                          <Grid item xs={12} md={4}>
-                            <TextField
-                              fullWidth
-                              label="Certificate Name"
-                              value={listener.certificateName || ""}
-                              onChange={(e) =>
-                                handleListenerChange(
-                                  index,
-                                  "certificateName",
-                                  e.target.value,
-                                )
-                              }
-                              error={hasFieldError(
-                                validationErrors,
-                                `listeners[${index}].certificateName`,
+                          <Grid item xs={12}>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
+                              <Typography variant="subtitle2">
+                                TLS Certificate Configuration
+                              </Typography>
+                              <Tooltip title="Manage certificates for TLS termination">
+                                <IconButton 
+                                  size="small" 
+                                  onClick={() => handleOpenCertificateManager(index)}
+                                  color="primary"
+                                >
+                                  <SecurityIcon />
+                                </IconButton>
+                              </Tooltip>
+                            </Box>
+                          </Grid>
+
+                          <Grid item xs={12} md={8}>
+                            <FormControl fullWidth>
+                              <InputLabel>Certificate Secret</InputLabel>
+                              <Select
+                                value={listener.certificateName || ""}
+                                onChange={(e) =>
+                                  handleListenerChange(
+                                    index,
+                                    "certificateName",
+                                    e.target.value,
+                                  )
+                                }
+                                label="Certificate Secret"
+                                error={hasFieldError(
+                                  validationErrors,
+                                  `listeners[${index}].certificateName`,
+                                )}
+                              >
+                                {getAvailableCertificatesForNamespace(formData.namespace).map((cert) => (
+                                  <MenuItem key={`${cert.namespace}-${cert.secretName}`} value={cert.secretName}>
+                                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, width: "100%" }}>
+                                      <SecurityIcon 
+                                        fontSize="small" 
+                                        color={cert.status === "ready" ? "success" : "warning"} 
+                                      />
+                                      <Box sx={{ flexGrow: 1 }}>
+                                        <Typography variant="body2">{cert.secretName}</Typography>
+                                        <Typography variant="caption" color="text.secondary">
+                                          DNS: {cert.dnsNames.join(", ")} • Status: {cert.status}
+                                        </Typography>
+                                      </Box>
+                                    </Box>
+                                  </MenuItem>
+                                ))}
+                                <MenuItem value="">
+                                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                    <AddIcon fontSize="small" />
+                                    <Typography variant="body2" color="primary">
+                                      Generate new certificate...
+                                    </Typography>
+                                  </Box>
+                                </MenuItem>
+                              </Select>
+                              {hasFieldError(validationErrors, `listeners[${index}].certificateName`) && (
+                                <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
+                                  {getFieldError(validationErrors, `listeners[${index}].certificateName`)}
+                                </Typography>
                               )}
-                              helperText={getFieldError(
-                                validationErrors,
-                                `listeners[${index}].certificateName`,
-                              )}
-                            />
+                            </FormControl>
                           </Grid>
 
                           <Grid item xs={12} md={4}>
@@ -475,7 +601,20 @@ export const GatewayCreationForm: React.FC<GatewayCreationFormProps> = ({
                                   e.target.value,
                                 )
                               }
+                              helperText="Leave empty to use same namespace as Gateway"
                             />
+                          </Grid>
+
+                          <Grid item xs={12}>
+                            <Button
+                              variant="outlined"
+                              startIcon={<SecurityIcon />}
+                              onClick={() => handleOpenCertificateManager(index)}
+                              size="small"
+                              sx={{ mt: 1 }}
+                            >
+                              Manage Certificates
+                            </Button>
                           </Grid>
                         </>
                       )}
@@ -674,6 +813,32 @@ export const GatewayCreationForm: React.FC<GatewayCreationFormProps> = ({
           </Box>
         </Grid>
       </Grid>
+
+      {/* Certificate Management Dialog */}
+      <Dialog 
+        open={certificateDialogOpen} 
+        onClose={() => setCertificateDialogOpen(false)}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <SecurityIcon />
+            <Typography variant="h6">Certificate Management</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <CertificateManager 
+            onCertificateCreated={handleCertificateCreated}
+            selectedNamespace={formData.namespace}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCertificateDialogOpen(false)}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Paper>
   );
 };
