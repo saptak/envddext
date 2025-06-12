@@ -9,7 +9,7 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 - **HTTPRoute Creation & Management**: Create and delete HTTPRoute resources with advanced path matching, header/query parameter support, and backend service configuration
 - **LoadBalancer Management**: Robust MetalLB integration, configuration (including auto-detection), and accurate real-time status monitoring
 - **Reliable Proxy Management**: Process control with PID tracking and proper cleanup
-- **Responsive Tabbed Interface**: Organized UI with Overview, Templates, Gateway Management, HTTPRoute Management, HTTP Testing, and Proxy Manager tabs with horizontal scrolling support
+- **Responsive Tabbed Interface**: Organized UI with Resources, Gateway Management, HTTPRoute Management, Deployment Status, and Testing & Proxy tabs with horizontal scrolling support
 - **GitHub Templates Integration**: Apply basic HTTP routing templates directly from GitHub repositories
 - **HTTP Testing Tools**: Built-in HTTP client for testing routes with request/response display
 - **Kubectl Proxy Manager**: Integrated proxy management for accessing Kubernetes services
@@ -47,21 +47,13 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 - Real-time status monitoring for all resources
 - Visual feedback for resource creation and deletion
 
-### 🧪 HTTP Testing Tab
-- Built-in HTTP client for testing deployed routes
-- Support for all HTTP methods (GET, POST, PUT, DELETE, etc.)
-- Request/response display with syntax highlighting
-- cURL command generation and copy functionality
-- Request history and replay capabilities
-- Custom headers and request body support
-
-### 🔧 Proxy Manager Tab
-- Integrated kubectl proxy management
-- One-click proxy start/stop functionality
-- Service URL generator for easy access
-- Quick access to common service endpoints
-- Real-time proxy status monitoring
-- Direct integration with HTTP testing tools
+### 🧪 Testing & Proxy Tab
+- **Proxy Manager**: Integrated kubectl proxy management with one-click start/stop functionality
+- **HTTP Testing**: Built-in HTTP client for testing deployed routes with all HTTP methods
+- **Request/Response Display**: Syntax highlighting and comprehensive response analysis
+- **cURL Generation**: Automatic cURL command generation and copy functionality
+- **Request History**: Save and replay previous requests for easy testing
+- **Service Integration**: Direct proxy-to-testing workflow for seamless endpoint validation
 
 ### ⚖️ LoadBalancer Manager
 - MetalLB LoadBalancer controller integration
@@ -140,20 +132,14 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 - **Responsive Design**: Scrollable tabs for narrow screens and mobile devices
 - **Improved Navigation**: Auto-scrolling tabs with navigation arrows when needed
 
-#### HTTP Testing Tools (Iteration 4 ✅)
+#### Testing & Proxy Tools (Iteration 4 ✅) - Consolidated for Better UX
+- **Integrated Proxy Management**: Start/stop kubectl proxy directly from the UI with PID tracking
 - **Built-in HTTP Client**: Comprehensive HTTP testing interface with support for all methods
-- **Request/Response Display**: Syntax-highlighted request and response viewing
+- **Request/Response Display**: Syntax-highlighted request and response viewing with detailed analysis
 - **cURL Command Generation**: Automatic cURL command generation and copy functionality
-- **Request History**: Save and replay previous requests for easy testing
-- **Custom Headers**: Support for custom headers and request body configuration
-- **Tabbed Interface**: Organized tabs for Request, Response, History, and cURL commands
-
-#### Kubectl Proxy Manager (Iteration 4 ✅)
-- **Integrated Proxy Management**: Start/stop kubectl proxy directly from the UI
-- **Service URL Generator**: Generate proxy URLs for Kubernetes services
-- **Quick Access Endpoints**: Pre-configured common service endpoints
-- **Real-time Status**: Live proxy status monitoring and connectivity testing
-- **HTTP Client Integration**: Direct integration with HTTP testing tools
+- **Request History**: Save and replay previous requests for easy testing workflows
+- **Service Integration**: Seamless proxy-to-testing workflow for endpoint validation
+- **Unified Interface**: Combined proxy management and HTTP testing in single tab for improved workflow
 
 #### Enhanced UI and Resource Management (Iteration 4 ✅) - **v0.6.0 Complete - June 11, 2025**
 - **Professional Resource Cards**: Rich visual cards with status indicators, avatars, detailed Gateway/HTTPRoute information
