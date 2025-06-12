@@ -5,6 +5,15 @@ All notable changes to the Envoy Gateway Docker Desktop Extension will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2025-06-11
+
+### Changed - UI/UX Improvements
+- **Tab Consolidation**: Combined HTTP Testing and Proxy Manager into single "Testing & Proxy" tab for improved workflow
+- **Reduced Interface Complexity**: Streamlined from 6 tabs to 5 tabs for cleaner navigation
+- **Improved User Experience**: Logical grouping of related testing functionality in unified interface
+- **Better Workflow**: Proxy management → HTTP testing flow now in single tab for seamless endpoint validation
+- **Maintained Functionality**: All existing features preserved while improving organization and usability
+
 ## [0.6.0] - 2025-06-11 "Visual Gateway Management"
 
 ### Added - 🎉 Major Release: Enhanced UI and Resource Management

@@ -36,13 +36,12 @@ Before starting the demos, ensure you have the following components properly con
     *   Enable Kubernetes: Docker Desktop → Settings → Kubernetes → Enable Kubernetes
     *   Ensure adequate resource allocation (4GB RAM minimum recommended)
 *   **Envoy Gateway Extension**: Latest version from Docker Desktop Extension Marketplace (v0.6.0+)
-    *   The extension features a modern responsive tabbed interface with 6 main sections:
+    *   The extension features a modern responsive tabbed interface with 5 main sections:
         - **Resources**: Enhanced visual resource cards, relationship visualization, and resource management actions
         - **Gateway Management**: Gateway creation and configuration
         - **HTTPRoute Management**: HTTPRoute creation and routing rules
         - **Deployment Status**: Real-time deployment monitoring
-        - **HTTP Testing**: Built-in client for testing endpoints
-        - **Proxy Manager**: Kubectl proxy lifecycle management
+        - **Testing & Proxy**: Integrated HTTP testing and kubectl proxy management for seamless endpoint validation
 
 ### 2. LoadBalancer Configuration (Critical)
 The extension offers to configure MetalLB for Gateway IP assignment in Docker Desktop environments if it does not detect an exisiting load balancer:
@@ -161,8 +160,8 @@ The extension includes a built-in HTTP client for testing Gateway endpoints with
     *   Note the **External IP** assigned by MetalLB (e.g., `172.18.200.1`)
     *   Status should show `Ready` with `Addresses` populated
 
-2.  **Using the Built-in HTTP Testing Tab**:
-    *   Navigate to the **HTTP Testing** tab
+2.  **Using the Built-in Testing & Proxy Tab**:
+    *   Navigate to the **Testing & Proxy** tab
     *   **Configure Request**:
         - **URL**: `http://172.18.200.1/` (or `http://echo.local.demo/` if hostname configured)
         - **Method**: `GET`
@@ -321,11 +320,12 @@ Use the extension's HTTP Testing tab to validate complex routing behavior.
     *   Monitor responses to verify ~80/20 distribution
     *   Use extension's request history to track routing patterns
 
-4.  **Extension HTTP Testing Features**:
+4.  **Extension Testing & Proxy Features**:
+    *   **Proxy Management**: Start/stop kubectl proxy for internal service access
     *   **Request History**: Track and replay previous requests
     *   **Response Display**: View detailed response data including headers and body
     *   **cURL Generation**: Generate equivalent cURL commands for external testing
-    *   **Method/Header Configuration**: Configure HTTP methods and custom headers
+    *   **Unified Workflow**: Seamless proxy setup to HTTP testing workflow
 
 ---
 
@@ -447,8 +447,8 @@ Configure secure HTTPS endpoints with TLS certificate management using the exten
 
 Verify HTTPS functionality using the extension's HTTP testing capabilities and external tools.
 
-1.  **Using Extension HTTP Testing Tab**:
-    *   Navigate to **HTTP Testing** tab
+1.  **Using Extension Testing & Proxy Tab**:
+    *   Navigate to **Testing & Proxy** tab
     *   **Test HTTPS Endpoint**:
         - **URL**: `https://<GATEWAY_HTTPS_IP>/` (use the secure gateway's IP)
         - **Method**: `GET`

@@ -2,13 +2,14 @@
 
 ## Current Status: ✅ v0.6.0 "VISUAL GATEWAY MANAGEMENT" COMPLETE (June 11, 2025)
 
-### Recently Completed: Enhanced UI and Resource Visualization (June 11, 2025) - v0.6.0
+### Recently Completed: Enhanced UI and Tab Consolidation (June 11, 2025) - v0.6.0+
 - ✅ **Professional Resource Cards**: Rich visual cards with status indicators, avatars, and detailed Gateway/HTTPRoute information
 - ✅ **Interactive Resource Visualization**: Card-based layout showing Gateway → HTTPRoute relationships with connection mapping
 - ✅ **Resource Management Actions**: Click-to-delete with confirmation dialogs, view YAML configurations, and refresh capabilities
 - ✅ **Enhanced Visual Design**: Material-UI theming, hover effects, professional styling matching Docker Desktop
 - ✅ **User Feedback Integration**: Complete redesign addressing user feedback for intuitive visual experience
 - ✅ **Gateway/HTTPRoute CRUD**: Create, Read, Delete with enhanced visual feedback (Update planned for future)
+- ✅ **UI/UX Consolidation**: Combined HTTP Testing and Proxy Manager into unified "Testing & Proxy" tab for improved workflow
 
 ### Core Extension Status
 - ✅ **Core Extension Framework**: Complete Docker Desktop extension setup with VM service backend
