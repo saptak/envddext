@@ -539,12 +539,7 @@ export function App() {
                 id="tab-3"
                 aria-controls="tabpanel-3"
               />
-              <Tab label="HTTP Testing" id="tab-4" aria-controls="tabpanel-4" />
-              <Tab
-                label="Proxy Manager"
-                id="tab-5"
-                aria-controls="tabpanel-5"
-              />
+              <Tab label="Testing & Proxy" id="tab-4" aria-controls="tabpanel-4" />
             </Tabs>
           </Box>
 
@@ -709,7 +704,7 @@ export function App() {
             )}
           </Box>
 
-          {/* HTTP Testing Tab */}
+          {/* Testing & Proxy Tab */}
           <Box
             role="tabpanel"
             hidden={currentTab !== 4}
@@ -719,35 +714,37 @@ export function App() {
             {currentTab === 4 && (
               <>
                 <Typography variant="h6" gutterBottom>
-                  HTTP Testing
+                  Testing & Proxy
                 </Typography>
                 <Typography variant="body2" color="text.secondary" paragraph>
-                  Test your deployed Envoy Gateway services with HTTP requests.
-                  Use this tool to verify your routes and gateways are working
-                  correctly.
+                  Test your deployed Envoy Gateway services and manage kubectl proxy connections.
+                  Use these tools to verify your routes and gateways are working correctly.
                 </Typography>
-                <HTTPClient />
-              </>
-            )}
-          </Box>
+                
+                {/* Proxy Manager Section */}
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h6" gutterBottom>
+                    Proxy Manager
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" paragraph>
+                    Manage kubectl proxy connections to access Kubernetes services
+                    directly. Enable proxy to test internal services and APIs.
+                  </Typography>
+                  <ProxyManager />
+                </Box>
 
-          {/* Proxy Manager Tab */}
-          <Box
-            role="tabpanel"
-            hidden={currentTab !== 5}
-            id="tabpanel-5"
-            aria-labelledby="tab-5"
-          >
-            {currentTab === 5 && (
-              <>
-                <Typography variant="h6" gutterBottom>
-                  Proxy Manager
-                </Typography>
-                <Typography variant="body2" color="text.secondary" paragraph>
-                  Manage kubectl proxy connections to access Kubernetes services
-                  directly. Enable proxy to test internal services and APIs.
-                </Typography>
-                <ProxyManager />
+                {/* HTTP Testing Section */}
+                <Box>
+                  <Typography variant="h6" gutterBottom>
+                    HTTP Testing
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" paragraph>
+                    Test your deployed Envoy Gateway services with HTTP requests.
+                    Use this tool to verify your routes and gateways are working
+                    correctly.
+                  </Typography>
+                  <HTTPClient />
+                </Box>
               </>
             )}
           </Box>
