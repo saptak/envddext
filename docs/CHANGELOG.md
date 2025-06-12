@@ -5,7 +5,7 @@ All notable changes to the Envoy Gateway Docker Desktop Extension will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.8.1] - 2025-12-12 "Kubectl Proxy Reliability & Error Handling"
+## [0.8.1] - 2025-06-12 "Kubectl Proxy Reliability & Error Handling"
 
 ### Added - 🔧 Major Reliability & Error Handling Improvements
 

@@ -92,11 +92,11 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 
 ## Current Status
 
-**Latest Update: December 12, 2025** - **v0.8.1 "Kubectl Proxy Reliability & Error Handling" Release Complete!** Major kubectl proxy improvements including enhanced error handling, automatic kubeconfig detection, proper response parsing, and robust process management. Resolves hardcoded path dependencies and Docker VM service communication issues. This builds on v0.8.0's synthetic traffic generation capabilities, consolidated dashboard, v0.7.0's traffic splitting features, and v0.6.0's TLS management to provide a fully reliable testing environment.
+**Latest Update: June 12, 2025** - **v0.8.1 "Kubectl Proxy Reliability & Error Handling" Release Complete!** Major kubectl proxy improvements including enhanced error handling, automatic kubeconfig detection, proper response parsing, and robust process management. Resolves hardcoded path dependencies and Docker VM service communication issues. This builds on v0.8.0's synthetic traffic generation capabilities, consolidated dashboard, v0.7.0's traffic splitting features, and v0.6.0's TLS management to provide a fully reliable testing environment.
 
 ### ✅ Completed Features (Iteration 1-8)
 
-#### Kubectl Proxy Reliability & Error Handling (Iteration 8 ✅ - December 12, 2025)
+#### Kubectl Proxy Reliability & Error Handling (Iteration 8 ✅ - June 12, 2025)
 - **Enhanced Error Handling**: Comprehensive error reporting with detailed backend logs and frontend error propagation
 - **Automatic Kubeconfig Detection**: Dynamic kubeconfig path resolution eliminating hardcoded user paths
 - **Robust Response Parsing**: Proper Docker VM service communication with correct response structure handling
@@ -106,7 +106,7 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 - **Fallback Mechanisms**: Graceful handling of kubeconfig and connectivity issues
 - **User-Friendly Messages**: Clear error messages replacing generic "Unknown error" responses
 
-#### Dashboard Consolidation & UI Enhancement (Previous v0.8.0 ✅ - December 12, 2025)
+#### Dashboard Consolidation & UI Enhancement (Previous v0.8.0 ✅ - June 12, 2025)
 - **Consolidated Dashboard**: Combined Resources and Deployment Status tabs into unified system overview
 - **System Health Monitoring**: Intelligent health detection with color-coded status alerts (healthy/warning/critical)
 - **Overview Cards**: Visual count display for Gateways, HTTP Routes, and Services with status summaries
@@ -116,7 +116,7 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 - **Enhanced User Experience**: Professional dashboard design with Material-UI theming and responsive layout
 - **Real-time Status Integration**: Live updates for both resource status and deployment monitoring
 
-#### Synthetic Traffic Generation & Performance Testing (Iteration 7 ✅ - December 12, 2025)
+#### Synthetic Traffic Generation & Performance Testing (Iteration 7 ✅ - June 12, 2025)
 - **Advanced Traffic Generator**: Comprehensive synthetic traffic generation with configurable RPS (1-1000), duration, HTTP methods, headers, and request bodies
 - **Real-time Metrics Collection**: Live performance monitoring with response times (min/avg/max), success rates, status code distribution, and error tracking
 - **Interactive Visualization**: Professional charts showing response time distribution, RPS trends, and performance analytics with SVG-based rendering
