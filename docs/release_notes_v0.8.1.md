@@ -1,6 +1,6 @@
 # Release Notes v0.8.1 - "Kubectl Proxy Reliability & Error Handling"
 
-**Release Date**: December 12, 2025
+**Release Date**: June 12, 2025
 
 ## Overview
 
