@@ -35,9 +35,9 @@ Before starting the demos, ensure you have the following components properly con
 *   **Docker Desktop**: Version 4.0+ with Kubernetes enabled
     *   Enable Kubernetes: Docker Desktop → Settings → Kubernetes → Enable Kubernetes
     *   Ensure adequate resource allocation (4GB RAM minimum recommended)
-*   **Envoy Gateway Extension**: Latest version from Docker Desktop Extension Marketplace
+*   **Envoy Gateway Extension**: Latest version from Docker Desktop Extension Marketplace (v0.6.0+)
     *   The extension features a modern responsive tabbed interface with 6 main sections:
-        - **Resources**: System overview and quick status
+        - **Resources**: Enhanced visual resource cards, relationship visualization, and resource management actions
         - **Gateway Management**: Gateway creation and configuration
         - **HTTPRoute Management**: HTTPRoute creation and routing rules
         - **Deployment Status**: Real-time deployment monitoring
@@ -202,6 +202,8 @@ The extension includes a built-in HTTP client for testing Gateway endpoints with
     ```
 
 **Success Criteria**: JSON response confirms request routing through Gateway → HTTPRoute → Echo Service, demonstrating successful traffic flow.
+
+**Resource Visualization**: Navigate to the **Resources** tab to see the visual representation of your created Gateway and HTTPRoute with their connection relationships displayed in an intuitive card-based interface.
 
 ---
 
@@ -491,25 +493,32 @@ This final demo covers the extension's monitoring capabilities and operational b
 
 ### Step 5.1: Gateway and HTTPRoute Status Monitoring
 
-The extension provides comprehensive status monitoring for all Gateway API resources.
+The extension provides comprehensive status monitoring for all Gateway API resources through enhanced visual interfaces.
 
-1.  **Gateway Status Dashboard**:
-    *   **Status Conditions**: Real-time condition monitoring
-        - `Accepted`: Gateway configuration accepted
-        - `Programmed`: Envoy configuration applied
-        - `Ready`: Gateway serving traffic
-    *   **Address Assignment**: IP allocation tracking
-    *   **Listener Status**: Per-listener health and configuration
+1.  **Enhanced Resource Cards (v0.6.0)**:
+    *   Navigate to the **Resources** tab to access the new visual resource management interface
+    *   **Gateway Cards**: Display comprehensive information including:
+        - Status indicators with color-coded icons (Ready/Warning/Error)
+        - External IP addresses and LoadBalancer status
+        - Listener configuration (ports, protocols)
+        - Attached route count and connection status
+    *   **HTTPRoute Cards**: Show detailed routing information including:
+        - Parent Gateway connections with visual indicators
+        - Hostname and path configuration
+        - Backend service references and health status
+        - Rule count and routing configuration summary
 
-2.  **HTTPRoute Status Monitoring**:
-    *   **Parent Reference Status**: Gateway attachment verification
-    *   **Backend Reference Status**: Service resolution confirmation
-    *   **Rule Status**: Individual rule evaluation and errors
+2.  **Interactive Resource Visualization**:
+    *   **Connection Flow**: Visual representation showing Gateway → HTTPRoute relationships
+    *   **Status Legend**: Comprehensive legend explaining all visual indicators
+    *   **Resource Actions**: Click-to-view YAML, delete resources, and refresh status
+    *   **Real-time Updates**: Live status updates with visual feedback
 
-3.  **Real-Time Status Updates**:
-    *   **Auto-Refresh**: Configurable status update intervals
-    *   **Status Indicators**: Visual status representations
-    *   **Event Correlation**: Link status changes to Kubernetes events
+3.  **Resource Management Actions**:
+    *   **View YAML Configuration**: Click any resource card to view detailed YAML
+    *   **Delete Resources**: Safe deletion with confirmation dialogs
+    *   **Status Refresh**: Individual and bulk resource status updates
+    *   **Error Diagnostics**: Detailed error messages with resolution guidance
 
 ### Step 5.2: Deployment Status and Troubleshooting
 
@@ -545,16 +554,19 @@ Leverage the extension's troubleshooting tools for operational excellence.
 This comprehensive demo guide demonstrates the full capabilities of the Envoy Gateway Docker Desktop Extension:
 
 - **Basic Operations**: Gateway and HTTPRoute creation with template deployment
-- **Advanced Routing**: Header matching, method-based routing, and traffic splitting
+- **Advanced Routing**: Header matching, method-based routing, and traffic splitting  
 - **Infrastructure Management**: LoadBalancer configuration and proxy management
 - **Security Features**: TLS termination and HTTPS endpoint configuration
+- **Visual Resource Management (v0.6.0)**: Enhanced resource cards, relationship visualization, and interactive management actions
 - **Monitoring & Troubleshooting**: Real-time status monitoring and diagnostic tools
 
-The extension's tabbed interface provides intuitive access to core Envoy Gateway features while maintaining the power and flexibility of the underlying Gateway API. For advanced configurations and detailed technical information, refer to the comprehensive documentation in the `/docs` folder.
+The extension's enhanced tabbed interface provides intuitive visual access to core Envoy Gateway features while maintaining the power and flexibility of the underlying Gateway API. The new v0.6.0 resource visualization transforms resource management from text-based lists to rich, interactive visual experiences with professional card layouts, relationship mapping, and comprehensive resource actions.
 
 ### Next Steps
 
-- Explore additional GitHub templates for complex scenarios
-- Experiment with advanced Gateway API features through YAML configuration
-- Review the troubleshooting guide for operational best practices
-- Build custom templates for your specific use cases
+- **Explore v0.6.0 Features**: Discover the enhanced resource visualization and management capabilities
+- **Use GitHub Templates**: Apply additional templates for complex scenarios
+- **Advanced Configuration**: Experiment with Gateway API features through YAML configuration
+- **Operational Excellence**: Review the troubleshooting guide for best practices
+- **Custom Development**: Build custom templates for your specific use cases
+- **Resource Management**: Leverage the new visual resource cards for efficient gateway management

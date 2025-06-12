@@ -5,27 +5,65 @@ All notable changes to the Envoy Gateway Docker Desktop Extension will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 2025-06-11
+## [0.6.0] - 2025-06-11 "Visual Gateway Management"
 
-### Fixed
+### Added - 🎉 Major Release: Enhanced UI and Resource Management
+- **🎨 Professional Resource Cards**:
+    - Rich visual cards with status indicators, avatars, and detailed Gateway/HTTPRoute information
+    - Color-coded status icons (Ready/Warning/Error/Unknown) with comprehensive details
+    - Interactive elements including Gateway classes, listeners, addresses, attached routes
+    - Professional Material-UI theming with hover effects and Docker Desktop integration
+
+- **🔗 Interactive Resource Visualization**:
+    - **User Feedback Integration**: Complete redesign addressing "ugly and unintuitive" feedback
+    - Card-based layout showing Gateway → HTTPRoute relationships with connection mapping
+    - Visual flow indicators demonstrating traffic routing from Gateways through routes to services
+    - Comprehensive status legend explaining all visual indicators and connection types
+    - Enhanced visual design with gradients, professional styling, and enhanced typography
+
+- **⚙️ Resource Management Actions**:
+    - Click-to-delete resources with confirmation dialogs and detailed warnings
+    - View YAML configurations in formatted, syntax-highlighted dialogs
+    - Individual and bulk resource refresh capabilities
+    - Comprehensive error handling with specific resolution guidance
+    - Success feedback with automatic resource list updates
+
 - **HTTPRoute Creation Form Improvements**:
     - Resolved form not closing automatically after successful HTTPRoute creation. Form now properly calls `onSuccess` callback with constructed HTTPRoute object.
     - Fixed validation errors not clearing when corrected. All form change handlers now properly clear validation errors for the corresponding fields.
     - Removed debug information from UI for production-ready experience (removed namespace loading status, debug logs, and debug UI sections).
     - Fixed TypeScript build error by removing `resourceVersion` field from HTTPRoute metadata construction (not part of interface).
 
-### Added
 - **Responsive Tab Navigation**: 
     - Added horizontal scrolling support for tabs when screen width is insufficient
     - Implemented `variant="scrollable"`, `scrollButtons="auto"`, and `allowScrollButtonsMobile` for Material-UI Tabs component
     - Enhanced mobile and narrow-screen user experience with automatic navigation arrows
 
 ### Changed
-- **UI/UX Enhancements**:
+- **UI/UX Overhaul**:
+    - Resources tab completely redesigned with rich resource cards showing detailed status, configuration, and relationship information
+    - Added comprehensive resource visualization section showing Gateway-HTTPRoute connections
     - HTTPRoute Management tab now provides clean, production-ready interface without debug clutter
     - All validation error states properly reset when users correct input
     - Improved form workflow with automatic closure after successful resource creation
     - Better responsive design across all screen sizes
+
+### Technical Implementation - v0.6.0 Architecture
+- **NEW: Visual Components**:
+    - `ui/src/components/ResourceCard.tsx` - Professional resource cards with rich information display
+    - `ui/src/components/ResourceVisualization.tsx` - **REDESIGNED** Card-based relationship visualization
+    - `ui/src/components/ResourceActionDialog.tsx` - Unified dialog for resource actions
+    - `ui/src/utils/resourceCardHelpers.ts` - Data extraction utilities for meaningful display
+
+- **Enhanced Kubernetes Integration**:
+    - Added `getGatewayYAML` and `getHTTPRouteYAML` functions for configuration viewing
+    - Integrated resource management actions with comprehensive state management
+    - Enhanced error handling and user feedback throughout the interface
+
+- **UI/UX Transformation**:
+    - Complete Resources tab redesign from text-based to visual card interface
+    - Interactive resource visualization replacing basic status displays
+    - Professional theming and responsive design improvements
 
 ## [0.5.1] - 2025-06-08
 

@@ -1697,3 +1697,79 @@ export const checkGatewayCompatibility = async (
     };
   }
 };
+
+/**
+ * Get Gateway YAML representation
+ * @param ddClient Docker Desktop client
+ * @param namespace Gateway namespace
+ * @param name Gateway name
+ * @returns YAML string or error
+ */
+export const getGatewayYAML = async (
+  ddClient: v1.DockerDesktopClient,
+  namespace: string,
+  name: string,
+): Promise<{ yaml?: string; error?: string }> => {
+  try {
+    const output = await ddClient.extension.host?.cli.exec("kubectl", [
+      "get",
+      "gateway",
+      "-n",
+      namespace,
+      name,
+      "-o",
+      "yaml",
+    ]);
+
+    if (output?.stderr && output.stderr.includes("Error:")) {
+      return {
+        error: output.stderr,
+      };
+    }
+
+    return { yaml: output?.stdout || "" };
+  } catch (error: any) {
+    console.error("Error getting Gateway YAML:", error);
+    return {
+      error: typeof error === "string" ? error : JSON.stringify(error, null, 2),
+    };
+  }
+};
+
+/**
+ * Get HTTPRoute YAML representation
+ * @param ddClient Docker Desktop client
+ * @param namespace HTTPRoute namespace
+ * @param name HTTPRoute name
+ * @returns YAML string or error
+ */
+export const getHTTPRouteYAML = async (
+  ddClient: v1.DockerDesktopClient,
+  namespace: string,
+  name: string,
+): Promise<{ yaml?: string; error?: string }> => {
+  try {
+    const output = await ddClient.extension.host?.cli.exec("kubectl", [
+      "get",
+      "httproute",
+      "-n",
+      namespace,
+      name,
+      "-o",
+      "yaml",
+    ]);
+
+    if (output?.stderr && output.stderr.includes("Error:")) {
+      return {
+        error: output.stderr,
+      };
+    }
+
+    return { yaml: output?.stdout || "" };
+  } catch (error: any) {
+    console.error("Error getting HTTPRoute YAML:", error);
+    return {
+      error: typeof error === "string" ? error : JSON.stringify(error, null, 2),
+    };
+  }
+};
