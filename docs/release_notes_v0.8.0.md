@@ -1,6 +1,6 @@
 # Release Notes v0.8.0 - Synthetic Traffic Generation & Performance Testing
 
-**Release Date**: December 12, 2025  
+**Release Date**: June 12, 2025  
 **Version**: v0.8.0  
 **Codename**: "Synthetic Traffic Generation & Performance Testing"
 
