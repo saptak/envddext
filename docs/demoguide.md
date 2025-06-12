@@ -44,15 +44,14 @@ Before starting the demos, ensure you have the following components properly con
 *   **Docker Desktop**: Version 4.0+ with Kubernetes enabled
     *   Enable Kubernetes: Docker Desktop → Settings → Kubernetes → Enable Kubernetes
     *   Ensure adequate resource allocation (4GB RAM minimum recommended)
-*   **Envoy Gateway Extension**: Latest version from Docker Desktop Extension Marketplace (v0.7.0+)
-    *   The extension features a modern responsive tabbed interface with 7 main sections:
-        - **Resources**: Enhanced visual resource cards, relationship visualization, and resource management actions
+*   **Envoy Gateway Extension**: Latest version from Docker Desktop Extension Marketplace (v0.8.1+)
+    *   The extension features a modern responsive tabbed interface with 6 main sections:
+        - **Dashboard**: Consolidated system overview with resource cards, health monitoring, and deployment status
         - **Gateway Management**: Gateway creation and configuration
         - **HTTPRoute Management**: HTTPRoute creation and routing rules
-        - **Deployment Status**: Real-time deployment monitoring
-        - **Testing & Proxy**: Integrated HTTP testing and kubectl proxy management for seamless endpoint validation
+        - **Testing & Proxy**: Enhanced HTTP testing with reliable kubectl proxy management, comprehensive error handling, and seamless endpoint validation
         - **TLS Management**: Complete certificate lifecycle management with intelligent prerequisite detection and automated cert-manager installation
-        - **Traffic Splitting**: Comprehensive canary deployment and traffic management with wizard-based setup and advanced controls
+        - **Traffic Splitting**: Comprehensive canary deployment and traffic management with wizard-based setup, advanced controls, and synthetic traffic generation
 
 ### 2. LoadBalancer Configuration (Critical)
 The extension offers to configure MetalLB for Gateway IP assignment in Docker Desktop environments if it does not detect an exisiting load balancer:

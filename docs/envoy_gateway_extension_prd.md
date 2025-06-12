@@ -4,7 +4,7 @@
 - **Document Title**: Envoy Gateway Extension Enhancement PRD
 - **Version**: 1.2
 - **Date**: June 12, 2025
-- **Status**: v0.8.0 Implementation Complete
+- **Status**: v0.8.1 Implementation Complete
 
 ## Executive Summary
 
@@ -16,7 +16,7 @@ This PRD outlines the completed enhancements to the extension that enable users 
 
 Envoy Gateway is a powerful API Gateway built on Envoy Proxy and the Kubernetes Gateway API. However, getting started with Envoy Gateway requires knowledge of Kubernetes, Gateway API resources, and YAML configuration. This creates a high barrier to entry for new users who want to evaluate Envoy Gateway's capabilities.
 
-The Docker Desktop extension now provides comprehensive functionality including Envoy Gateway installation, resource creation and management, guided workflows, templates for common use cases, integrated testing tools, and synthetic traffic generation with performance testing capabilities.
+The Docker Desktop extension now provides comprehensive functionality including Envoy Gateway installation, resource creation and management, guided workflows, templates for common use cases, integrated testing tools with reliable kubectl proxy management, and synthetic traffic generation with performance testing capabilities.
 
 ## Goals ✅ COMPLETED
 

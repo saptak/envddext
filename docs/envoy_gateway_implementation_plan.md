@@ -1,8 +1,18 @@
 # Envoy Gateway Extension Implementation Plan
 
-## Current Status: ✅ v0.8.0 "SYNTHETIC TRAFFIC GENERATION & PERFORMANCE TESTING" COMPLETE (June 12, 2025)
+## Current Status: ✅ v0.8.1 "KUBECTL PROXY RELIABILITY & ERROR HANDLING" COMPLETE (June 12, 2025)
 
-### Recently Completed: Synthetic Traffic Generation & Performance Testing (June 12, 2025) - v0.8.0
+### Recently Completed: Kubectl Proxy Reliability & Error Handling (June 12, 2025) - v0.8.1
+- ✅ **Enhanced Error Handling**: Comprehensive error reporting replacing generic "Unknown error" messages with detailed backend logs and specific frontend feedback
+- ✅ **Automatic Kubeconfig Detection**: Dynamic kubeconfig path resolution using environment variables, eliminating hardcoded user-specific paths
+- ✅ **Robust Response Parsing**: Fixed Docker VM service communication by properly handling response structure where backend responses are wrapped in data property
+- ✅ **Pre-flight Connectivity Testing**: Added kubectl cluster-info validation before proxy startup to ensure cluster accessibility
+- ✅ **Enhanced Process Management**: Reliable kubectl proxy startup with improved PID tracking and proper cleanup mechanisms
+- ✅ **Detailed Logging**: Comprehensive logging throughout proxy lifecycle for troubleshooting and debugging
+- ✅ **Graceful Fallback**: Proper handling of kubeconfig issues and connectivity problems with user-friendly error messages
+- ✅ **Environment Variable Support**: Support for custom KUBECONFIG paths with fallback to Docker Desktop defaults
+
+### Previous Major Release: Synthetic Traffic Generation & Performance Testing (June 12, 2025) - v0.8.0
 - ✅ **Advanced Traffic Generator**: Comprehensive synthetic traffic generation with configurable RPS (1-1000), duration, HTTP methods, headers, and request bodies
 - ✅ **Real-time Metrics Collection**: Live performance monitoring with response times (min/avg/max), success rates, status code distribution, and error tracking
 - ✅ **Interactive Visualization**: Professional charts showing response time distribution, RPS trends, and performance analytics with SVG-based rendering
@@ -46,7 +56,8 @@
 - ✅ **Basic HTTPRoute Management**: Create/delete HTTPRoute resources with routing rule configuration
 - ✅ **LoadBalancer Management**: Robust MetalLB integration with auto-configuration and status monitoring
 - ✅ **Template System**: GitHub-based basic HTTP routing templates
-- ✅ **HTTP Testing Tools**: Built-in client for testing routes
+- ✅ **HTTP Testing Tools**: Built-in client for testing routes with enhanced HTTPS support
+- ✅ **Kubectl Proxy Management**: Reliable proxy startup with enhanced error handling, automatic kubeconfig detection, and robust process lifecycle management  
 - ✅ **Status Monitoring**: Real-time resource status with visual indicators
 
 ### **❌ Current Limitations (Planned for Future Releases)**
