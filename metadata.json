@@ -1,6 +1,6 @@
 {
   "name": "Envoy Gateway",
-  "description": "Manage and observe Envoy Gateway resources with HTTP testing tools, LoadBalancer management, and kubectl proxy management in your local Kubernetes cluster using Docker Desktop.",
+  "description": "Production-ready Docker Desktop extension for managing Envoy Gateway resources with enterprise-grade performance optimizations, JWT authentication, comprehensive security policies, synthetic traffic generation, and advanced testing tools for local Kubernetes clusters.",
   "icon": "docker.svg",
   "vm": {
     "composefile": "docker-compose.yaml",

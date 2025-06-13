@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback, memo } from 'react';
 import {
   Box,
   Typography,
@@ -45,7 +45,7 @@ interface DashboardProps {
   ddClient: any;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({
+export const Dashboard: React.FC<DashboardProps> = memo(({
   gateways,
   routes,
   deployedServices,
@@ -57,8 +57,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [showDeployments, setShowDeployments] = useState(true);
   const [showVisualization, setShowVisualization] = useState(true);
 
-  // Calculate overall system health
-  const getSystemHealth = () => {
+  // Memoized system health calculation
+  const systemHealth = useMemo(() => {
     const totalResources = gateways.length + routes.length;
     if (totalResources === 0) {
       return { status: 'empty', message: 'No resources deployed', color: 'info' };
@@ -87,9 +87,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
     } else {
       return { status: 'critical', message: `${totalFailed} of ${totalResources} resources failed`, color: 'error' };
     }
-  };
+  }, [gateways, routes]);
 
-  const systemHealth = getSystemHealth();
+  // Memoized toggle handlers
+  const handleToggleDeployments = useCallback(() => {
+    setShowDeployments(prev => !prev);
+  }, []);
+
+  const handleToggleVisualization = useCallback(() => {
+    setShowVisualization(prev => !prev);
+  }, []);
 
   return (
     <Box sx={{ p: 3 }}>
@@ -322,4 +329,4 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </Card>
     </Box>
   );
-};
+});

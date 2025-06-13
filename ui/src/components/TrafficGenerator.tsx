@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useInterval } from '../utils/performanceUtils';
 import {
   Box,
   Typography,
@@ -98,15 +99,8 @@ export const TrafficGenerator: React.FC = () => {
   const [headerValue, setHeaderValue] = useState('');
   const [currentTab, setCurrentTab] = useState(0);
 
-  // Auto-refresh metrics when test is running
-  useEffect(() => {
-    if (isRunning) {
-      const interval = setInterval(fetchMetrics, 2000);
-      return () => clearInterval(interval);
-    }
-  }, [isRunning]);
-
-  const fetchMetrics = async () => {
+  // Optimized metrics fetching with memoization
+  const fetchMetrics = useCallback(async () => {
     try {
       const result: any = await ddClient.extension?.vm?.service?.get('/traffic-metrics');
       if (result?.data?.success) {
@@ -117,7 +111,10 @@ export const TrafficGenerator: React.FC = () => {
     } catch (err: any) {
       console.error('Error fetching metrics:', err);
     }
-  };
+  }, [ddClient]);
+
+  // Use optimized interval hook for auto-refresh
+  useInterval(fetchMetrics, isRunning ? 2000 : null, [isRunning]);
 
   const startTrafficTest = async () => {
     try {

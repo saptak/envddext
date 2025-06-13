@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo, useCallback, memo } from "react";
 import {
   Typography,
   Box,
@@ -24,6 +24,7 @@ import {
   Tab,
   Tabs,
 } from "@mui/material";
+import { useInterval, useDebounce, ApiCallManager } from "./utils/performanceUtils";
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 import {
   listEnvoyGateways,
@@ -51,6 +52,8 @@ import { RateLimitTester } from "./components/RateLimitTester";
 import { Dashboard } from "./components/Dashboard";
 import { SecurityPolicyManager } from "./components/SecurityPolicyManager";
 import { TemplateGallery } from "./components/TemplateGallery";
+import ResiliencePolicyManager from "./components/ResiliencePolicyManager";
+import { TutorialManager, TutorialLauncher } from "./components/InteractiveTutorial";
 
 const ddClient = createDockerDesktopClient();
 
@@ -85,8 +88,6 @@ export function App() {
     status: "pending" | "ready" | "failed";
     message?: string;
   } | null>(null);
-  const [statusCheckInterval, setStatusCheckInterval] =
-    React.useState<NodeJS.Timeout | null>(null);
 
   // Add tab state and deployed services tracking
   const [currentTab, setCurrentTab] = React.useState<number>(0);
@@ -120,16 +121,33 @@ export function App() {
     resourceNamespace: "",
   });
 
-  const fetchData = React.useCallback(async () => {
+  // Tutorial state
+  const [tutorialDialogOpen, setTutorialDialogOpen] = React.useState<boolean>(false);
+  const [selectedTutorialId, setSelectedTutorialId] = React.useState<string | undefined>(undefined);
+
+  // Optimized fetchData with caching and error handling
+  const apiManager = useMemo(() => ApiCallManager.getInstance(), []);
+  
+  const fetchData = useCallback(async (forceRefresh = false) => {
     setLoading(true);
     setError(null);
-    const installed = await checkEnvoyGatewayCRDs(ddClient);
-    setIsEnvoyGatewayInstalled(installed);
+    
+    try {
+      // Use cached API calls for better performance
+      const installed = await apiManager.call(
+        'envoy-gateway-crds', 
+        () => checkEnvoyGatewayCRDs(ddClient),
+        forceRefresh
+      );
+      setIsEnvoyGatewayInstalled(installed);
 
-    if (installed) {
-      try {
-        const gwResult = await listEnvoyGateways(ddClient);
-        const rtResult = await listEnvoyHTTPRoutes(ddClient);
+      if (installed) {
+        // Parallel API calls for better performance
+        const [gwResult, rtResult] = await Promise.all([
+          apiManager.call('envoy-gateways', () => listEnvoyGateways(ddClient), forceRefresh),
+          apiManager.call('envoy-routes', () => listEnvoyHTTPRoutes(ddClient), forceRefresh)
+        ]);
+        
         if (gwResult.error) {
           console.error("Gateway error:", gwResult.error);
           setError(gwResult.error);
@@ -138,15 +156,17 @@ export function App() {
           console.error("Route error:", rtResult.error);
           setError(rtResult.error);
         }
+        
         setGateways(gwResult.items || []);
         setRoutes(rtResult.items || []);
-      } catch (e: any) {
-        console.error("Caught error:", e);
-        setError(typeof e === "string" ? e : JSON.stringify(e, null, 2));
       }
+    } catch (e: any) {
+      console.error("Caught error:", e);
+      setError(typeof e === "string" ? e : JSON.stringify(e, null, 2));
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  }, [ddClient]);
+  }, [ddClient, apiManager]);
 
   React.useEffect(() => {
     fetchData();
@@ -175,15 +195,19 @@ export function App() {
     setIsInstalling(false);
   };
 
-  const handleQuickStartOpen = async () => {
+  // Memoized event handlers for better performance
+  const handleQuickStartOpen = useCallback(async () => {
     setIsLoadingTemplates(true);
     setTemplateError(null);
     setTemplateSuccess(false);
     setQuickStartDialogOpen(true);
 
     try {
-      // Fetch templates metadata from GitHub
-      const templatesMetadata = await fetchTemplatesMetadata();
+      // Use cached template fetching
+      const templatesMetadata = await apiManager.call(
+        'templates-metadata',
+        () => fetchTemplatesMetadata()
+      );
       setTemplates(templatesMetadata);
     } catch (error: any) {
       console.error("Error fetching templates:", error);
@@ -196,16 +220,18 @@ export function App() {
 
     setSelectedTemplate(null);
     setTemplateYaml("");
-  };
+  }, [apiManager]);
 
-  const handleQuickStartClose = () => {
+  const handleQuickStartClose = useCallback(() => {
     setQuickStartDialogOpen(false);
-  };
+  }, []);
 
-  // Handle tab change
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+  // Handle tab change with memoization
+  const handleTabChange = useCallback((_event: React.SyntheticEvent, newValue: number) => {
     setCurrentTab(newValue);
-  };
+    // Clear cache for the new tab to ensure fresh data
+    apiManager.clearCache();
+  }, [apiManager]);
 
   const handleTemplateSelect = async (templateId: string) => {
     setTemplateError(null);
@@ -230,8 +256,11 @@ export function App() {
     }
   };
 
-  // Add status checking function
-  const checkTemplateDeploymentStatus = async () => {
+  // Optimized status checking with proper interval management
+  const [isStatusChecking, setIsStatusChecking] = React.useState(false);
+  const [statusCheckInterval, setStatusCheckInterval] = React.useState<NodeJS.Timeout | null>(null);
+  
+  const checkTemplateDeploymentStatus = useCallback(async () => {
     if (!selectedTemplate) return;
 
     try {
@@ -239,10 +268,7 @@ export function App() {
       setDeploymentStatus(status);
 
       if (status.status === "ready" || status.status === "failed") {
-        if (statusCheckInterval) {
-          clearInterval(statusCheckInterval);
-          setStatusCheckInterval(null);
-        }
+        setIsStatusChecking(false);
       }
     } catch (error) {
       console.error("Error checking deployment status:", error);
@@ -250,8 +276,16 @@ export function App() {
         status: "failed",
         message: "Failed to check deployment status",
       });
+      setIsStatusChecking(false);
     }
-  };
+  }, [selectedTemplate, ddClient]);
+
+  // Use optimized interval hook
+  useInterval(
+    checkTemplateDeploymentStatus,
+    isStatusChecking ? 2000 : null,
+    [selectedTemplate]
+  );
 
   // Update handleApplyTemplate
   const handleApplyTemplate = async () => {
@@ -271,9 +305,8 @@ export function App() {
 
       if (result.success) {
         setTemplateSuccess(true);
-        // Start checking deployment status
-        const interval = setInterval(checkTemplateDeploymentStatus, 2000);
-        setStatusCheckInterval(interval);
+        // Start optimized status checking
+        setIsStatusChecking(true);
         // Initial check
         await checkTemplateDeploymentStatus();
 
@@ -328,9 +361,8 @@ export function App() {
 
       if (result.success) {
         setTemplateSuccess(true);
-        // Start checking deployment status
-        const interval = setInterval(checkTemplateDeploymentStatus, 2000);
-        setStatusCheckInterval(interval);
+        // Start optimized status checking
+        setIsStatusChecking(true);
         // Initial check
         await checkTemplateDeploymentStatus();
 
@@ -373,8 +405,8 @@ export function App() {
     }
   };
 
-  // Dialog helper functions
-  const openActionDialog = (
+  // Memoized dialog helper functions for better performance
+  const openActionDialog = useCallback((
     action: "delete" | "viewYaml",
     resourceType: "Gateway" | "HTTPRoute",
     resourceName: string,
@@ -387,16 +419,177 @@ export function App() {
       resourceName,
       resourceNamespace,
     });
-  };
+  }, []);
 
-  const closeActionDialog = () => {
+  const closeActionDialog = useCallback(() => {
     setActionDialog(prev => ({ ...prev, open: false }));
-  };
+  }, []);
 
-  const handleActionSuccess = () => {
-    // Refresh data after successful action
-    fetchData();
-  };
+  const handleActionSuccess = useCallback(() => {
+    // Refresh data after successful action with cache invalidation
+    apiManager.invalidatePattern(/^(envoy-gateways|envoy-routes|envoy-gateway-crds)$/);
+    fetchData(true);
+  }, [apiManager, fetchData]);
+
+  // Memoized tutorial handlers
+  const handleTutorialLaunch = useCallback((tutorialId?: string) => {
+    setSelectedTutorialId(tutorialId);
+    setTutorialDialogOpen(true);
+  }, []);
+
+  const handleTutorialClose = useCallback(() => {
+    setTutorialDialogOpen(false);
+    setSelectedTutorialId(undefined);
+  }, []);
+
+  // Memoized tab content components for better performance
+  const DashboardTab = useMemo(() => 
+    currentTab === 0 ? (
+      <Dashboard
+        gateways={gateways}
+        routes={routes}
+        deployedServices={deployedServices}
+        loading={loading}
+        onRefresh={fetchData}
+        onResourceAction={openActionDialog}
+        ddClient={ddClient}
+      />
+    ) : null,
+    [currentTab, gateways, routes, deployedServices, loading, fetchData, openActionDialog, ddClient]
+  );
+
+  const GatewayManagementTab = useMemo(() =>
+    currentTab === 1 ? (
+      <GatewayManagement
+        onGatewayCreated={handleActionSuccess}
+      />
+    ) : null,
+    [currentTab, handleActionSuccess]
+  );
+
+  const HTTPRouteManagementTab = useMemo(() =>
+    currentTab === 2 ? (
+      <HTTPRouteManagement
+        onHTTPRouteCreated={handleActionSuccess}
+      />
+    ) : null,
+    [currentTab, handleActionSuccess]
+  );
+
+  const TestingProxyTab = useMemo(() =>
+    currentTab === 3 ? (
+      <>
+        <Typography variant="h6" gutterBottom>
+          Testing & Proxy
+        </Typography>
+        <Typography variant="body2" color="text.secondary" paragraph>
+          Test your deployed Envoy Gateway services and manage kubectl proxy connections.
+          Use these tools to verify your routes and gateways are working correctly.
+        </Typography>
+        
+        {/* Proxy Manager Section */}
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h6" gutterBottom>
+            Proxy Manager
+          </Typography>
+          <Typography variant="body2" color="text.secondary" paragraph>
+            Manage kubectl proxy connections to access Kubernetes services
+            directly. Enable proxy to test internal services and APIs.
+          </Typography>
+          <ProxyManager />
+        </Box>
+
+        {/* HTTP Testing Section */}
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h6" gutterBottom>
+            HTTP Testing
+          </Typography>
+          <Typography variant="body2" color="text.secondary" paragraph>
+            Test your deployed Envoy Gateway services with HTTP requests.
+            Use this tool to verify your routes and gateways are working
+            correctly.
+          </Typography>
+          <HTTPClient />
+        </Box>
+
+        {/* Traffic Generator Section */}
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h6" gutterBottom>
+            Synthetic Traffic Generator
+          </Typography>
+          <Typography variant="body2" color="text.secondary" paragraph>
+            Generate synthetic traffic to test traffic splitting, performance,
+            and load balancing configurations. Create realistic load patterns
+            to validate your Gateway and HTTPRoute setups.
+          </Typography>
+          <TrafficGenerator />
+        </Box>
+
+        {/* Rate Limit Testing Section */}
+        <Box>
+          <Typography variant="h6" gutterBottom>
+            Rate Limit Testing
+          </Typography>
+          <Typography variant="body2" color="text.secondary" paragraph>
+            Test your rate limiting policies with burst traffic patterns.
+            Send multiple requests quickly to validate rate limit enforcement,
+            monitor 429 responses, and analyze rate limit headers.
+          </Typography>
+          <RateLimitTester onTestComplete={(summary) => {
+            console.log("Rate limit test completed:", summary);
+          }} />
+        </Box>
+      </>
+    ) : null,
+    [currentTab]
+  );
+
+  const TLSManagementTab = useMemo(() =>
+    currentTab === 4 ? (
+      <>
+        <Typography variant="h6" gutterBottom>
+          TLS Certificate Management
+        </Typography>
+        <Typography variant="body2" color="text.secondary" paragraph>
+          Generate and manage TLS certificates for secure HTTPS connections.
+          Create self-signed certificates for testing or manage existing certificates.
+        </Typography>
+        
+        <CertificateManager onCertificateCreated={handleActionSuccess} />
+      </>
+    ) : null,
+    [currentTab, handleActionSuccess]
+  );
+
+  const TrafficSplittingTab = useMemo(() =>
+    currentTab === 5 ? (
+      <TrafficSplittingManager />
+    ) : null,
+    [currentTab]
+  );
+
+  const SecurityPoliciesTab = useMemo(() =>
+    currentTab === 6 ? (
+      <SecurityPolicyManager onPolicyCreated={handleActionSuccess} />
+    ) : null,
+    [currentTab, handleActionSuccess]
+  );
+
+  const ResiliencePoliciesTab = useMemo(() =>
+    currentTab === 7 ? (
+      <ResiliencePolicyManager />
+    ) : null,
+    [currentTab]
+  );
+
+  const TemplateGalleryTab = useMemo(() =>
+    currentTab === 8 ? (
+      <TemplateGallery 
+        onTemplateApply={() => handleActionSuccess()}
+      />
+    ) : null,
+    [currentTab, handleActionSuccess]
+  );
 
   return (
     <Box sx={{ p: 4 }}>
@@ -508,7 +701,7 @@ export function App() {
               <Button
                 variant="outlined"
                 color="secondary"
-                onClick={fetchData}
+                onClick={() => fetchData(true)}
                 disabled={loading}
               >
                 {loading ? "Refreshing..." : "Refresh Resources"}
@@ -541,208 +734,91 @@ export function App() {
               <Tab label="TLS Management" id="tab-4" aria-controls="tabpanel-4" />
               <Tab label="Traffic Splitting" id="tab-5" aria-controls="tabpanel-5" />
               <Tab label="Security Policies" id="tab-6" aria-controls="tabpanel-6" />
-              <Tab label="Template Gallery" id="tab-7" aria-controls="tabpanel-7" />
+              <Tab label="Resilience Policies" id="tab-7" aria-controls="tabpanel-7" />
+              <Tab label="Template Gallery" id="tab-8" aria-controls="tabpanel-8" />
             </Tabs>
           </Box>
 
-          {/* Dashboard Tab */}
+          {/* Optimized Tab Content - Only renders active tab */}
           <Box
             role="tabpanel"
             hidden={currentTab !== 0}
             id="tabpanel-0"
             aria-labelledby="tab-0"
           >
-            {currentTab === 0 && (
-              <Dashboard
-                gateways={gateways}
-                routes={routes}
-                deployedServices={deployedServices}
-                loading={loading}
-                onRefresh={fetchData}
-                onResourceAction={openActionDialog}
-                ddClient={ddClient}
-              />
-            )}
+            {DashboardTab}
           </Box>
 
-          {/* Gateway Management Tab */}
           <Box
             role="tabpanel"
             hidden={currentTab !== 1}
             id="tabpanel-1"
             aria-labelledby="tab-1"
           >
-            {currentTab === 1 && (
-              <GatewayManagement
-                onGatewayCreated={(gateway) => {
-                  // Refresh the gateways list when a new gateway is created
-                  fetchData();
-                }}
-              />
-            )}
+            {GatewayManagementTab}
           </Box>
 
-          {/* HTTPRoute Management Tab */}
           <Box
             role="tabpanel"
             hidden={currentTab !== 2}
             id="tabpanel-2"
             aria-labelledby="tab-2"
           >
-            {currentTab === 2 && (
-              <HTTPRouteManagement
-                onHTTPRouteCreated={(_httpRoute) => {
-                  // Refresh the routes list when a new HTTPRoute is created
-                  fetchData();
-                }}
-              />
-            )}
+            {HTTPRouteManagementTab}
           </Box>
 
-          {/* Testing & Proxy Tab */}
           <Box
             role="tabpanel"
             hidden={currentTab !== 3}
             id="tabpanel-3"
             aria-labelledby="tab-3"
           >
-            {currentTab === 3 && (
-              <>
-                <Typography variant="h6" gutterBottom>
-                  Testing & Proxy
-                </Typography>
-                <Typography variant="body2" color="text.secondary" paragraph>
-                  Test your deployed Envoy Gateway services and manage kubectl proxy connections.
-                  Use these tools to verify your routes and gateways are working correctly.
-                </Typography>
-                
-                {/* Proxy Manager Section */}
-                <Box sx={{ mb: 4 }}>
-                  <Typography variant="h6" gutterBottom>
-                    Proxy Manager
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" paragraph>
-                    Manage kubectl proxy connections to access Kubernetes services
-                    directly. Enable proxy to test internal services and APIs.
-                  </Typography>
-                  <ProxyManager />
-                </Box>
-
-                {/* HTTP Testing Section */}
-                <Box sx={{ mb: 4 }}>
-                  <Typography variant="h6" gutterBottom>
-                    HTTP Testing
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" paragraph>
-                    Test your deployed Envoy Gateway services with HTTP requests.
-                    Use this tool to verify your routes and gateways are working
-                    correctly.
-                  </Typography>
-                  <HTTPClient />
-                </Box>
-
-                {/* Traffic Generator Section */}
-                <Box sx={{ mb: 4 }}>
-                  <Typography variant="h6" gutterBottom>
-                    Synthetic Traffic Generator
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" paragraph>
-                    Generate synthetic traffic to test traffic splitting, performance,
-                    and load balancing configurations. Create realistic load patterns
-                    to validate your Gateway and HTTPRoute setups.
-                  </Typography>
-                  <TrafficGenerator />
-                </Box>
-
-                {/* Rate Limit Testing Section */}
-                <Box>
-                  <Typography variant="h6" gutterBottom>
-                    Rate Limit Testing
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" paragraph>
-                    Test your rate limiting policies with burst traffic patterns.
-                    Send multiple requests quickly to validate rate limit enforcement,
-                    monitor 429 responses, and analyze rate limit headers.
-                  </Typography>
-                  <RateLimitTester onTestComplete={(summary) => {
-                    console.log("Rate limit test completed:", summary);
-                  }} />
-                </Box>
-              </>
-            )}
+            {TestingProxyTab}
           </Box>
 
-          {/* TLS Management Tab */}
           <Box
             role="tabpanel"
             hidden={currentTab !== 4}
             id="tabpanel-4"
             aria-labelledby="tab-4"
           >
-            {currentTab === 4 && (
-              <>
-                <Typography variant="h6" gutterBottom>
-                  TLS Certificate Management
-                </Typography>
-                <Typography variant="body2" color="text.secondary" paragraph>
-                  Generate and manage TLS certificates for secure HTTPS connections.
-                  Create self-signed certificates for testing or manage existing certificates.
-                </Typography>
-                
-                <CertificateManager onCertificateCreated={() => {
-                  // Refresh data when a certificate is created
-                  fetchData();
-                }} />
-              </>
-            )}
+            {TLSManagementTab}
           </Box>
 
-          {/* Traffic Splitting Tab */}
           <Box
             role="tabpanel"
             hidden={currentTab !== 5}
             id="tabpanel-5"
             aria-labelledby="tab-5"
           >
-            {currentTab === 5 && <TrafficSplittingManager />}
+            {TrafficSplittingTab}
           </Box>
 
-          {/* Security Policies Tab */}
           <Box
             role="tabpanel"
             hidden={currentTab !== 6}
             id="tabpanel-6"
             aria-labelledby="tab-6"
           >
-            {currentTab === 6 && (
-              <SecurityPolicyManager 
-                onPolicyCreated={() => {
-                  // Refresh data when a policy is created
-                  fetchData();
-                }}
-              />
-            )}
+            {SecurityPoliciesTab}
           </Box>
 
-          {/* Template Gallery Tab */}
           <Box
             role="tabpanel"
             hidden={currentTab !== 7}
             id="tabpanel-7"
             aria-labelledby="tab-7"
           >
-            {currentTab === 7 && (
-              <TemplateGallery 
-                onTemplateApply={async (template) => {
-                  // Apply template using the existing handler
-                  await handleApplyTemplateFromUrl(template.yamlUrl);
-                }}
-                onTemplateSelect={(template) => {
-                  // Optional: Handle template selection for preview
-                  console.log("Template selected:", template);
-                }}
-              />
-            )}
+            {ResiliencePoliciesTab}
+          </Box>
+
+          <Box
+            role="tabpanel"
+            hidden={currentTab !== 8}
+            id="tabpanel-8"
+            aria-labelledby="tab-8"
+          >
+            {TemplateGalleryTab}
           </Box>
         </>
       )}
@@ -1061,6 +1137,24 @@ export function App() {
         resourceName={actionDialog.resourceName}
         resourceNamespace={actionDialog.resourceNamespace}
         onSuccess={handleActionSuccess}
+      />
+
+      {/* Tutorial Manager */}
+      <TutorialManager
+        open={tutorialDialogOpen}
+        onClose={() => {
+          setTutorialDialogOpen(false);
+          setSelectedTutorialId(undefined);
+        }}
+        selectedTutorial={selectedTutorialId}
+      />
+
+      {/* Tutorial Launcher - Floating Action Button */}
+      <TutorialLauncher
+        onLaunchTutorial={(tutorialId) => {
+          setSelectedTutorialId(tutorialId);
+          setTutorialDialogOpen(true);
+        }}
       />
     </Box>
   );
