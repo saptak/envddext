@@ -1,6 +1,6 @@
 # Envoy Gateway Docker Desktop Extension
 
-A comprehensive Docker Desktop extension for managing Envoy Gateway resources with an intuitive visual interface, security policy management including advanced rate limiting, template gallery, YAML editor, HTTP testing tools, synthetic traffic generation, and enhanced resource visualization. Built with a robust VM service backend architecture that eliminates Docker Desktop extension limitations.
+A comprehensive Docker Desktop extension for managing Envoy Gateway resources with an intuitive visual interface, JWT authentication, comprehensive security policy management including advanced rate limiting, template gallery, YAML editor, HTTP testing tools, synthetic traffic generation, and enhanced resource visualization. Built with a robust VM service backend architecture that eliminates Docker Desktop extension limitations.
 
 ## Key Features
 
@@ -11,12 +11,13 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 - **LoadBalancer Management**: Robust MetalLB integration, configuration (including auto-detection), and accurate real-time status monitoring
 - **Reliable Kubectl Proxy Management**: Robust proxy startup with enhanced error handling, automatic kubeconfig detection, and proper process lifecycle management
 - **Responsive Tabbed Interface**: Organized UI with consolidated Dashboard, Gateway Management, HTTPRoute Management, Testing & Proxy, TLS Management, Traffic Splitting, Security Policies, and Template Gallery tabs with horizontal scrolling support
-- **Security Policy Management**: Comprehensive security policy management with Basic Authentication, CORS, IP Filtering, Mutual TLS (mTLS), and advanced Rate Limiting configuration
+- **JWT Authentication**: Complete JWT authentication policy management with provider configuration, token testing, and claim-to-header mapping
+- **Security Policy Management**: Comprehensive security policy management with JWT Authentication, Basic Authentication, CORS, IP Filtering, Mutual TLS (mTLS), and advanced Rate Limiting configuration
 - **Advanced Template Gallery**: Professional template gallery with search, filtering, categorization, ratings, and one-click deployment
 - **YAML Editor**: Professional YAML editor with syntax highlighting, validation, templates, and real-time error reporting
 - **Resource Creation Wizard**: Multi-step guided wizard for creating Gateways, HTTPRoutes, and Security Policies with contextual help
 - **GitHub Templates Integration**: Apply basic HTTP routing templates directly from GitHub repositories
-- **HTTP Testing Tools**: Built-in HTTP client for testing routes with request/response display and enhanced 429 rate limiting response handling
+- **HTTP Testing Tools**: Built-in HTTP client for testing routes with JWT authentication support, request/response display, and enhanced 429 rate limiting response handling
 - **Synthetic Traffic Generation**: Advanced traffic generator with real-time metrics, visualization, and traffic splitting validation
 - **Kubectl Proxy Manager**: Integrated proxy management for accessing Kubernetes services
 - **Enhanced Monitoring**: Real-time status tracking with detailed deployment information
@@ -26,7 +27,7 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 ## Current Limitations
 
 - **No Resource Editing**: Can create and delete but not modify existing Gateways or HTTPRoutes
-- **Limited Advanced Policies**: Some advanced traffic policies not yet supported (Basic Auth, CORS, IP Filtering, mTLS, Rate Limiting supported)
+- **Limited Advanced Policies**: Some advanced traffic policies not yet supported (JWT Authentication, Basic Auth, CORS, IP Filtering, mTLS, Rate Limiting supported)
 - **HTTP Only**: Limited to HTTP/HTTPS routing (no TCP, UDP, or gRPC support)
 - **No Advanced Envoy Features**: EnvoyProxy custom resources and patches not supported
 
@@ -88,14 +89,16 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 - IP address pool management and visualization
 - Support for existing MetalLB installations
 
-### 🛡️ Security Policies Tab (New in v0.9.0)
-- **Comprehensive Security Management**: Complete implementation of Basic Authentication, CORS, IP Filtering, and Mutual TLS (mTLS) policies
+### 🛡️ Security Policies Tab (Enhanced in v0.10.0)
+- **JWT Authentication**: Complete JWT authentication policy management with multi-step wizard for provider configuration, claim-to-header mapping, and token testing tools
+- **Comprehensive Security Management**: Complete implementation of JWT Authentication, Basic Authentication, CORS, IP Filtering, Mutual TLS (mTLS), and Rate Limiting policies
 - **Basic Authentication**: Username/password protection with Kubernetes Secret management and realm configuration
 - **CORS Policy Management**: Cross-origin resource sharing configuration with origins, methods, headers, and credentials support
 - **IP Filtering**: Allow/deny lists with CIDR range support, rule-based access control, and visual rule management
 - **Mutual TLS (mTLS)**: Client certificate authentication with CA management, step-by-step wizard, and CRL support
+- **Rate Limiting**: Advanced rate limiting policies with multi-dimensional configuration and burst testing tools
 - **Professional Interface**: Tabbed security policy management with status indicators and comprehensive validation
-- **Testing Integration**: Built-in testing information and cURL command generation for policy validation
+- **Testing Integration**: Built-in testing information, JWT token testing, and cURL command generation for policy validation
 
 ### 🎨 Template Gallery Tab (New in v0.9.0)
 - **Enhanced Template Discovery**: Professional gallery view with search, filtering, categorization, and ratings
@@ -119,9 +122,19 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 
 ## Current Status
 
-**Latest Update: June 13, 2025** - **v0.9.1 "Rate Limiting & Advanced Traffic Control" Release Complete!** Comprehensive rate limiting with multi-dimensional policies (global, per-IP, per-header, per-user), sophisticated burst testing tools, and enhanced HTTP client with professional 429 response handling. Complete service deployment automation and advanced testing integration for enterprise-grade traffic control. Builds on v0.9.0's security policy management, template gallery, YAML editor, and resource creation wizard.
+**Latest Update: June 13, 2025** - **v0.10.0 "JWT Authentication & Policy Management" Release Complete!** Comprehensive JWT authentication with policy management wizard, provider configuration, token testing tools, and HTTP client integration. Complete claim-to-header mapping, JWT token generation, and validation workflows for enterprise-grade authentication. Builds on v0.9.1's rate limiting and v0.9.0's security policy foundation.
 
-### ✅ Completed Features (Iteration 1-9)
+### ✅ Completed Features (Iteration 1-10)
+
+#### JWT Authentication & Policy Management (Iteration 10 ✅ - June 13, 2025)
+- **Comprehensive JWT Policy Management**: Complete JWT authentication policy interface with multi-step wizard for provider configuration
+- **JWT Provider Configuration**: Advanced setup for JWT providers including issuer, JWKS URI, audiences, and claim-to-header mapping
+- **JWT Testing Tools**: Sophisticated JWT token testing with validation, claim extraction, and token generator for testing purposes
+- **Enhanced HTTP Client**: JWT authentication support integrated into HTTP testing tools with configurable token headers and validation
+- **Token Validation**: Client-side JWT parsing with expiration checks, issuer/audience validation, and comprehensive error handling
+- **Professional UI Integration**: Material-UI components with tabbed interface, professional theming, and intuitive JWT workflows
+- **Claim Mapping**: Dynamic JWT claim-to-header mapping functionality for downstream service integration
+- **Security Policy Integration**: Seamless integration with existing Security Policies interface for unified authentication management
 
 #### Rate Limiting & Advanced Traffic Control (Iteration 9 ✅ - June 13, 2025)
 - **Comprehensive Rate Limiting Management**: Complete implementation of rate limiting policies with multi-dimensional configuration (global, per-IP, per-header, per-user)

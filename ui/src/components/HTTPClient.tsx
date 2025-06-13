@@ -31,6 +31,8 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import SecurityIcon from '@mui/icons-material/Security';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import HttpsIcon from '@mui/icons-material/Https';
+import TokenIcon from '@mui/icons-material/Token';
+import VerifiedIcon from '@mui/icons-material/Verified';
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 import {
   HTTPClientState,
@@ -115,6 +117,13 @@ export const HTTPClient: React.FC<HTTPClientProps> = ({
     }));
   };
 
+  const handleJWTAuthChange = (field: keyof typeof state.jwtAuth, value: any) => {
+    setState(prev => ({
+      ...prev,
+      jwtAuth: { ...prev.jwtAuth, [field]: value }
+    }));
+  };
+
   const handleHeaderChange = (index: number, field: keyof HeaderPair, value: string | boolean) => {
     setState(prev => ({
       ...prev,
@@ -154,12 +163,21 @@ export const HTTPClient: React.FC<HTTPClientProps> = ({
     try {
       const headers = HTTPClientService.headerPairsToObject(state.headers);
 
+      // Add JWT authentication header if enabled
+      if (state.jwtAuth.enabled && state.jwtAuth.token) {
+        const authValue = state.jwtAuth.tokenPrefix ? 
+          `${state.jwtAuth.tokenPrefix} ${state.jwtAuth.token}` : 
+          state.jwtAuth.token;
+        headers[state.jwtAuth.headerName] = authValue;
+      }
+
       const request = {
         method: state.method,
         url: state.url.trim(),
         headers,
         body: state.body || undefined,
-        tlsOptions: state.url.startsWith('https://') ? state.tlsOptions : undefined
+        tlsOptions: state.url.startsWith('https://') ? state.tlsOptions : undefined,
+        jwtAuth: state.jwtAuth.enabled ? state.jwtAuth : undefined
       };
 
       const result = await httpService.makeRequest(request);
@@ -200,12 +218,22 @@ export const HTTPClient: React.FC<HTTPClientProps> = ({
 
   const handleCopyAsCurl = async () => {
     const headers = HTTPClientService.headerPairsToObject(state.headers);
+    
+    // Add JWT authentication header if enabled
+    if (state.jwtAuth.enabled && state.jwtAuth.token) {
+      const authValue = state.jwtAuth.tokenPrefix ? 
+        `${state.jwtAuth.tokenPrefix} ${state.jwtAuth.token}` : 
+        state.jwtAuth.token;
+      headers[state.jwtAuth.headerName] = authValue;
+    }
+    
     const request = {
       method: state.method,
       url: state.url,
       headers,
       body: state.body || undefined,
-      tlsOptions: state.url.startsWith('https://') ? state.tlsOptions : undefined
+      tlsOptions: state.url.startsWith('https://') ? state.tlsOptions : undefined,
+      jwtAuth: state.jwtAuth.enabled ? state.jwtAuth : undefined
     };
 
     const curlCommand = generateFormattedCurlCommand(request);
@@ -235,12 +263,22 @@ export const HTTPClient: React.FC<HTTPClientProps> = ({
 
   const currentCurlCommand = (() => {
     const headers = HTTPClientService.headerPairsToObject(state.headers);
+    
+    // Add JWT authentication header if enabled
+    if (state.jwtAuth.enabled && state.jwtAuth.token) {
+      const authValue = state.jwtAuth.tokenPrefix ? 
+        `${state.jwtAuth.tokenPrefix} ${state.jwtAuth.token}` : 
+        state.jwtAuth.token;
+      headers[state.jwtAuth.headerName] = authValue;
+    }
+    
     return generateFormattedCurlCommand({
       method: state.method,
       url: state.url,
       headers,
       body: state.body || undefined,
-      tlsOptions: state.url.startsWith('https://') ? state.tlsOptions : undefined
+      tlsOptions: state.url.startsWith('https://') ? state.tlsOptions : undefined,
+      jwtAuth: state.jwtAuth.enabled ? state.jwtAuth : undefined
     });
   })();
 
@@ -466,6 +504,147 @@ export const HTTPClient: React.FC<HTTPClientProps> = ({
             </Accordion>
           </Box>
         )}
+
+        {/* JWT Authentication Options */}
+        <Box sx={{ mt: 3 }}>
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <TokenIcon color="primary" />
+                <Typography variant="subtitle2">JWT Authentication</Typography>
+                {state.jwtAuth.enabled && (
+                  <Chip 
+                    label="ENABLED" 
+                    size="small" 
+                    color="success" 
+                    icon={<VerifiedIcon />}
+                  />
+                )}
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={state.jwtAuth.enabled}
+                        onChange={(e) => handleJWTAuthChange('enabled', e.target.checked)}
+                        color="primary"
+                      />
+                    }
+                    label="Enable JWT Authentication"
+                  />
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Add JWT token to request headers for authentication
+                  </Typography>
+                </Grid>
+
+                {state.jwtAuth.enabled && (
+                  <>
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        multiline
+                        rows={3}
+                        label="JWT Token"
+                        value={state.jwtAuth.token}
+                        onChange={(e) => handleJWTAuthChange('token', e.target.value)}
+                        placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                        helperText="Enter your JWT token for authentication"
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        label="Header Name"
+                        value={state.jwtAuth.headerName}
+                        onChange={(e) => handleJWTAuthChange('headerName', e.target.value)}
+                        placeholder="Authorization"
+                        helperText="HTTP header name for the token"
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        label="Token Prefix"
+                        value={state.jwtAuth.tokenPrefix}
+                        onChange={(e) => handleJWTAuthChange('tokenPrefix', e.target.value)}
+                        placeholder="Bearer"
+                        helperText="Prefix before the token (e.g., 'Bearer')"
+                      />
+                    </Grid>
+
+                    <Grid item xs={12}>
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={state.jwtAuth.validateToken}
+                            onChange={(e) => handleJWTAuthChange('validateToken', e.target.checked)}
+                            color="primary"
+                          />
+                        }
+                        label="Validate Token Locally"
+                      />
+                      <Typography variant="caption" color="text.secondary" display="block">
+                        Parse and validate JWT structure before sending request
+                      </Typography>
+                    </Grid>
+
+                    {state.jwtAuth.validateToken && (
+                      <>
+                        <Grid item xs={12} md={6}>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            label="Expected Issuer (Optional)"
+                            value={state.jwtAuth.expectedIssuer || ''}
+                            onChange={(e) => handleJWTAuthChange('expectedIssuer', e.target.value)}
+                            placeholder="https://example.auth0.com/"
+                            helperText="Validate the token issuer claim"
+                          />
+                        </Grid>
+
+                        <Grid item xs={12} md={6}>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            label="Expected Audience (Optional)"
+                            value={state.jwtAuth.expectedAudience || ''}
+                            onChange={(e) => handleJWTAuthChange('expectedAudience', e.target.value)}
+                            placeholder="api.example.com"
+                            helperText="Validate the token audience claim"
+                          />
+                        </Grid>
+                      </>
+                    )}
+
+                    <Grid item xs={12}>
+                      <Alert severity="info" icon={<TokenIcon />}>
+                        <Typography variant="subtitle2" gutterBottom>
+                          JWT Token Authentication
+                        </Typography>
+                        <Typography variant="body2">
+                          The JWT token will be added to the <code>{state.jwtAuth.headerName}</code> header 
+                          {state.jwtAuth.tokenPrefix && (
+                            <> with the prefix <code>{state.jwtAuth.tokenPrefix}</code></>
+                          )}. 
+                          {state.jwtAuth.validateToken && (
+                            <> The token will be validated locally before sending the request.</>
+                          )}
+                        </Typography>
+                      </Alert>
+                    </Grid>
+                  </>
+                )}
+              </Grid>
+            </AccordionDetails>
+          </Accordion>
+        </Box>
 
         {state.error && (
           <Alert severity="error" sx={{ mt: 2 }}>

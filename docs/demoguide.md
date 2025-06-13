@@ -37,7 +37,7 @@ Envoy Gateway builds on the powerful Envoy Proxy and integrates with Kubernetes'
 
 * Docker Desktop with Kubernetes enabled
 * Minimum 4GB RAM allocated to Docker Desktop
-* Envoy Gateway Docker Desktop Extension v0.9.1+
+* Envoy Gateway Docker Desktop Extension v0.10.0+
 
 ### Setup Verification
 
@@ -51,7 +51,7 @@ Envoy Gateway builds on the powerful Envoy Proxy and integrates with Kubernetes'
 
 3. **Verify Installation**:
    * Open the Envoy Gateway extension
-   * You should see an 8-tab interface with security policies and enhanced template gallery
+   * You should see an 8-tab interface with Security Policies, Template Gallery, and JWT authentication capabilities
 
 ## Learning Path
 
@@ -63,8 +63,9 @@ This guide is organized as a progressive learning journey:
 4. **[Security with HTTPS](#demo-4-security-with-tls-and-https)** - Add encryption and certificate management
 5. **[Advanced Deployments](#demo-5-advanced-deployments-with-traffic-splitting)** - Implement canary deployments and traffic splitting
 6. **[Performance Testing](#demo-6-performance-testing-and-load-validation)** - Validate your setup under load
-7. **[Security Policies](#demo-7-security-policies-and-access-control)** - Configure enterprise security with authentication, access control, and advanced rate limiting
-8. **[Production Operations](#demo-8-operational-monitoring-and-troubleshooting)** - Monitor and troubleshoot your gateway
+7. **[Security Policies](#demo-7-security-policies-and-access-control)** - Configure enterprise security with JWT authentication, access control, and advanced rate limiting
+8. **[JWT Authentication](#demo-8-jwt-authentication-and-policy-management)** - Implement comprehensive JWT authentication with provider configuration, token testing, and claim mapping
+9. **[Production Operations](#demo-9-operational-monitoring-and-troubleshooting)** - Monitor and troubleshoot your gateway
 
 Each demo builds on the previous one, introducing new concepts while reinforcing what you've learned.
 
@@ -568,8 +569,9 @@ Performance testing with gateways helps you:
 
 ### Understanding Security Policies
 
-Modern applications require comprehensive security policies to protect against threats and ensure compliance. The extension provides five core security policy types:
+Modern applications require comprehensive security policies to protect against threats and ensure compliance. The extension provides six core security policy types:
 
+* **JWT Authentication**: Token-based authentication with provider configuration and claim mapping
 * **Basic Authentication**: Username/password protection with Secret management
 * **CORS Policies**: Cross-origin resource sharing configuration for web applications  
 * **IP Filtering**: Allow/deny lists for network-based access control
@@ -583,7 +585,7 @@ Modern applications require comprehensive security policies to protect against t
    * This provides comprehensive security policy management
 
 2. **Review Security Policy Overview**:
-   * The tab shows all five security policy types
+   * The tab shows all six security policy types including JWT Authentication
    * Each has dedicated management interfaces with professional cards
    * Status indicators show current policy configurations
 
@@ -736,7 +738,173 @@ Modern applications require comprehensive security policies to protect against t
 
 ---
 
-## Demo 8: Operational Monitoring and Troubleshooting
+## Demo 8: JWT Authentication and Policy Management
+
+**What you'll learn**: JWT authentication implementation, provider configuration, token testing, and claim-to-header mapping
+
+### Understanding JWT Authentication
+
+JSON Web Tokens (JWT) provide a modern, stateless authentication mechanism that's perfect for microservices and API architectures. The extension provides comprehensive JWT authentication capabilities:
+
+* **Provider Configuration**: Set up JWT providers with issuer, JWKS URI, and audience validation
+* **Claim-to-Header Mapping**: Map JWT token claims to HTTP headers for downstream services
+* **Token Testing**: Built-in JWT token validation and testing tools
+* **Multi-Provider Support**: Configure multiple JWT providers per policy
+* **Real-time Validation**: Client-side JWT parsing with comprehensive error handling
+
+### Step 8.1: Explore JWT Authentication Interface
+
+1. **Access JWT Management**:
+   * Navigate to the **Security Policies** tab
+   * Find the **JWT Authentication** section (new in v0.10.0)
+   * This provides complete JWT policy management capabilities
+
+2. **Review JWT Authentication Overview**:
+   * Professional cards showing JWT policies and providers
+   * Status indicators for JWT policy configurations
+   * Integration with existing security policy management
+
+### Step 8.2: Configure JWT Provider
+
+1. **Create JWT Authentication Policy**:
+   * Click **"Add JWT Policy"** in the JWT Authentication section
+   * **Policy Name**: `api-jwt-auth`
+   * **Target Type**: `HTTPRoute`
+   * **Target Name**: `echo-route` (from Demo 1)
+   * **Namespace**: `demo`
+
+2. **Configure JWT Provider - Step 1: Basic Information**:
+   * **Provider Name**: `auth0-provider`
+   * **Issuer**: `https://your-domain.auth0.com/`
+   * **Audiences**: `["https://api.example.com", "your-api-identifier"]`
+
+3. **Configure JWT Provider - Step 2: JWKS Configuration**:
+   * **JWKS URI**: `https://your-domain.auth0.com/.well-known/jwks.json`
+   * This endpoint provides the public keys for token validation
+   * The extension will fetch keys automatically during validation
+
+4. **Configure JWT Provider - Step 3: Claim Mapping**:
+   * Map JWT claims to HTTP headers for downstream services:
+     * **Claim**: `sub` → **Header**: `x-user-id`
+     * **Claim**: `email` → **Header**: `x-user-email`
+     * **Claim**: `role` → **Header**: `x-user-role`
+   * Choose whether claims are **Required** or **Optional**
+
+5. **Configure JWT Provider - Step 4: Policy Settings**:
+   * **JWT Required**: `true` (enforce authentication)
+   * **Strip Token**: `false` (pass token to backend)
+   * **Review and Create Policy**
+
+### Step 8.3: Test JWT Authentication
+
+1. **Generate Test JWT Token**:
+   * Navigate to the **Testing & Proxy** tab
+   * Find the **JWT Testing Tools** section (new in v0.10.0)
+   * Click **"JWT Token Generator"**
+
+2. **Create Sample Token**:
+   * **Issuer**: `https://your-domain.auth0.com/`
+   * **Audience**: `https://api.example.com`
+   * **Subject**: `user123`
+   * **Claims**:
+     * `email`: `user@example.com`
+     * `role`: `admin`
+     * `name`: `Test User`
+   * **Expiration**: `1 hour from now`
+   * Click **"Generate JWT Token"**
+
+3. **Test JWT-Protected Endpoint**:
+   * In the **HTTP Testing Client**, configure JWT authentication:
+   * **URL**: Your echo service endpoint
+   * **Method**: `GET`
+   * **JWT Authentication**: Enable
+   * **Token**: Paste the generated JWT token
+   * **Header Name**: `Authorization`
+   * **Token Prefix**: `Bearer `
+   * Click **"Send Request"**
+
+4. **Analyze JWT Token Details**:
+   * Use the **JWT Tester** component to analyze tokens:
+   * **Token Input**: Paste any JWT token
+   * **Validation Settings**:
+     * **Validate Signature**: Enable for production tokens
+     * **Check Expiration**: Enable
+     * **Expected Issuer**: `https://your-domain.auth0.com/`
+     * **Expected Audience**: `https://api.example.com`
+   * Click **"Analyze Token"**
+
+5. **Review Token Analysis**:
+   * **Header**: Algorithm, token type, key ID
+   * **Payload**: Claims including issuer, audience, expiration
+   * **Validation Results**: Signature status, expiration check, issuer/audience validation
+   * **Claim Extraction**: See how claims would be mapped to headers
+
+### Step 8.4: Advanced JWT Testing Workflows
+
+1. **Mock Request Testing**:
+   * Configure mock HTTP requests with JWT authentication
+   * Test different token scenarios (valid, expired, invalid issuer)
+   * Verify claim mapping and header generation
+
+2. **Token Validation Scenarios**:
+   * **Valid Token**: Proper issuer, audience, and unexpired
+   * **Expired Token**: Test expiration handling
+   * **Invalid Issuer**: Wrong issuer URL
+   * **Invalid Audience**: Audience mismatch
+   * **Malformed Token**: Invalid JWT structure
+
+3. **Integration with HTTP Client**:
+   * Use the enhanced HTTP client with JWT authentication support
+   * **JWT Configuration Panel**: Easy token management
+   * **Local Validation**: Client-side token validation before sending
+   * **Request History**: Save and replay JWT-authenticated requests
+
+### Step 8.5: Production JWT Configuration
+
+1. **Real JWT Provider Setup**:
+   * Configure actual JWT providers (Auth0, Okta, Azure AD, etc.)
+   * Use real JWKS endpoints for production scenarios
+   * Set up proper audience and issuer validation
+
+2. **Claim Mapping Best Practices**:
+   * Map essential user information to headers
+   * Common patterns:
+     * `sub` → `x-user-id` (user identifier)
+     * `email` → `x-user-email` (user email)
+     * `role` or `scope` → `x-user-role` (permissions)
+     * `tenant` → `x-tenant-id` (multi-tenancy)
+
+3. **Security Considerations**:
+   * Always validate JWT signatures in production
+   * Use HTTPS for all JWT-protected endpoints
+   * Configure appropriate token expiration times
+   * Monitor for suspicious authentication patterns
+
+### Step 8.6: Multi-Provider JWT Setup
+
+1. **Configure Multiple Providers**:
+   * Add additional JWT providers for different user types
+   * **Provider 2**: Internal service authentication
+   * **Provider 3**: Partner API authentication
+   * Each provider can have different claim mappings
+
+2. **Provider Priority and Fallback**:
+   * Configure provider evaluation order
+   * Test fallback scenarios when primary provider fails
+   * Validate provider-specific claim mapping
+
+### Key Concepts Learned
+
+* **JWT Authentication**: Modern token-based authentication implementation
+* **Provider Configuration**: Setting up JWT issuers, JWKS endpoints, and audiences
+* **Claim Mapping**: Converting JWT claims to HTTP headers for downstream services
+* **Token Testing**: Comprehensive JWT validation and testing workflows
+* **Multi-Provider Support**: Managing multiple JWT providers with different configurations
+* **Security Best Practices**: Production-ready JWT authentication patterns
+
+---
+
+## Demo 9: Operational Monitoring and Troubleshooting
 
 **What you'll learn**: System monitoring, troubleshooting, and operational best practices
 
@@ -748,7 +916,7 @@ Production gateways require:
 * **Comprehensive troubleshooting**: Quickly identify and fix issues
 * **Proactive management**: Prevent problems before they occur
 
-### Step 8.1: System Health Monitoring
+### Step 9.1: System Health Monitoring
 
 1. **Consolidated Dashboard**:
    * Navigate to the **Dashboard** tab
@@ -766,7 +934,7 @@ Production gateways require:
    * **Service Health**: Backend service connectivity
    * **Proxy Status**: kubectl proxy reliability (v0.8.1)
 
-### Step 8.2: Enhanced Troubleshooting (v0.8.1)
+### Step 9.2: Enhanced Troubleshooting (v0.8.1)
 
 1. **Improved Error Reporting**:
    * **Specific Error Messages**: No more "Unknown error"
@@ -784,7 +952,7 @@ Production gateways require:
    * **Event Analysis**: Kubernetes events correlation
    * **Connection Testing**: Validate network connectivity
 
-### Step 8.3: Best Practices
+### Step 9.3: Best Practices
 
 1. **Regular Monitoring**:
    * Review dashboard status regularly
@@ -823,9 +991,19 @@ Congratulations! You've completed a comprehensive tour of the Envoy Gateway Dock
 * **Advanced Deployments**: Traffic splitting, canary deployments, and A/B testing
 * **Performance Validation**: Load testing, metrics collection, and performance analysis
 * **Enterprise Security**: Comprehensive security policies with authentication, access control, and advanced rate limiting
+* **JWT Authentication**: Modern token-based authentication with provider configuration and claim mapping
 * **Operational Excellence**: Monitoring, troubleshooting, and maintenance
 
-### Latest Enhancements (v0.9.1)
+### Latest Enhancements (v0.10.0)
+
+* **Comprehensive JWT Authentication**: Complete JWT authentication policy management with multi-step wizard for provider configuration
+* **JWT Provider Configuration**: Advanced setup for JWT providers including issuer, JWKS URI, audiences, and claim-to-header mapping
+* **JWT Testing Tools**: Sophisticated JWT token testing with validation, claim extraction, and token generator for testing purposes
+* **Enhanced HTTP Client**: JWT authentication support integrated into HTTP testing tools with configurable token headers and validation
+* **Token Validation**: Client-side JWT parsing with expiration checks, issuer/audience validation, and comprehensive error handling
+* **Professional UI Integration**: Material-UI components with tabbed interface, professional theming, and intuitive JWT workflows
+
+### Previous Enhancements (v0.9.1)
 
 * **Advanced Rate Limiting & Traffic Control**: Comprehensive rate limiting with multi-dimensional policies (global, per-IP, per-header, per-user)
 * **Sophisticated Burst Testing**: Advanced testing tools with configurable traffic patterns and real-time analytics
@@ -858,8 +1036,8 @@ The patterns you've learned apply to:
 
 ### Continue Learning
 
-* **Explore Advanced Features**: JWT authentication, circuit breakers, and custom policies
-* **Production Deployment**: Export configurations for production environments
+* **Explore Advanced Features**: Circuit breakers, custom policies, and advanced traffic management
+* **Production Deployment**: Export configurations for production environments  
 * **Integration**: Connect with monitoring and observability tools
 * **Community**: Join the Envoy Gateway community for updates and support
 

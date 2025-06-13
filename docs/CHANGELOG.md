@@ -5,6 +5,62 @@ All notable changes to the Envoy Gateway Docker Desktop Extension will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2025-06-13 "JWT Authentication & Policy Management"
+
+### Added - 🔑 Comprehensive JWT Authentication System
+
+- **🛡️ JWT Policy Management**:
+    - **Multi-step Wizard Interface**: Guided JWT policy creation with provider configuration, claim mapping, and validation setup
+    - **JWT Provider Configuration**: Advanced setup for JWT providers including issuer, JWKS URI, audiences, and authentication parameters
+    - **Claim-to-Header Mapping**: Dynamic mapping of JWT claims to HTTP headers for downstream service integration
+    - **Policy Lifecycle Management**: Complete CRUD operations with professional Material-UI components and status monitoring
+    - **Multi-Provider Support**: Configure multiple JWT providers per policy with individual claim mappings and validation rules
+
+- **🧪 Advanced JWT Testing Tools**:
+    - **Comprehensive Token Testing**: Sophisticated JWT token validation with detailed claim extraction and analysis
+    - **JWT Token Generator**: Built-in token generator for testing with configurable claims, expiration, and authentication parameters
+    - **Real-time Validation**: Client-side JWT parsing with expiration checks, issuer/audience validation, and comprehensive error handling
+    - **Token Analysis Interface**: Professional token breakdown showing header, payload, claims, and detailed validation status
+    - **Mock Request Testing**: Simulate HTTP requests with JWT authentication to test complete authentication workflows
+
+- **🌐 Enhanced HTTP Testing Client**:
+    - **JWT Authentication Integration**: Seamless JWT authentication support integrated into existing HTTP Testing client
+    - **Configurable Authentication**: Support for custom header names, token prefixes, and comprehensive validation options
+    - **Local Token Validation**: Optional client-side JWT validation before sending requests with issuer/audience verification
+    - **Authentication Status Indicators**: Visual feedback for JWT authentication status, configuration, and validation results
+    - **cURL Command Generation**: Complete cURL commands with JWT authentication headers for external testing and integration
+
+### Enhanced - 🎨 Professional User Experience
+
+- **🎯 Security Policies Integration**:
+    - **Unified Security Management**: JWT authentication seamlessly integrates with existing Security Policies interface
+    - **Consistent Policy Lifecycle**: Unified management across all security features (Basic Auth, CORS, IP Filtering, mTLS, Rate Limiting, JWT)
+    - **Professional Material-UI Components**: Consistent theming and design patterns across all JWT authentication features
+    - **Tabbed Interface Organization**: JWT testing organized with Token Testing and Token Generator tabs for optimal workflow
+
+- **🔧 Technical Infrastructure**:
+    - **Enhanced Type System**: Comprehensive TypeScript interfaces for JWT authentication with full type safety
+    - **HTTP Client Architecture**: JWT authentication works alongside existing TLS options without conflicts
+    - **Request History Integration**: JWT authentication settings preserved in HTTP client history for testing workflow continuity
+    - **Error Handling System**: Comprehensive error propagation and user feedback for JWT validation failures and configuration issues
+
+### Technical Implementation
+
+- **New Components**:
+    - `JWTManager.tsx`: Comprehensive JWT policy management with multi-step wizard
+    - `JWTTester.tsx`: Advanced JWT testing tools with token generation and validation
+    - Enhanced `HTTPClient.tsx`: JWT authentication integration with existing HTTP testing workflow
+
+- **Type System Updates**:
+    - `JWTAuthOptions` interface: Complete JWT authentication configuration structure
+    - Enhanced `HTTPRequest` interface: JWT authentication support alongside existing options
+    - JWT policy interfaces: Provider configuration, claim mapping, and validation parameters
+
+- **Integration Architecture**:
+    - JWT authentication integrates with Security Policies tab for unified security management
+    - HTTP Testing client supports both TLS and JWT authentication simultaneously
+    - Token testing tools provide complete authentication workflow validation
+
 ## [0.9.1] - 2025-06-12 "Rate Limiting & Advanced Traffic Control"
 
 ### Added - 🚦 Comprehensive Rate Limiting & Traffic Control

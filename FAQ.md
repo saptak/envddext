@@ -18,12 +18,15 @@ Absolutely! This extension was designed specifically for developers who want API
 - Test your routes and HTTPS endpoints with the built-in HTTP client
 - Generate synthetic traffic with the advanced traffic generator and view real-time performance metrics
 - Validate traffic splitting configurations with load testing and visualization
-- Configure comprehensive security policies including Basic Authentication, CORS, IP Filtering, Mutual TLS, and advanced Rate Limiting
+- Configure comprehensive security policies including JWT Authentication, Basic Authentication, CORS, IP Filtering, Mutual TLS, and advanced Rate Limiting
 - Use the Resource Creation Wizard for guided step-by-step configuration of complex resources
 - Edit YAML configurations with the professional YAML editor including syntax highlighting and validation
 - Browse and deploy templates from the enhanced Template Gallery with search and filtering
 - See real-time status of your Gateways and routes with enhanced visual cards in the consolidated Dashboard
 - Test rate limiting policies with advanced burst testing and real-time analytics
+- Configure JWT authentication with policy management, token testing, and claim mapping
+- Use the comprehensive JWT testing tools with token validation and generation
+- Test HTTP requests with JWT authentication support in the enhanced HTTP client
 - Access everything from an eight-tab responsive interface that works on any screen size
 
 ### I'm already using Kubernetes tools. Why switch?
@@ -108,8 +111,7 @@ The extension currently supports HTTP routing with:
 
 ### What's not supported yet?
 
-The extension now supports comprehensive Gateway and HTTPRoute management, TLS termination, traffic splitting, security policy management, and advanced rate limiting. Not yet supported:
-- **JWT Authentication**: Token-based authentication policies
+The extension now supports comprehensive Gateway and HTTPRoute management, TLS termination, traffic splitting, JWT authentication, comprehensive security policy management, and advanced rate limiting. Not yet supported:
 - **Resource editing**: You can create and delete but not edit existing resources
 - **Advanced protocols**: TCP, UDP, or gRPC routing (HTTP only)
 - **Advanced Envoy features**: EnvoyProxy custom resources or patches
@@ -160,10 +162,11 @@ The Dashboard consolidates what used to be separate Resources and Deployment Sta
 
 This reduces navigation and provides a more intuitive overview of your entire system state.
 
-### What about the new Security Policies features?
+### What about the Security Policies features?
 
-The extension now includes comprehensive security policy management (v0.9.1):
+The extension now includes comprehensive security policy management (v0.10.0):
 
+- **JWT Authentication**: Complete JWT token validation with policy management wizard, provider configuration (issuer, JWKS URI, audiences), claim-to-header mapping, and comprehensive testing tools
 - **Basic Authentication**: Protect routes with username/password authentication, manage credentials via Kubernetes Secrets
 - **CORS Policies**: Configure cross-origin resource sharing with origins, methods, headers, and credentials support
 - **IP Filtering**: Set up allow/deny lists with CIDR range support for network-based access control
@@ -174,7 +177,7 @@ Each security policy type has its own professional interface with real-time vali
 
 ### What about the enhanced user experience features?
 
-Version 0.9.1 includes several major UX improvements:
+Version 0.10.0 includes several major UX improvements:
 
 - **Resource Creation Wizard**: Multi-step guided interface for creating complex Gateways, HTTPRoutes, and Security Policies with contextual help
 - **Advanced YAML Editor**: Professional editor with syntax highlighting, validation, templates, and real-time error reporting
@@ -182,6 +185,30 @@ Version 0.9.1 includes several major UX improvements:
 - **Professional Interface**: All features use Material-UI theming with responsive design and intuitive workflows
 
 These features make complex configurations accessible to users of all experience levels.
+
+### How does JWT authentication work?
+
+The extension now includes comprehensive JWT authentication support (v0.10.0):
+
+- **JWT Policy Management**: Create JWT authentication policies with a multi-step wizard that guides you through provider configuration
+- **Provider Configuration**: Set up JWT providers with issuer URLs, JWKS endpoints, and audience validation
+- **Claim Mapping**: Map JWT token claims to HTTP headers for downstream services (e.g., map `sub` claim to `x-user-id` header)
+- **Token Testing**: Built-in JWT testing tools that validate tokens, extract claims, and test authentication workflows
+- **Token Generator**: Generate sample JWT tokens for testing with configurable claims and expiration
+- **HTTP Client Integration**: Test JWT-protected endpoints directly with the enhanced HTTP client that supports JWT authentication
+
+The JWT testing tools show you exactly how tokens are parsed, what claims are extracted, and whether validation passes or fails with detailed error messages.
+
+### How do I test JWT authentication?
+
+The extension provides multiple ways to test JWT authentication:
+
+1. **JWT Tester Component**: Dedicated testing interface with token validation, claim analysis, and mock request testing
+2. **Token Generator**: Create sample JWT tokens with custom claims for testing purposes
+3. **HTTP Client**: Test real endpoints with JWT authentication using the enhanced HTTP testing client
+4. **Policy Testing**: Validate that your JWT policies are correctly configured and working as expected
+
+All testing tools provide real-time feedback and detailed analysis of token structure, claims, and validation results.
 
 ## What Else Can I Do?
 
@@ -194,7 +221,7 @@ The extension is perfect for basic HTTP routing scenarios in development and lea
 - **Learn routing patterns** you can apply in any Kubernetes environment
 - **Prototype basic configurations** before production deployment
 
-However, production environments typically need additional features not yet supported like JWT authentication and some advanced traffic management policies. The extension now supports comprehensive security policies including Basic Authentication, CORS, IP Filtering, mTLS, and advanced Rate Limiting.
+The extension now supports comprehensive security policies including JWT Authentication, Basic Authentication, CORS, IP Filtering, mTLS, and advanced Rate Limiting, making it suitable for many production scenarios with proper security configurations.
 
 ### What if I need to modify existing resources?
 

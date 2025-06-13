@@ -10,6 +10,16 @@ export interface TLSOptions {
   caCertificate?: string;
 }
 
+export interface JWTAuthOptions {
+  enabled: boolean;
+  token: string;
+  headerName: string;
+  tokenPrefix: string;
+  validateToken: boolean;
+  expectedIssuer?: string;
+  expectedAudience?: string;
+}
+
 export interface HTTPRequest {
   method: HTTPMethod;
   url: string;
@@ -17,6 +27,7 @@ export interface HTTPRequest {
   body?: string;
   timeout?: number;
   tlsOptions?: TLSOptions;
+  jwtAuth?: JWTAuthOptions;
 }
 
 export interface HTTPResponse {
@@ -48,6 +59,7 @@ export interface HTTPClientState {
   response: HTTPResponse | null;
   history: TestResult[];
   tlsOptions: TLSOptions;
+  jwtAuth: JWTAuthOptions;
 }
 
 export interface HeaderPair {
@@ -97,6 +109,16 @@ export interface HTTPTestPreset {
   category: 'health' | 'crud' | 'auth' | 'custom';
 }
 
+export const DEFAULT_JWT_AUTH_OPTIONS: JWTAuthOptions = {
+  enabled: false,
+  token: '',
+  headerName: 'Authorization',
+  tokenPrefix: 'Bearer',
+  validateToken: false,
+  expectedIssuer: undefined,
+  expectedAudience: undefined,
+};
+
 export const DEFAULT_TLS_OPTIONS: TLSOptions = {
   verifySSL: true,
   ignoreCertErrors: false,
@@ -114,7 +136,8 @@ export const DEFAULT_HTTP_CLIENT_STATE: HTTPClientState = {
   error: null,
   response: null,
   history: [],
-  tlsOptions: { ...DEFAULT_TLS_OPTIONS }
+  tlsOptions: { ...DEFAULT_TLS_OPTIONS },
+  jwtAuth: { ...DEFAULT_JWT_AUTH_OPTIONS }
 };
 
 export interface RouteTestingContext {

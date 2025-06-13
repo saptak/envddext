@@ -2,9 +2,9 @@
 
 ## Document Information
 - **Document Title**: Envoy Gateway Extension Enhancement PRD
-- **Version**: 1.2
-- **Date**: June 12, 2025
-- **Status**: v0.9.1 Implementation Complete
+- **Version**: 1.3
+- **Date**: June 13, 2025
+- **Status**: v0.10.0 Implementation Complete
 
 ## Executive Summary
 
@@ -16,7 +16,7 @@ This PRD outlines the completed enhancements to the extension that enable users 
 
 Envoy Gateway is a powerful API Gateway built on Envoy Proxy and the Kubernetes Gateway API. However, getting started with Envoy Gateway requires knowledge of Kubernetes, Gateway API resources, and YAML configuration. This creates a high barrier to entry for new users who want to evaluate Envoy Gateway's capabilities.
 
-The Docker Desktop extension now provides comprehensive functionality including Envoy Gateway installation, resource creation and management, guided workflows, templates for common use cases, integrated testing tools with reliable kubectl proxy management, synthetic traffic generation with performance testing capabilities, comprehensive security policy management with enterprise-grade authentication and access control features, and advanced rate limiting with sophisticated testing tools.
+The Docker Desktop extension now provides comprehensive functionality including Envoy Gateway installation, resource creation and management, guided workflows, templates for common use cases, integrated testing tools with reliable kubectl proxy management, synthetic traffic generation with performance testing capabilities, comprehensive security policy management with JWT authentication, enterprise-grade authentication and access control features, and advanced rate limiting with sophisticated testing tools.
 
 ## Goals ✅ COMPLETED
 
@@ -310,17 +310,26 @@ The Docker Desktop extension now provides comprehensive functionality including 
    - **Burst Testing Tools**: Advanced testing with configurable request count, concurrency, delays, and real-time performance metrics
    - **Rate Limit Header Display**: Automatic detection and formatting of rate limit headers with retry timing guidance
 
+13. **JWT Authentication & Policy Management** ✅ COMPLETED (v0.10.0 - June 13, 2025)
+   - **Comprehensive JWT Policy Management**: Complete JWT authentication policy interface with multi-step wizard for provider configuration
+   - **JWT Provider Configuration**: Advanced setup for JWT providers including issuer, JWKS URI, audiences, and claim-to-header mapping
+   - **JWT Testing Tools**: Sophisticated JWT token testing with validation, claim extraction, and token generator for testing purposes
+   - **Enhanced HTTP Client**: JWT authentication support integrated into HTTP testing tools with configurable token headers and validation
+   - **Token Validation**: Client-side JWT parsing with expiration checks, issuer/audience validation, and comprehensive error handling
+   - **Professional UI Integration**: Material-UI components with tabbed interface, professional theming, and intuitive JWT workflows
+   - **Claim Mapping**: Dynamic JWT claim-to-header mapping functionality for downstream service integration
+   - **Security Policy Integration**: Seamless integration with existing Security Policies interface for unified authentication management
+   - **Multi-Provider Support**: Configure multiple JWT providers per policy with individual claim mappings and validation rules
+   - **Token Generator**: Built-in JWT token generator for testing with configurable claims, expiration, and authentication parameters
+   - **Real-time Validation**: Client-side JWT parsing with comprehensive error handling and detailed validation feedback
+
 ### 📋 Planned Features
 
 1. **Advanced Resource Management**
    - Resource editing and cloning capabilities
    - Bulk operations and template management
 
-2. **JWT Authentication and Advanced Security Policies**
-   - JWT token validation and configuration interfaces
-   - Advanced authentication testing tools
-
-3. **Interactive Tutorials and Documentation**
+2. **Interactive Tutorials and Documentation**
    - Step-by-step guided workflows
    - Contextual help and explanations
 
