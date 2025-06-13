@@ -4,7 +4,7 @@
 - **Document Title**: Envoy Gateway Extension Enhancement PRD
 - **Version**: 1.2
 - **Date**: June 12, 2025
-- **Status**: v0.8.1 Implementation Complete
+- **Status**: v0.9.0 Implementation Complete
 
 ## Executive Summary
 
@@ -16,7 +16,7 @@ This PRD outlines the completed enhancements to the extension that enable users 
 
 Envoy Gateway is a powerful API Gateway built on Envoy Proxy and the Kubernetes Gateway API. However, getting started with Envoy Gateway requires knowledge of Kubernetes, Gateway API resources, and YAML configuration. This creates a high barrier to entry for new users who want to evaluate Envoy Gateway's capabilities.
 
-The Docker Desktop extension now provides comprehensive functionality including Envoy Gateway installation, resource creation and management, guided workflows, templates for common use cases, integrated testing tools with reliable kubectl proxy management, and synthetic traffic generation with performance testing capabilities.
+The Docker Desktop extension now provides comprehensive functionality including Envoy Gateway installation, resource creation and management, guided workflows, templates for common use cases, integrated testing tools with reliable kubectl proxy management, synthetic traffic generation with performance testing capabilities, and comprehensive security policy management with enterprise-grade authentication and access control features.
 
 ## Goals ✅ COMPLETED
 
@@ -126,24 +126,29 @@ The Docker Desktop extension now provides comprehensive functionality including 
    - Test API access with valid and invalid JWTs.
    - (Future: Visualize authentication flow).
 
-8. **Security Policy: Basic Authentication**
-   - Protect routes with basic username/password authentication.
-   - Manage credentials via Kubernetes Secrets.
-   - Test access with and without credentials.
+8. **Security Policy: Basic Authentication** ✅ COMPLETED (v0.9.0)
+   - Protect routes with basic username/password authentication via SecurityPolicy.
+   - Manage credentials via Kubernetes Secrets with automatic secret creation.
+   - Professional UI with realm configuration and testing guidance.
+   - Integration with HTTPRoute and Gateway targets for comprehensive protection.
 
-9. **Security Policy: CORS (Cross-Origin Resource Sharing)**
-   - Configure CORS policies at the Gateway or Route level.
-   - Define allowed origins, methods, headers, and other CORS parameters.
-   - Enable secure cross-domain requests from web applications.
+9. **Security Policy: CORS (Cross-Origin Resource Sharing)** ✅ COMPLETED (v0.9.0)
+   - Configure CORS policies at the Gateway or Route level with comprehensive settings.
+   - Define allowed origins, methods, headers, exposed headers, and credentials support.
+   - Real-time validation and security warnings for CORS configurations.
+   - Professional interface with best practices guidance and testing integration.
 
-10. **Security Policy: IP-based Access Control**
-    - Implement IP allow-lists or deny-lists for specific routes or listeners.
-    - Restrict access based on source IP addresses or CIDR ranges.
+10. **Security Policy: IP-based Access Control** ✅ COMPLETED (v0.9.0)
+    - Implement IP allow-lists or deny-lists with CIDR range support.
+    - Rule-based access control with priority ordering and visual table interface.
+    - Common CIDR templates and comprehensive validation.
+    - Professional rule management with testing and validation capabilities.
 
-11. **Security Policy: Mutual TLS (mTLS) Client Authentication**
-    - Configure Gateway listeners to require client certificates for mTLS.
-    - Manage client CA certificates for validation.
-    - Secure service-to-service or B2B communication requiring strong client authentication.
+11. **Security Policy: Mutual TLS (mTLS) Client Authentication** ✅ COMPLETED (v0.9.0)
+    - Configure Gateway listeners to require client certificates with step-by-step wizard.
+    - Complete PKI setup with CA certificate management and validation.
+    - Professional stepper interface for complex mTLS configuration workflow.
+    - Certificate revocation list (CRL) support and comprehensive security management.
 
 ## User Experience
 
@@ -275,6 +280,19 @@ The Docker Desktop extension now provides comprehensive functionality including 
    - **Backend API**: Robust Go backend with `/start-traffic-test`, `/stop-traffic-test`, and `/traffic-metrics` endpoints
    - **Thread-safe Operations**: Concurrent metrics collection with proper synchronization and graceful test lifecycle management
    - **Comprehensive Analytics**: Status code breakdown, error analysis, historical trending, and detailed performance reports
+
+11. **Security Policies & Enhanced User Experience** ✅ COMPLETED (v0.9.0 - June 12, 2025)
+   - **Comprehensive Security Policy Management**: Complete implementation of Basic Authentication, CORS, IP Filtering, and Mutual TLS (mTLS) policies
+   - **Resource Creation Wizard**: Multi-step guided wizard for creating Gateways, HTTPRoutes, and Security Policies with contextual help and best practices guidance
+   - **Advanced YAML Editor**: Professional YAML editor with syntax highlighting, validation, templates, and real-time error reporting
+   - **Enhanced Template Gallery**: Comprehensive template gallery with search, filtering, categorization, ratings, and one-click deployment
+   - **Professional Security Interface**: Tabbed security policy management with step-by-step wizards for complex configurations
+   - **Intuitive User Experience**: Eight-tab interface with Security Policies and Template Gallery tabs, Material-UI theming and responsive design
+   - **Complete Policy Lifecycle**: Create, configure, test, and manage security policies with comprehensive validation and testing integration
+   - **Basic Authentication Manager**: Username/password protection with Kubernetes Secret management and realm configuration
+   - **CORS Policy Manager**: Cross-origin resource sharing with origins, methods, headers, and credentials support
+   - **IP Filtering Manager**: Allow/deny lists with CIDR range support and visual rule management
+   - **Mutual TLS Manager**: Client certificate authentication with CA management and step-by-step PKI setup wizard
 
 ### 📋 Planned Features
 
