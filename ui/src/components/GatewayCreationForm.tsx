@@ -46,6 +46,7 @@ import {
   getFieldError,
   hasFieldError,
 } from "../utils/gatewayValidation";
+import { ContextualHelp, QuickHelp } from "./ContextualHelp";
 import {
   createGateway,
   listGatewayClasses,
@@ -294,9 +295,12 @@ export const GatewayCreationForm: React.FC<GatewayCreationFormProps> = ({
 
   return (
     <Paper sx={{ p: 3, maxWidth: 800, mx: "auto" }}>
-      <Typography variant="h5" gutterBottom>
-        Create Gateway
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+        <Typography variant="h5">
+          Create Gateway
+        </Typography>
+        <ContextualHelp topic="gateway" variant="tooltip" />
+      </Box>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         Create a new Gateway resource to expose services through Envoy Gateway.
       </Typography>
@@ -316,15 +320,21 @@ export const GatewayCreationForm: React.FC<GatewayCreationFormProps> = ({
         </Grid>
 
         <Grid item xs={12} md={6}>
-          <TextField
-            fullWidth
-            label="Gateway Name"
-            value={formData.name}
-            onChange={(e) => handleInputChange("name", e.target.value)}
-            error={hasFieldError(validationErrors, "name")}
-            helperText={getFieldError(validationErrors, "name")}
-            placeholder="my-gateway"
-          />
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <TextField
+              fullWidth
+              label="Gateway Name"
+              value={formData.name}
+              onChange={(e) => handleInputChange("name", e.target.value)}
+              error={hasFieldError(validationErrors, "name")}
+              helperText={getFieldError(validationErrors, "name")}
+              placeholder="my-gateway"
+            />
+            <QuickHelp 
+              title="Gateway Name"
+              description="A unique name for your Gateway resource. Use lowercase letters, numbers, and hyphens only."
+            />
+          </Box>
         </Grid>
 
         <Grid item xs={12} md={6}>

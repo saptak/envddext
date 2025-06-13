@@ -31,6 +31,7 @@ import {
   Settings as SettingsIcon,
   Help as HelpIcon
 } from "@mui/icons-material";
+import { ContextualHelp } from "./ContextualHelp";
 import { BasicAuthManager } from "./security/BasicAuthManager";
 import { CorsManager } from "./security/CorsManager";
 import { IPFilterManager } from "./security/IPFilterManager";
@@ -117,6 +118,7 @@ export const SecurityPolicyManager: React.FC<SecurityPolicyManagerProps> = ({
           <Typography variant="h5" gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <SecurityIcon />
             Security Policy Management
+            <ContextualHelp topic="jwt" variant="tooltip" />
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Configure security policies to protect your Envoy Gateway routes with authentication, 
