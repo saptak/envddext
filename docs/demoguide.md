@@ -9,7 +9,7 @@ By the end of this guide, you'll understand:
 * How API Gateways work and why they're essential for modern applications
 * The difference between traditional proxies and modern gateway solutions
 * How to configure secure, scalable, and reliable traffic management
-* Advanced patterns like canary deployments, traffic splitting, and performance testing
+* Advanced patterns like canary deployments, traffic splitting, rate limiting, and performance testing
 
 ## Before You Begin
 
@@ -20,7 +20,7 @@ An API Gateway is like a "front door" for your applications. Instead of clients 
 * **Centralized Management**: All routing rules, security policies, and monitoring in one place
 * **Service Protection**: Backend services are hidden from direct access
 * **Traffic Control**: Advanced routing, load balancing, and traffic splitting capabilities
-* **Security**: Authentication, authorization, and rate limiting at the gateway level
+* **Security**: Authentication, authorization, rate limiting, and advanced policies at the gateway level
 
 ### What is Envoy Gateway?
 
@@ -37,7 +37,7 @@ Envoy Gateway builds on the powerful Envoy Proxy and integrates with Kubernetes'
 
 * Docker Desktop with Kubernetes enabled
 * Minimum 4GB RAM allocated to Docker Desktop
-* Envoy Gateway Docker Desktop Extension v0.9.0+
+* Envoy Gateway Docker Desktop Extension v0.9.1+
 
 ### Setup Verification
 
@@ -63,7 +63,7 @@ This guide is organized as a progressive learning journey:
 4. **[Security with HTTPS](#demo-4-security-with-tls-and-https)** - Add encryption and certificate management
 5. **[Advanced Deployments](#demo-5-advanced-deployments-with-traffic-splitting)** - Implement canary deployments and traffic splitting
 6. **[Performance Testing](#demo-6-performance-testing-and-load-validation)** - Validate your setup under load
-7. **[Security Policies](#demo-7-security-policies-and-access-control)** - Configure enterprise security with authentication and access control
+7. **[Security Policies](#demo-7-security-policies-and-access-control)** - Configure enterprise security with authentication, access control, and advanced rate limiting
 8. **[Production Operations](#demo-8-operational-monitoring-and-troubleshooting)** - Monitor and troubleshoot your gateway
 
 Each demo builds on the previous one, introducing new concepts while reinforcing what you've learned.
@@ -568,12 +568,13 @@ Performance testing with gateways helps you:
 
 ### Understanding Security Policies
 
-Modern applications require comprehensive security policies to protect against threats and ensure compliance. The extension provides four core security policy types:
+Modern applications require comprehensive security policies to protect against threats and ensure compliance. The extension provides five core security policy types:
 
 * **Basic Authentication**: Username/password protection with Secret management
 * **CORS Policies**: Cross-origin resource sharing configuration for web applications  
 * **IP Filtering**: Allow/deny lists for network-based access control
 * **Mutual TLS (mTLS)**: Client certificate authentication for the highest security
+* **Rate Limiting**: Advanced traffic control with multi-dimensional rate limiting policies
 
 ### Step 7.1: Explore the Security Policies Tab
 
@@ -582,7 +583,7 @@ Modern applications require comprehensive security policies to protect against t
    * This provides comprehensive security policy management
 
 2. **Review Security Policy Overview**:
-   * The tab shows all four security policy types
+   * The tab shows all five security policy types
    * Each has dedicated management interfaces with professional cards
    * Status indicators show current policy configurations
 
@@ -664,7 +665,55 @@ Modern applications require comprehensive security policies to protect against t
    * Review complete mTLS configuration
    * Apply settings to enable client certificate authentication
 
-### Step 7.6: Resource Creation Wizard
+### Step 7.6: Advanced Rate Limiting (v0.9.1)
+
+1. **Rate Limiting Overview**:
+   * Navigate to the **Rate Limiting** section in Security Policies tab
+   * Configure sophisticated traffic control policies
+   * Multi-dimensional rate limiting with burst allowances
+
+2. **Create Rate Limiting Policy**:
+   * Click **"Add Rate Limit Policy"**
+   * **Policy Name**: `api-rate-limit`
+   * **Target Type**: `HTTPRoute`
+   * **Target Name**: `echo-route` (from Demo 1)
+
+3. **Configure Rate Limits**:
+   * **Requests per Time Unit**: `100 requests per minute`
+   * **Dimension**: Choose from:
+     * `Global` - Apply to all traffic
+     * `Per-IP` - Limit per client IP address
+     * `Per-Header` - Rate limit based on header values
+     * `Per-User` - User-specific rate limiting
+   * **Burst Allowance**: `10` (extra requests allowed in bursts)
+   * **Enforcement Mode**: `Enforce` (or `Shadow` for monitoring)
+
+4. **Test Rate Limiting**:
+   * Navigate to **Testing & Proxy** tab
+   * Find the **Rate Limit Testing** section
+   * **Burst Test Configuration**:
+     * **URL**: Your echo service endpoint
+     * **Request Count**: `150` (exceeds limit)
+     * **Concurrency**: `10` concurrent connections
+     * **Delay**: `100ms` between requests
+   * Click **"Start Burst Test"**
+
+5. **Analyze Results**:
+   * Monitor real-time metrics and response times
+   * Observe 429 (Too Many Requests) responses
+   * Check rate limit headers in HTTP client:
+     * `X-RateLimit-Limit`: Total requests allowed
+     * `X-RateLimit-Remaining`: Requests remaining
+     * `X-RateLimit-Reset`: When limit resets
+     * `Retry-After`: Suggested retry timing
+
+6. **Advanced Configuration**:
+   * **Per-IP Rate Limiting**: Limit requests per client IP
+   * **Header-based Limiting**: Rate limit based on API keys or user tokens
+   * **Time Unit Flexibility**: Configure limits per second, minute, hour, or day
+   * **Shadow Mode**: Monitor without enforcement for testing
+
+### Step 7.7: Resource Creation Wizard
 
 1. **Guided Resource Creation**:
    * Use the **Resource Creation Wizard** (new in v0.9.0)
@@ -681,6 +730,8 @@ Modern applications require comprehensive security policies to protect against t
 * **Enterprise Security**: Implementing comprehensive security policies
 * **Authentication Mechanisms**: Username/password and certificate-based authentication
 * **Access Control**: Network-based and application-level restrictions
+* **Rate Limiting**: Advanced traffic control with multi-dimensional policies
+* **Burst Testing**: Validating rate limiting behavior under load
 * **Professional Security Management**: Step-by-step wizards for complex configurations
 
 ---
@@ -697,7 +748,7 @@ Production gateways require:
 * **Comprehensive troubleshooting**: Quickly identify and fix issues
 * **Proactive management**: Prevent problems before they occur
 
-### Step 7.1: System Health Monitoring
+### Step 8.1: System Health Monitoring
 
 1. **Consolidated Dashboard**:
    * Navigate to the **Dashboard** tab
@@ -715,7 +766,7 @@ Production gateways require:
    * **Service Health**: Backend service connectivity
    * **Proxy Status**: kubectl proxy reliability (v0.8.1)
 
-### Step 7.2: Enhanced Troubleshooting (v0.8.1)
+### Step 8.2: Enhanced Troubleshooting (v0.8.1)
 
 1. **Improved Error Reporting**:
    * **Specific Error Messages**: No more "Unknown error"
@@ -733,7 +784,7 @@ Production gateways require:
    * **Event Analysis**: Kubernetes events correlation
    * **Connection Testing**: Validate network connectivity
 
-### Step 7.3: Best Practices
+### Step 8.3: Best Practices
 
 1. **Regular Monitoring**:
    * Review dashboard status regularly
@@ -771,10 +822,17 @@ Congratulations! You've completed a comprehensive tour of the Envoy Gateway Dock
 * **Security Implementation**: TLS termination, certificate management, and HTTPS
 * **Advanced Deployments**: Traffic splitting, canary deployments, and A/B testing
 * **Performance Validation**: Load testing, metrics collection, and performance analysis
-* **Enterprise Security**: Comprehensive security policies with authentication and access control
+* **Enterprise Security**: Comprehensive security policies with authentication, access control, and advanced rate limiting
 * **Operational Excellence**: Monitoring, troubleshooting, and maintenance
 
-### Latest Enhancements (v0.9.0)
+### Latest Enhancements (v0.9.1)
+
+* **Advanced Rate Limiting & Traffic Control**: Comprehensive rate limiting with multi-dimensional policies (global, per-IP, per-header, per-user)
+* **Sophisticated Burst Testing**: Advanced testing tools with configurable traffic patterns and real-time analytics
+* **Enhanced HTTP Client**: Professional 429 response handling with rate limit header display and retry guidance
+* **Rate Limit Service Integration**: Complete setup guides for Envoy Rate Limit Service deployment with Redis backend
+
+### Previous Enhancements (v0.9.0)
 
 * **Comprehensive Security Policy Management**: Basic Authentication, CORS, IP Filtering, and Mutual TLS (mTLS) support
 * **Enhanced Template Gallery**: Professional gallery with search, filtering, categorization, and one-click deployment
@@ -800,7 +858,7 @@ The patterns you've learned apply to:
 
 ### Continue Learning
 
-* **Explore Advanced Features**: Rate limiting, circuit breakers, and custom policies
+* **Explore Advanced Features**: JWT authentication, circuit breakers, and custom policies
 * **Production Deployment**: Export configurations for production environments
 * **Integration**: Connect with monitoring and observability tools
 * **Community**: Join the Envoy Gateway community for updates and support

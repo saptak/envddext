@@ -26,6 +26,7 @@ import {
   Public as CorsIcon,
   Block as IPFilterIcon,
   VerifiedUser as MTLSIcon,
+  Speed as RateLimitIcon,
   Add as AddIcon,
   Settings as SettingsIcon,
   Help as HelpIcon
@@ -34,6 +35,7 @@ import { BasicAuthManager } from "./security/BasicAuthManager";
 import { CorsManager } from "./security/CorsManager";
 import { IPFilterManager } from "./security/IPFilterManager";
 import { MTLSManager } from "./security/MTLSManager";
+import { RateLimitManager } from "./security/RateLimitManager";
 import { ResourceCreationWizard } from "./ResourceCreationWizard";
 
 interface SecurityPolicyManagerProps {
@@ -74,6 +76,14 @@ export const SecurityPolicyManager: React.FC<SecurityPolicyManagerProps> = ({
       icon: <IPFilterIcon sx={{ color: "#ff9800" }} />,
       difficulty: "Medium",
       useCases: ["Admin Access", "Geo-blocking", "Corporate Networks"]
+    },
+    {
+      id: "rate-limiting",
+      name: "Rate Limiting",
+      description: "Control request rates to protect against abuse and overload",
+      icon: <RateLimitIcon sx={{ color: "#f44336" }} />,
+      difficulty: "Medium",
+      useCases: ["API Protection", "DDoS Prevention", "Resource Management"]
     },
     {
       id: "mtls",
@@ -272,6 +282,14 @@ export const SecurityPolicyManager: React.FC<SecurityPolicyManagerProps> = ({
             <Tab 
               label={
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <RateLimitIcon fontSize="small" />
+                  Rate Limiting
+                </Box>
+              } 
+            />
+            <Tab 
+              label={
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <MTLSIcon fontSize="small" />
                   mTLS
                 </Box>
@@ -292,6 +310,9 @@ export const SecurityPolicyManager: React.FC<SecurityPolicyManagerProps> = ({
             <IPFilterManager onPolicyCreated={onPolicyCreated} />
           )}
           {currentTab === 4 && (
+            <RateLimitManager onPolicyCreated={onPolicyCreated} />
+          )}
+          {currentTab === 5 && (
             <MTLSManager onPolicyCreated={onPolicyCreated} />
           )}
         </Box>

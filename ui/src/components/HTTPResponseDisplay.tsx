@@ -19,6 +19,9 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import WarningIcon from '@mui/icons-material/Warning';
 import InfoIcon from '@mui/icons-material/Info';
+import SpeedIcon from '@mui/icons-material/Speed';
+import BlockIcon from '@mui/icons-material/Block';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { HTTPResponse } from '../types/httpClient';
 import { HTTPClientService } from '../services/httpClientService';
 
@@ -68,6 +71,32 @@ export const HTTPResponseDisplay: React.FC<HTTPResponseDisplayProps> = ({ respon
     return `${(ms / 1000).toFixed(2)}s`;
   };
 
+  // Extract rate limiting headers
+  const getRateLimitHeaders = () => {
+    const rateLimitHeaders: Record<string, string> = {};
+    const rateLimitKeys = [
+      'x-ratelimit-limit',
+      'x-ratelimit-remaining', 
+      'x-ratelimit-reset',
+      'retry-after',
+      'x-rate-limit-limit',
+      'x-rate-limit-remaining',
+      'x-rate-limit-reset'
+    ];
+
+    Object.entries(response.headers).forEach(([key, value]) => {
+      if (rateLimitKeys.includes(key.toLowerCase())) {
+        rateLimitHeaders[key] = value;
+      }
+    });
+
+    return rateLimitHeaders;
+  };
+
+  const rateLimitHeaders = getRateLimitHeaders();
+  const hasRateLimitHeaders = Object.keys(rateLimitHeaders).length > 0;
+  const isRateLimited = response.status === 429;
+
   return (
     <Box>
       {/* Status Overview */}
@@ -107,6 +136,106 @@ export const HTTPResponseDisplay: React.FC<HTTPResponseDisplayProps> = ({ respon
           </Grid>
         </Grid>
       </Paper>
+
+      {/* Rate Limiting Alert */}
+      {isRateLimited && (
+        <Alert 
+          severity="warning" 
+          icon={<BlockIcon />}
+          sx={{ mb: 2 }}
+        >
+          <Typography variant="subtitle2" fontWeight="bold">
+            Rate Limited (HTTP 429)
+          </Typography>
+          <Typography variant="body2">
+            Your request was rate limited. Check the rate limit headers below for details about limits and retry timing.
+          </Typography>
+        </Alert>
+      )}
+
+      {/* Rate Limit Headers (if present) */}
+      {hasRateLimitHeaders && (
+        <Paper 
+          elevation={1} 
+          sx={{ 
+            mb: 2,
+            backgroundColor: isRateLimited ? 'warning.50' : 'info.50',
+            border: '1px solid',
+            borderColor: isRateLimited ? 'warning.200' : 'info.200'
+          }}
+        >
+          <Box 
+            sx={{ 
+              p: 2, 
+              backgroundColor: isRateLimited ? 'warning.100' : 'info.100',
+              borderBottom: '1px solid',
+              borderColor: isRateLimited ? 'warning.200' : 'info.200',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1
+            }}
+          >
+            <SpeedIcon color={isRateLimited ? 'warning' : 'info'} />
+            <Typography variant="subtitle2" fontWeight="bold">
+              Rate Limit Information
+            </Typography>
+            {isRateLimited && (
+              <Chip 
+                label="RATE LIMITED" 
+                size="small" 
+                color="warning" 
+                icon={<BlockIcon />}
+              />
+            )}
+          </Box>
+          <Box sx={{ p: 2 }}>
+            <Grid container spacing={2}>
+              {Object.entries(rateLimitHeaders).map(([key, value]) => {
+                const isResetHeader = key.toLowerCase().includes('reset');
+                const isRetryHeader = key.toLowerCase().includes('retry');
+                
+                return (
+                  <Grid item xs={12} md={6} key={key}>
+                    <Box sx={{ 
+                      p: 1.5, 
+                      backgroundColor: 'background.paper',
+                      borderRadius: 1,
+                      border: '1px solid',
+                      borderColor: 'divider'
+                    }}>
+                      <Typography variant="caption" color="text.secondary">
+                        {key}
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        {(isResetHeader || isRetryHeader) && <AccessTimeIcon fontSize="small" />}
+                        <Typography variant="body2" fontWeight="medium">
+                          {isResetHeader && !isNaN(Number(value)) ? 
+                            new Date(Number(value) * 1000).toLocaleString() : 
+                            value
+                          }
+                          {isRetryHeader && (
+                            <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                              seconds
+                            </Typography>
+                          )}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Grid>
+                );
+              })}
+            </Grid>
+            
+            {isRateLimited && rateLimitHeaders['retry-after'] && (
+              <Alert severity="info" sx={{ mt: 2 }}>
+                <Typography variant="body2">
+                  <strong>Retry After:</strong> Wait {rateLimitHeaders['retry-after']} seconds before making another request.
+                </Typography>
+              </Alert>
+            )}
+          </Box>
+        </Paper>
+      )}
 
       {/* Response Headers */}
       <Accordion 

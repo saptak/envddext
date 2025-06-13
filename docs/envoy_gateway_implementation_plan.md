@@ -1,8 +1,18 @@
 # Envoy Gateway Extension Implementation Plan
 
-## Current Status: ✅ v0.9.0 "SECURITY POLICIES & ENHANCED USER EXPERIENCE" COMPLETE (June 12, 2025)
+## Current Status: ✅ v0.9.1 "RATE LIMITING & ADVANCED TRAFFIC CONTROL" COMPLETE (June 12, 2025)
 
-### Recently Completed: Security Policies & Enhanced User Experience (June 12, 2025) - v0.9.0
+### Recently Completed: Rate Limiting & Advanced Traffic Control (June 12, 2025) - v0.9.1
+- ✅ **Comprehensive Rate Limiting Management**: Complete implementation of rate limiting policies with multi-dimensional configuration (global, per-IP, per-header, per-user)
+- ✅ **Advanced Rate Limit Testing**: Sophisticated burst testing tools with configurable traffic patterns, concurrency controls, and real-time analytics
+- ✅ **Enhanced HTTP Client**: Professional 429 response handling with prominent rate limit header display and retry guidance
+- ✅ **Service Deployment Automation**: Complete setup guides for Envoy Rate Limit Service with Redis backend and automated deployment options
+- ✅ **Rate Limit Policy Configuration**: Full CRUD operations for rate limiting rules with burst allowances, enforcement modes, and validation
+- ✅ **Professional Testing Integration**: Embedded rate limit testing in Testing & Proxy tab with comprehensive burst pattern analysis
+- ✅ **Rate Limit Service Setup**: Step-by-step deployment guides with configuration examples and verification steps
+- ✅ **Security Policy Integration**: Seamless integration with existing Security Policies interface for unified traffic control
+
+### Previous Release: Security Policies & Enhanced User Experience (June 12, 2025) - v0.9.0
 - ✅ **Comprehensive Security Policy Management**: Complete implementation of Basic Authentication, CORS, IP Filtering, and Mutual TLS (mTLS) policies
 - ✅ **Resource Creation Wizard**: Multi-step guided wizard for creating Gateways, HTTPRoutes, and Security Policies with contextual help
 - ✅ **Advanced YAML Editor**: Professional YAML editor with syntax highlighting, validation, templates, and real-time error reporting
@@ -439,20 +449,44 @@ This document outlines the implementation plan for the Envoy Gateway Docker Desk
   - Client certificate authentication with CA management and validation
   - Professional stepper interface for complex mTLS configuration workflow
 
-## Iteration 9: Rate Limiting Example
+## Iteration 9: Rate Limiting & Advanced Traffic Control ✅ COMPLETED (v0.9.1)
 
-### Task 9.1: Implement Rate Limit Configuration (2-3 days)
-- [ ] Add UI to configure rate limiting policies (e.g., using `EnvoyPatchPolicy` or `RateLimitFilter` CRD if available).
-- [ ] Support defining limits (requests per unit of time) and dimensions (e.g., per IP, per header value).
-- [ ] Guide users on deploying a rate limit service (e.g., Envoy's RLService) if necessary.
+### Task 9.1: Implement Rate Limit Configuration (2-3 days) ✅ COMPLETED
+- [x] Add UI to configure rate limiting policies with multi-dimensional configuration
+- [x] Support defining limits (requests per unit of time) and dimensions (global, per-IP, per-header, per-user)
+- [x] Guide users on deploying rate limit service with complete setup instructions
 - **Enables PRD Use Case**: "Rate Limiting".
-- **Testable Outcome**: Users can apply rate limits to HTTPRoutes
+- **Testable Outcome**: Users can apply rate limits to HTTPRoutes ✅
+- **Implementation Details**:
+  - Created `RateLimitManager.tsx` with comprehensive policy management interface
+  - Multi-dimensional rate limiting with configurable time units and burst allowances
+  - Complete Envoy Rate Limit Service deployment guidance with Redis backend
+  - Professional policy cards with status indicators and detailed information
 
-### Task 9.2: Add Rate Limit Testing (2 days)
-- [ ] Enhance HTTP client to send bursts of requests for testing rate limits
-- [ ] Display 429 (Too Many Requests) responses and rate limit headers
-- **Enables PRD Use Case**: "Rate Limiting" (testing part).
-- **Testable Outcome**: Users can verify rate limiting behavior
+### Task 9.2: Implement Rate Limit Testing Tools (2-3 days) ✅ COMPLETED
+- [x] Advanced burst testing tools with configurable traffic patterns and concurrency controls
+- [x] Real-time analytics with response time tracking and 429 response monitoring
+- [x] Comprehensive test results with success rates and timing analytics
+- **Enables**: Rate limiting validation and performance testing
+- **Testable Outcome**: Users can test rate limiting policies with burst traffic ✅
+- **Implementation Details**:
+  - Created `RateLimitTester.tsx` with sophisticated burst testing capabilities
+  - Configurable request count, concurrency, delays, and traffic patterns
+  - Real-time metrics collection with detailed performance analytics
+  - Integration with Testing & Proxy tab for comprehensive testing workflows
+
+### Task 9.3: Enhanced HTTP Client with Rate Limit Response Handling (1-2 days) ✅ COMPLETED
+- [x] Professional 429 response handling with prominent rate limit header display
+- [x] Automatic retry timing calculation and guidance with formatted display
+- [x] Rate limit reset time formatting with local timezone display
+- **Enables**: Better understanding of rate limiting behavior and debugging
+- **Testable Outcome**: HTTP client clearly shows rate limiting information ✅
+- **Implementation Details**:
+  - Enhanced `HTTPResponseDisplay.tsx` with dedicated rate limit section
+  - Prominent 429 rate limiting alerts with clear explanations and retry guidance
+  - Professional warning indicators and formatted rate limit headers
+  - Automatic detection and formatting of common rate limit headers
+
 
 ## Iteration 10: JWT Authentication Example
 
@@ -698,6 +732,6 @@ interface KubernetesResource {
 ## Success Criteria
 - High completion rate for "Basic HTTP Routing" and "TLS Termination" tutorials
 - Positive user feedback on ease of use and time to value
-- Increased engagement with advanced features (traffic splitting, rate limiting)
+- Increased engagement with advanced features (traffic splitting, rate limiting, security policies)
 - Extension stability with low error rates during common operations
 - Successful demonstration of all PRD use cases through the UI.

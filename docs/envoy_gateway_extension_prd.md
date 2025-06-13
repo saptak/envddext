@@ -4,7 +4,7 @@
 - **Document Title**: Envoy Gateway Extension Enhancement PRD
 - **Version**: 1.2
 - **Date**: June 12, 2025
-- **Status**: v0.9.0 Implementation Complete
+- **Status**: v0.9.1 Implementation Complete
 
 ## Executive Summary
 
@@ -16,7 +16,7 @@ This PRD outlines the completed enhancements to the extension that enable users 
 
 Envoy Gateway is a powerful API Gateway built on Envoy Proxy and the Kubernetes Gateway API. However, getting started with Envoy Gateway requires knowledge of Kubernetes, Gateway API resources, and YAML configuration. This creates a high barrier to entry for new users who want to evaluate Envoy Gateway's capabilities.
 
-The Docker Desktop extension now provides comprehensive functionality including Envoy Gateway installation, resource creation and management, guided workflows, templates for common use cases, integrated testing tools with reliable kubectl proxy management, synthetic traffic generation with performance testing capabilities, and comprehensive security policy management with enterprise-grade authentication and access control features.
+The Docker Desktop extension now provides comprehensive functionality including Envoy Gateway installation, resource creation and management, guided workflows, templates for common use cases, integrated testing tools with reliable kubectl proxy management, synthetic traffic generation with performance testing capabilities, comprehensive security policy management with enterprise-grade authentication and access control features, and advanced rate limiting with sophisticated testing tools.
 
 ## Goals ✅ COMPLETED
 
@@ -115,10 +115,13 @@ The Docker Desktop extension now provides comprehensive functionality including 
    - Implement retry policies for failed requests to backend services (e.g., on 5xx errors or connection failures for idempotent requests).
    - Test timeout and retry behaviors.
 
-6. **Rate Limiting**
-   - Configure global and per-route rate limits to protect backend services.
-   - Test rate limiting behavior under load.
-   - (Future: Visualize rate limit metrics).
+6. **Rate Limiting & Advanced Traffic Control** ✅ COMPLETED (v0.9.1)
+   - Configure multi-dimensional rate limiting policies (global, per-IP, per-header, per-user) with burst allowances.
+   - Professional policy management with configurable time units (second, minute, hour, day) and enforcement modes.
+   - Advanced burst testing tools with configurable traffic patterns, concurrency controls, and real-time analytics.
+   - Enhanced HTTP client with professional 429 response handling and rate limit header display.
+   - Complete service deployment automation with Envoy Rate Limit Service and Redis backend setup.
+   - Sophisticated testing integration with comprehensive burst pattern analysis and performance metrics.
 
 7. **Security Policy: JWT Authentication**
    - Configure JWT validation for specific routes using Envoy Gateway's `SecurityPolicy` or similar mechanisms.
@@ -294,15 +297,28 @@ The Docker Desktop extension now provides comprehensive functionality including 
    - **IP Filtering Manager**: Allow/deny lists with CIDR range support and visual rule management
    - **Mutual TLS Manager**: Client certificate authentication with CA management and step-by-step PKI setup wizard
 
+12. **Rate Limiting & Advanced Traffic Control** ✅ COMPLETED (v0.9.1 - June 12, 2025)
+   - **Comprehensive Rate Limiting Management**: Complete implementation of rate limiting policies with multi-dimensional configuration (global, per-IP, per-header, per-user)
+   - **Advanced Rate Limit Testing**: Sophisticated burst testing tools with configurable traffic patterns, concurrency controls, and real-time analytics
+   - **Enhanced HTTP Client**: Professional 429 response handling with prominent rate limit header display and retry guidance
+   - **Service Deployment Automation**: Complete setup guides for Envoy Rate Limit Service with Redis backend and automated deployment options
+   - **Rate Limit Policy Configuration**: Full CRUD operations for rate limiting rules with burst allowances, enforcement modes, and validation
+   - **Professional Testing Integration**: Embedded rate limit testing in Testing & Proxy tab with comprehensive burst pattern analysis
+   - **Rate Limit Service Setup**: Step-by-step deployment guides with configuration examples and verification steps
+   - **Security Policy Integration**: Seamless integration with existing Security Policies interface for unified traffic control
+   - **Multi-dimensional Configuration**: Support for global, per-IP, per-header, and per-user rate limiting with configurable time units
+   - **Burst Testing Tools**: Advanced testing with configurable request count, concurrency, delays, and real-time performance metrics
+   - **Rate Limit Header Display**: Automatic detection and formatting of rate limit headers with retry timing guidance
+
 ### 📋 Planned Features
 
 1. **Advanced Resource Management**
    - Resource editing and cloning capabilities
    - Bulk operations and template management
 
-2. **Rate Limiting and JWT Authentication**
-   - Policy configuration interfaces
-   - Testing tools for security features
+2. **JWT Authentication and Advanced Security Policies**
+   - JWT token validation and configuration interfaces
+   - Advanced authentication testing tools
 
 3. **Interactive Tutorials and Documentation**
    - Step-by-step guided workflows

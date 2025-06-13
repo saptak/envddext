@@ -1,6 +1,6 @@
 # Envoy Gateway Docker Desktop Extension
 
-A comprehensive Docker Desktop extension for managing Envoy Gateway resources with an intuitive visual interface, security policy management, advanced template gallery, YAML editor, HTTP testing tools, synthetic traffic generation, and enhanced resource visualization. Built with a robust VM service backend architecture that eliminates Docker Desktop extension limitations.
+A comprehensive Docker Desktop extension for managing Envoy Gateway resources with an intuitive visual interface, security policy management including advanced rate limiting, template gallery, YAML editor, HTTP testing tools, synthetic traffic generation, and enhanced resource visualization. Built with a robust VM service backend architecture that eliminates Docker Desktop extension limitations.
 
 ## Key Features
 
@@ -11,12 +11,12 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 - **LoadBalancer Management**: Robust MetalLB integration, configuration (including auto-detection), and accurate real-time status monitoring
 - **Reliable Kubectl Proxy Management**: Robust proxy startup with enhanced error handling, automatic kubeconfig detection, and proper process lifecycle management
 - **Responsive Tabbed Interface**: Organized UI with consolidated Dashboard, Gateway Management, HTTPRoute Management, Testing & Proxy, TLS Management, Traffic Splitting, Security Policies, and Template Gallery tabs with horizontal scrolling support
-- **Security Policy Management**: Comprehensive security policy management with Basic Authentication, CORS, IP Filtering, and Mutual TLS (mTLS) configuration
+- **Security Policy Management**: Comprehensive security policy management with Basic Authentication, CORS, IP Filtering, Mutual TLS (mTLS), and advanced Rate Limiting configuration
 - **Advanced Template Gallery**: Professional template gallery with search, filtering, categorization, ratings, and one-click deployment
 - **YAML Editor**: Professional YAML editor with syntax highlighting, validation, templates, and real-time error reporting
 - **Resource Creation Wizard**: Multi-step guided wizard for creating Gateways, HTTPRoutes, and Security Policies with contextual help
 - **GitHub Templates Integration**: Apply basic HTTP routing templates directly from GitHub repositories
-- **HTTP Testing Tools**: Built-in HTTP client for testing routes with request/response display
+- **HTTP Testing Tools**: Built-in HTTP client for testing routes with request/response display and enhanced 429 rate limiting response handling
 - **Synthetic Traffic Generation**: Advanced traffic generator with real-time metrics, visualization, and traffic splitting validation
 - **Kubectl Proxy Manager**: Integrated proxy management for accessing Kubernetes services
 - **Enhanced Monitoring**: Real-time status tracking with detailed deployment information
@@ -26,7 +26,7 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 ## Current Limitations
 
 - **No Resource Editing**: Can create and delete but not modify existing Gateways or HTTPRoutes
-- **Limited Policy Management**: Advanced rate limiting and traffic policies not yet supported (Basic Auth, CORS, IP Filtering, mTLS supported)
+- **Limited Advanced Policies**: Some advanced traffic policies not yet supported (Basic Auth, CORS, IP Filtering, mTLS, Rate Limiting supported)
 - **HTTP Only**: Limited to HTTP/HTTPS routing (no TCP, UDP, or gRPC support)
 - **No Advanced Envoy Features**: EnvoyProxy custom resources and patches not supported
 
@@ -119,9 +119,19 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 
 ## Current Status
 
-**Latest Update: June 12, 2025** - **v0.9.0 "Security Policies & Enhanced User Experience" Release Complete!** Comprehensive security policy management with Basic Authentication, CORS, IP Filtering, and Mutual TLS (mTLS) support. Added advanced Template Gallery with search and filtering, professional YAML Editor with validation, and Resource Creation Wizard for guided setup. Eight-tab interface now includes Security Policies and Template Gallery tabs with Material-UI theming and intuitive user experience.
+**Latest Update: June 13, 2025** - **v0.9.1 "Rate Limiting & Advanced Traffic Control" Release Complete!** Comprehensive rate limiting with multi-dimensional policies (global, per-IP, per-header, per-user), sophisticated burst testing tools, and enhanced HTTP client with professional 429 response handling. Complete service deployment automation and advanced testing integration for enterprise-grade traffic control. Builds on v0.9.0's security policy management, template gallery, YAML editor, and resource creation wizard.
 
-### ✅ Completed Features (Iteration 1-8)
+### ✅ Completed Features (Iteration 1-9)
+
+#### Rate Limiting & Advanced Traffic Control (Iteration 9 ✅ - June 13, 2025)
+- **Comprehensive Rate Limiting Management**: Complete implementation of rate limiting policies with multi-dimensional configuration (global, per-IP, per-header, per-user)
+- **Advanced Rate Limit Testing**: Sophisticated burst testing tools with configurable traffic patterns, concurrency controls, and real-time analytics
+- **Enhanced HTTP Client**: Professional 429 response handling with prominent rate limit header display and retry guidance
+- **Service Deployment Automation**: Complete setup guides for Envoy Rate Limit Service with Redis backend and automated deployment options
+- **Rate Limit Policy Configuration**: Full CRUD operations for rate limiting rules with burst allowances, enforcement modes, and validation
+- **Professional Testing Integration**: Embedded rate limit testing in Testing & Proxy tab with comprehensive burst pattern analysis
+- **Rate Limit Service Setup**: Step-by-step deployment guides with configuration examples and verification steps
+- **Security Policy Integration**: Seamless integration with existing Security Policies interface for unified traffic control
 
 #### Security Policies & Enhanced User Experience (Iteration 8 ✅ - June 12, 2025)
 - **Comprehensive Security Policy Management**: Complete implementation of Basic Authentication, CORS, IP Filtering, and Mutual TLS (mTLS) policies

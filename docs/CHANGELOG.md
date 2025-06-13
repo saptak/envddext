@@ -5,6 +5,51 @@ All notable changes to the Envoy Gateway Docker Desktop Extension will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1] - 2025-06-12 "Rate Limiting & Advanced Traffic Control"
+
+### Added - 🚦 Comprehensive Rate Limiting & Traffic Control
+
+- **🛡️ Rate Limiting Policy Management**:
+    - **Multi-dimensional Rate Limiting**: Support for global, per-IP, per-header, and per-user rate limiting configurations
+    - **Configurable Time Units**: Rate limits can be set per second, minute, hour, or day with flexible request counts
+    - **Burst Allowances**: Configure burst allowances for legitimate traffic spikes above normal rate limits
+    - **Enforcement Modes**: Shadow mode for testing and enforce mode for production rate limiting
+    - **Professional Policy Management**: Full CRUD operations with policy cards, status indicators, and detailed information
+
+- **🧪 Advanced Rate Limit Testing**:
+    - **Sophisticated Burst Testing**: Configurable traffic patterns with request count, concurrency, and timing controls
+    - **Real-time Analytics**: Live metrics collection with response time tracking and 429 response monitoring
+    - **Comprehensive Results**: Success rates, timing analytics, and detailed performance reports
+    - **Testing Integration**: Embedded in Testing & Proxy tab for seamless rate limit validation workflows
+
+- **📊 Enhanced HTTP Client**:
+    - **429 Response Handling**: Prominent rate limiting alerts with clear explanations and retry guidance
+    - **Rate Limit Header Display**: Dedicated section for rate limit headers with formatted display and timing
+    - **Automatic Retry Guidance**: Retry-after timing calculation and retry suggestions with local timezone formatting
+    - **Professional Warning Indicators**: Visual feedback for rate limited requests with detailed information
+
+- **🏗️ Service Deployment Automation**:
+    - **Complete Setup Guides**: Step-by-step Envoy Rate Limit Service deployment with Redis backend
+    - **Configuration Examples**: Gateway configuration examples with rate limit backend setup
+    - **Verification Steps**: Troubleshooting guidance and verification commands for service deployment
+    - **Auto-deployment Buttons**: Ready for future automation implementation with service deployment
+
+### Enhanced - Security & Testing Integration
+
+- **Security Policy Integration**: Rate limiting seamlessly integrated into existing Security Policies interface
+- **Professional UI Components**: Material-UI themed interface with comprehensive validation and error handling
+- **Testing Workflow Enhancement**: Rate limit testing embedded in HTTP testing for comprehensive validation
+
+### Technical Implementation - v0.9.1 Architecture
+
+- **New Components**:
+    - `ui/src/components/security/RateLimitManager.tsx` - Comprehensive rate limiting policy management
+    - `ui/src/components/RateLimitTester.tsx` - Advanced burst testing with real-time analytics
+- **Enhanced Components**:
+    - `ui/src/components/HTTPResponseDisplay.tsx` - Professional 429 response handling and rate limit headers
+    - `ui/src/components/SecurityPolicyManager.tsx` - Added Rate Limiting tab with policy overview
+    - `ui/src/AppWithGitHubTemplates.tsx` - Integrated rate limit testing in Testing & Proxy tab
+
 ## [0.8.1] - 2025-06-12 "Kubectl Proxy Reliability & Error Handling"
 
 ### Added - 🔧 Major Reliability & Error Handling Improvements

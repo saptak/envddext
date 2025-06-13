@@ -47,6 +47,7 @@ import { ResourceActionDialog } from "./components/ResourceActionDialog";
 import { CertificateManager } from "./components/CertificateManager";
 import { TrafficSplittingManager } from "./components/TrafficSplittingManager";
 import { TrafficGenerator } from "./components/TrafficGenerator";
+import { RateLimitTester } from "./components/RateLimitTester";
 import { Dashboard } from "./components/Dashboard";
 import { SecurityPolicyManager } from "./components/SecurityPolicyManager";
 import { TemplateGallery } from "./components/TemplateGallery";
@@ -641,7 +642,7 @@ export function App() {
                 </Box>
 
                 {/* Traffic Generator Section */}
-                <Box>
+                <Box sx={{ mb: 4 }}>
                   <Typography variant="h6" gutterBottom>
                     Synthetic Traffic Generator
                   </Typography>
@@ -651,6 +652,21 @@ export function App() {
                     to validate your Gateway and HTTPRoute setups.
                   </Typography>
                   <TrafficGenerator />
+                </Box>
+
+                {/* Rate Limit Testing Section */}
+                <Box>
+                  <Typography variant="h6" gutterBottom>
+                    Rate Limit Testing
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" paragraph>
+                    Test your rate limiting policies with burst traffic patterns.
+                    Send multiple requests quickly to validate rate limit enforcement,
+                    monitor 429 responses, and analyze rate limit headers.
+                  </Typography>
+                  <RateLimitTester onTestComplete={(summary) => {
+                    console.log("Rate limit test completed:", summary);
+                  }} />
                 </Box>
               </>
             )}
