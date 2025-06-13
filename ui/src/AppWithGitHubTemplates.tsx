@@ -48,6 +48,8 @@ import { CertificateManager } from "./components/CertificateManager";
 import { TrafficSplittingManager } from "./components/TrafficSplittingManager";
 import { TrafficGenerator } from "./components/TrafficGenerator";
 import { Dashboard } from "./components/Dashboard";
+import { SecurityPolicyManager } from "./components/SecurityPolicyManager";
+import { TemplateGallery } from "./components/TemplateGallery";
 
 const ddClient = createDockerDesktopClient();
 
@@ -537,6 +539,8 @@ export function App() {
               <Tab label="Testing & Proxy" id="tab-3" aria-controls="tabpanel-3" />
               <Tab label="TLS Management" id="tab-4" aria-controls="tabpanel-4" />
               <Tab label="Traffic Splitting" id="tab-5" aria-controls="tabpanel-5" />
+              <Tab label="Security Policies" id="tab-6" aria-controls="tabpanel-6" />
+              <Tab label="Template Gallery" id="tab-7" aria-controls="tabpanel-7" />
             </Tabs>
           </Box>
 
@@ -685,6 +689,44 @@ export function App() {
             aria-labelledby="tab-5"
           >
             {currentTab === 5 && <TrafficSplittingManager />}
+          </Box>
+
+          {/* Security Policies Tab */}
+          <Box
+            role="tabpanel"
+            hidden={currentTab !== 6}
+            id="tabpanel-6"
+            aria-labelledby="tab-6"
+          >
+            {currentTab === 6 && (
+              <SecurityPolicyManager 
+                onPolicyCreated={() => {
+                  // Refresh data when a policy is created
+                  fetchData();
+                }}
+              />
+            )}
+          </Box>
+
+          {/* Template Gallery Tab */}
+          <Box
+            role="tabpanel"
+            hidden={currentTab !== 7}
+            id="tabpanel-7"
+            aria-labelledby="tab-7"
+          >
+            {currentTab === 7 && (
+              <TemplateGallery 
+                onTemplateApply={async (template) => {
+                  // Apply template using the existing handler
+                  await handleApplyTemplateFromUrl(template.yamlUrl);
+                }}
+                onTemplateSelect={(template) => {
+                  // Optional: Handle template selection for preview
+                  console.log("Template selected:", template);
+                }}
+              />
+            )}
           </Box>
         </>
       )}

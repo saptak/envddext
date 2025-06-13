@@ -1,6 +1,6 @@
 # Envoy Gateway Docker Desktop Extension
 
-A comprehensive Docker Desktop extension for managing Envoy Gateway resources with an intuitive visual interface, GitHub-based templates, HTTP testing tools, synthetic traffic generation, and enhanced resource visualization. Built with a robust VM service backend architecture that eliminates Docker Desktop extension limitations.
+A comprehensive Docker Desktop extension for managing Envoy Gateway resources with an intuitive visual interface, security policy management, advanced template gallery, YAML editor, HTTP testing tools, synthetic traffic generation, and enhanced resource visualization. Built with a robust VM service backend architecture that eliminates Docker Desktop extension limitations.
 
 ## Key Features
 
@@ -10,7 +10,11 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 - **TLS Certificate Management**: Comprehensive TLS termination support with certificate generation, management, and HTTPS testing
 - **LoadBalancer Management**: Robust MetalLB integration, configuration (including auto-detection), and accurate real-time status monitoring
 - **Reliable Kubectl Proxy Management**: Robust proxy startup with enhanced error handling, automatic kubeconfig detection, and proper process lifecycle management
-- **Responsive Tabbed Interface**: Organized UI with consolidated Dashboard, Gateway Management, HTTPRoute Management, Testing & Proxy, TLS Management, and Traffic Splitting tabs with horizontal scrolling support
+- **Responsive Tabbed Interface**: Organized UI with consolidated Dashboard, Gateway Management, HTTPRoute Management, Testing & Proxy, TLS Management, Traffic Splitting, Security Policies, and Template Gallery tabs with horizontal scrolling support
+- **Security Policy Management**: Comprehensive security policy management with Basic Authentication, CORS, IP Filtering, and Mutual TLS (mTLS) configuration
+- **Advanced Template Gallery**: Professional template gallery with search, filtering, categorization, ratings, and one-click deployment
+- **YAML Editor**: Professional YAML editor with syntax highlighting, validation, templates, and real-time error reporting
+- **Resource Creation Wizard**: Multi-step guided wizard for creating Gateways, HTTPRoutes, and Security Policies with contextual help
 - **GitHub Templates Integration**: Apply basic HTTP routing templates directly from GitHub repositories
 - **HTTP Testing Tools**: Built-in HTTP client for testing routes with request/response display
 - **Synthetic Traffic Generation**: Advanced traffic generator with real-time metrics, visualization, and traffic splitting validation
@@ -22,7 +26,7 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 ## Current Limitations
 
 - **No Resource Editing**: Can create and delete but not modify existing Gateways or HTTPRoutes
-- **No Policy Management**: Security policies, rate limiting, and traffic policies not yet supported  
+- **Limited Policy Management**: Advanced rate limiting and traffic policies not yet supported (Basic Auth, CORS, IP Filtering, mTLS supported)
 - **HTTP Only**: Limited to HTTP/HTTPS routing (no TCP, UDP, or gRPC support)
 - **No Advanced Envoy Features**: EnvoyProxy custom resources and patches not supported
 
@@ -84,6 +88,29 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 - IP address pool management and visualization
 - Support for existing MetalLB installations
 
+### 🛡️ Security Policies Tab (New in v0.9.0)
+- **Comprehensive Security Management**: Complete implementation of Basic Authentication, CORS, IP Filtering, and Mutual TLS (mTLS) policies
+- **Basic Authentication**: Username/password protection with Kubernetes Secret management and realm configuration
+- **CORS Policy Management**: Cross-origin resource sharing configuration with origins, methods, headers, and credentials support
+- **IP Filtering**: Allow/deny lists with CIDR range support, rule-based access control, and visual rule management
+- **Mutual TLS (mTLS)**: Client certificate authentication with CA management, step-by-step wizard, and CRL support
+- **Professional Interface**: Tabbed security policy management with status indicators and comprehensive validation
+- **Testing Integration**: Built-in testing information and cURL command generation for policy validation
+
+### 🎨 Template Gallery Tab (New in v0.9.0)
+- **Enhanced Template Discovery**: Professional gallery view with search, filtering, categorization, and ratings
+- **Comprehensive Metadata**: Template information with prerequisites, documentation links, and difficulty levels
+- **User Experience**: Template favorites, download counts, featured templates, and user ratings
+- **One-Click Deployment**: Integrated apply functionality with progress tracking and status monitoring
+- **Search and Filtering**: Filter by category, difficulty, tags, and popularity with real-time search
+- **Detailed Template Views**: Multi-tab template details with overview, prerequisites, and installation guidance
+
+### ✏️ Advanced Tools (New in v0.9.0)
+- **YAML Editor**: Professional YAML editor with syntax highlighting, validation, templates, and real-time error reporting
+- **Resource Creation Wizard**: Multi-step guided wizard for creating Gateways, HTTPRoutes, and Security Policies with contextual help
+- **Template Management**: Copy, download, upload, and preview capabilities for YAML configurations
+- **Validation Engine**: Comprehensive validation with suggestions, warnings, and best practices guidance
+
 ### 🔗 GitHub Integration
 - Templates stored at [github.com/saptak/envoygatewaytemplates](https://github.com/saptak/envoygatewaytemplates)
 - Direct HTTP URL application to kubectl
@@ -92,11 +119,21 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 
 ## Current Status
 
-**Latest Update: June 12, 2025** - **v0.8.1 "Kubectl Proxy Reliability & Error Handling" Release Complete!** Major kubectl proxy improvements including enhanced error handling, automatic kubeconfig detection, proper response parsing, and robust process management. Resolves hardcoded path dependencies and Docker VM service communication issues. This builds on v0.8.0's synthetic traffic generation capabilities, consolidated dashboard, v0.7.0's traffic splitting features, and v0.6.0's TLS management to provide a fully reliable testing environment.
+**Latest Update: June 12, 2025** - **v0.9.0 "Security Policies & Enhanced User Experience" Release Complete!** Comprehensive security policy management with Basic Authentication, CORS, IP Filtering, and Mutual TLS (mTLS) support. Added advanced Template Gallery with search and filtering, professional YAML Editor with validation, and Resource Creation Wizard for guided setup. Eight-tab interface now includes Security Policies and Template Gallery tabs with Material-UI theming and intuitive user experience.
 
 ### ✅ Completed Features (Iteration 1-8)
 
-#### Kubectl Proxy Reliability & Error Handling (Iteration 8 ✅ - June 12, 2025)
+#### Security Policies & Enhanced User Experience (Iteration 8 ✅ - June 12, 2025)
+- **Comprehensive Security Policy Management**: Complete implementation of Basic Authentication, CORS, IP Filtering, and Mutual TLS (mTLS) policies
+- **Resource Creation Wizard**: Multi-step guided wizard for creating Gateways, HTTPRoutes, and Security Policies with contextual help
+- **Advanced YAML Editor**: Professional YAML editor with syntax highlighting, validation, templates, and real-time error reporting
+- **Enhanced Template Gallery**: Comprehensive template gallery with search, filtering, categorization, ratings, and one-click deployment
+- **Professional Security Interface**: Tabbed security policy management with step-by-step wizards for complex configurations
+- **Security Policy Components**: BasicAuthManager, CorsManager, IPFilterManager, MTLSManager with comprehensive configuration options
+- **Two New Tabs**: Security Policies and Template Gallery tabs with Material-UI theming and responsive design
+- **Complete Policy Lifecycle**: Create, configure, test, and manage security policies with comprehensive validation and best practices
+
+#### Kubectl Proxy Reliability & Error Handling (Iteration 8.1 ✅ - June 12, 2025)
 - **Enhanced Error Handling**: Comprehensive error reporting with detailed backend logs and frontend error propagation
 - **Automatic Kubeconfig Detection**: Dynamic kubeconfig path resolution eliminating hardcoded user paths
 - **Robust Response Parsing**: Proper Docker VM service communication with correct response structure handling

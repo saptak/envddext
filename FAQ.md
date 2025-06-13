@@ -18,8 +18,12 @@ Absolutely! This extension was designed specifically for developers who want API
 - Test your routes and HTTPS endpoints with the built-in HTTP client
 - Generate synthetic traffic with the advanced traffic generator and view real-time performance metrics
 - Validate traffic splitting configurations with load testing and visualization
+- Configure comprehensive security policies including Basic Authentication, CORS, IP Filtering, and Mutual TLS
+- Use the Resource Creation Wizard for guided step-by-step configuration of complex resources
+- Edit YAML configurations with the professional YAML editor including syntax highlighting and validation
+- Browse and deploy templates from the enhanced Template Gallery with search and filtering
 - See real-time status of your Gateways and routes with enhanced visual cards in the consolidated Dashboard
-- Access everything from responsive tabs that work on any screen size
+- Access everything from an eight-tab responsive interface that works on any screen size
 
 ### I'm already using Kubernetes tools. Why switch?
 
@@ -103,8 +107,9 @@ The extension currently supports HTTP routing with:
 
 ### What's not supported yet?
 
-The extension now supports comprehensive Gateway and HTTPRoute management, TLS termination, and traffic splitting. Not yet supported:
-- **Policy management**: Security policies, rate limiting, authentication
+The extension now supports comprehensive Gateway and HTTPRoute management, TLS termination, traffic splitting, and security policy management. Not yet supported:
+- **JWT Authentication**: Token-based authentication policies
+- **Rate limiting**: Request throttling and quotas
 - **Resource editing**: You can create and delete but not edit existing resources
 - **Advanced protocols**: TCP, UDP, or gRPC routing (HTTP only)
 - **Advanced Envoy features**: EnvoyProxy custom resources or patches
@@ -141,7 +146,7 @@ The extension is doing real Kubernetes operations, which can take a moment. Look
 
 ### The tabs don't fit on my screen
 
-The extension includes responsive design with scrollable tabs. With the new consolidated Dashboard (reducing from 7 to 6 tabs), there's more space for each tab. When tabs don't fit your screen width, you'll see left/right arrow buttons to scroll through them. This works on mobile devices and narrow windows automatically.
+The extension includes responsive design with scrollable tabs. With the enhanced interface now featuring 8 tabs (including Security Policies and Template Gallery), the interface automatically adapts to your screen size. When tabs don't fit your screen width, you'll see left/right arrow buttons to scroll through them. This works on mobile devices and narrow windows automatically.
 
 ### What's new about the Dashboard?
 
@@ -155,6 +160,28 @@ The Dashboard consolidates what used to be separate Resources and Deployment Sta
 
 This reduces navigation and provides a more intuitive overview of your entire system state.
 
+### What about the new Security Policies features?
+
+The extension now includes comprehensive security policy management (v0.9.0):
+
+- **Basic Authentication**: Protect routes with username/password authentication, manage credentials via Kubernetes Secrets
+- **CORS Policies**: Configure cross-origin resource sharing with origins, methods, headers, and credentials support
+- **IP Filtering**: Set up allow/deny lists with CIDR range support for network-based access control
+- **Mutual TLS (mTLS)**: Configure client certificate authentication with step-by-step wizard for PKI setup
+
+Each security policy type has its own professional interface with real-time validation, testing guidance, and comprehensive configuration options.
+
+### What about the enhanced user experience features?
+
+Version 0.9.0 includes several major UX improvements:
+
+- **Resource Creation Wizard**: Multi-step guided interface for creating complex Gateways, HTTPRoutes, and Security Policies with contextual help
+- **Advanced YAML Editor**: Professional editor with syntax highlighting, validation, templates, and real-time error reporting
+- **Enhanced Template Gallery**: Comprehensive gallery with search, filtering, categorization, ratings, and one-click deployment
+- **Professional Interface**: All features use Material-UI theming with responsive design and intuitive workflows
+
+These features make complex configurations accessible to users of all experience levels.
+
 ## What Else Can I Do?
 
 ### Can I use this for real projects?
@@ -166,7 +193,7 @@ The extension is perfect for basic HTTP routing scenarios in development and lea
 - **Learn routing patterns** you can apply in any Kubernetes environment
 - **Prototype basic configurations** before production deployment
 
-However, production environments typically need additional features not yet supported like security policies, rate limiting, and advanced traffic management policies.
+However, production environments typically need additional features not yet supported like JWT authentication, rate limiting, and advanced traffic management policies. The extension now supports comprehensive security policies including Basic Authentication, CORS, IP Filtering, and mTLS.
 
 ### What if I need to modify existing resources?
 
@@ -191,9 +218,9 @@ However, for complex production scenarios requiring policies and advanced featur
 
 ### What about advanced gateway features?
 
-The extension now provides comprehensive Gateway and HTTPRoute management, TLS termination with certificate management, traffic splitting capabilities, and synthetic traffic generation with performance testing. For additional advanced features like:
+The extension now provides comprehensive Gateway and HTTPRoute management, TLS termination with certificate management, traffic splitting capabilities, synthetic traffic generation with performance testing, and comprehensive security policy management including Basic Authentication, CORS, IP Filtering, and mTLS. For additional advanced features like:
 
-- **Security policies** (JWT, authentication, authorization)
+- **JWT Authentication**: Token-based authentication policies
 - **Rate limiting** and traffic policies
 - **Protocol routing** beyond HTTP
 - **EnvoyProxy custom resources**
@@ -204,13 +231,14 @@ You'll need to use kubectl, Helm charts, or other Kubernetes tools. These featur
 
 Consider using kubectl, Helm, or other tools when you need:
 
-- **Policy management**: Security, rate limiting, or traffic policies
+- **JWT Authentication**: Token-based authentication policies
+- **Rate limiting**: Advanced traffic throttling and quotas
 - **Resource editing**: Modifying existing configurations
 - **Production deployments**: Complex multi-environment scenarios
 - **Advanced protocols**: TCP, UDP, or gRPC routing
 - **Complex TLS scenarios**: Certificate rotation and advanced CA management
 
-The extension excels at basic HTTP routing scenarios and learning Gateway API concepts.
+The extension excels at HTTP routing scenarios, security policy management, and learning Gateway API concepts with comprehensive basic authentication, CORS, IP filtering, and mTLS support.
 
 ## Getting Help
 
@@ -228,14 +256,16 @@ The extension includes built-in guidance:
 Definitely! The development team actively listens to user feedback. Top requested features include:
 
 - **Resource editing capabilities** (update existing Gateways and HTTPRoutes)
-- **Policy management interface** (security policies, rate limiting)
-- **Advanced TLS configuration** (certificate management)
+- **JWT Authentication** (token-based authentication policies)
+- **Rate limiting interface** (traffic throttling and quotas)
 - **Multi-protocol support** (TCP, UDP, gRPC routing)
-- **Enhanced template system** with more use cases
+- **Enhanced workflow automation** and advanced template features
+
+Note: Comprehensive security policy management (Basic Auth, CORS, IP Filtering, mTLS), advanced YAML editor, Resource Creation Wizard, and enhanced Template Gallery have been completed in v0.9.0!
 
 ### Is this actively maintained?
 
-Yes! The extension receives regular updates focusing on expanding from the current basic Gateway/HTTPRoute management to more comprehensive Envoy Gateway features. The development team is responsive to issues and feature requests, with a clear roadmap for policy management and advanced features.
+Yes! The extension receives regular updates with v0.9.0 recently adding comprehensive security policy management, advanced YAML editor, Resource Creation Wizard, and enhanced Template Gallery. The development team is responsive to issues and feature requests, with a clear roadmap for JWT authentication, rate limiting, and additional advanced features.
 
 ---
 
