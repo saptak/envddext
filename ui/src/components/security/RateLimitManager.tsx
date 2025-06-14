@@ -113,6 +113,8 @@ export const RateLimitManager: React.FC<RateLimitManagerProps> = ({
   const [editingRule, setEditingRule] = React.useState<RateLimitRule | null>(null);
   const [isCreating, setIsCreating] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [yamlDialogOpen, setYamlDialogOpen] = React.useState(false);
+  const [selectedRuleForYaml, setSelectedRuleForYaml] = React.useState<RateLimitRule | null>(null);
 
   // Form state
   const [formData, setFormData] = React.useState({
@@ -237,6 +239,55 @@ export const RateLimitManager: React.FC<RateLimitManagerProps> = ({
   const formatRateLimit = (requests: number, timeUnit: string, burst?: number) => {
     const burstText = burst ? ` (burst: ${burst})` : "";
     return `${requests}/${timeUnit}${burstText}`;
+  };
+
+  const generateRateLimitYAML = (rule: RateLimitRule): string => {
+    const targetRef = rule.targetType === "Gateway" ? {
+      group: "gateway.networking.k8s.io",
+      kind: "Gateway",
+      name: rule.targetName
+    } : {
+      group: "gateway.networking.k8s.io", 
+      kind: "HTTPRoute",
+      name: rule.targetName
+    };
+
+    const descriptorKey = rule.dimension === "global" ? "generic_key" :
+                         rule.dimension === "per-ip" ? "remote_address" :
+                         rule.dimension === "per-header" ? `header_match` :
+                         rule.dimension === "per-user" ? "header_match" : "generic_key";
+
+    return `apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: ${rule.name}
+  namespace: ${rule.namespace}
+spec:
+  targetRef:
+    group: ${targetRef.group}
+    kind: ${targetRef.kind}
+    name: ${targetRef.name}
+  rateLimit:
+    type: Global
+    global:
+      rules:
+        - clientSelectors:
+            - ${rule.dimension === "per-header" && rule.dimensionKey ? `headers:
+                - name: "${rule.dimensionKey}"
+                  type: Distinct` : 
+               rule.dimension === "per-user" && rule.dimensionKey ? `headers:
+                - name: "${rule.dimensionKey}"
+                  type: Distinct` :
+               rule.dimension === "per-ip" ? `sourceCIDR: "0.0.0.0/0"` : `{}  # Global`}
+          limit:
+            requests: ${rule.requests}
+            unit: ${rule.timeUnit.charAt(0).toUpperCase() + rule.timeUnit.slice(1)}${rule.burst ? `
+            burst: ${rule.burst}` : ''}`;
+  };
+
+  const handleViewYaml = (rule: RateLimitRule) => {
+    setSelectedRuleForYaml(rule);
+    setYamlDialogOpen(true);
   };
 
   return (
@@ -555,7 +606,7 @@ spec:
                 <Button 
                   size="small" 
                   startIcon={<ViewIcon />}
-                  onClick={() => {}}
+                  onClick={() => handleViewYaml(rule)}
                 >
                   View YAML
                 </Button>
@@ -763,6 +814,52 @@ spec:
             disabled={isCreating}
           >
             {isCreating ? "Creating..." : editingRule ? "Update Rule" : "Create Rule"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* YAML View Dialog */}
+      <Dialog
+        open={yamlDialogOpen}
+        onClose={() => setYamlDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Rate Limit Policy YAML</DialogTitle>
+        <DialogContent>
+          {selectedRuleForYaml && (
+            <Paper
+              sx={{
+                p: 2,
+                backgroundColor: "grey.900",
+                color: "common.white",
+                border: "1px solid",
+                borderColor: "divider",
+                maxHeight: "500px",
+                overflow: "auto",
+                ...(theme => theme.palette.mode === 'light' && {
+                  backgroundColor: 'grey.100',
+                  color: 'text.primary'
+                })
+              }}
+            >
+              <Typography
+                component="pre"
+                sx={{
+                  fontFamily: "monospace",
+                  fontSize: "0.875rem",
+                  whiteSpace: "pre-wrap",
+                  margin: 0,
+                }}
+              >
+                {generateRateLimitYAML(selectedRuleForYaml)}
+              </Typography>
+            </Paper>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setYamlDialogOpen(false)} variant="contained">
+            Close
           </Button>
         </DialogActions>
       </Dialog>

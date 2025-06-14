@@ -91,6 +91,8 @@ export const CorsManager: React.FC<CorsManagerProps> = ({
   const [editingConfig, setEditingConfig] = React.useState<CorsConfig | null>(null);
   const [isCreating, setIsCreating] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [yamlDialogOpen, setYamlDialogOpen] = React.useState(false);
+  const [selectedConfigForYaml, setSelectedConfigForYaml] = React.useState<CorsConfig | null>(null);
 
   // Form state
   const [formData, setFormData] = React.useState({
@@ -271,6 +273,45 @@ export const CorsManager: React.FC<CorsManagerProps> = ({
     }));
   };
 
+  const generateCorsYAML = (config: CorsConfig): string => {
+    const targetRef = config.targetType === "Gateway" ? {
+      group: "gateway.networking.k8s.io",
+      kind: "Gateway",
+      name: config.targetName
+    } : {
+      group: "gateway.networking.k8s.io", 
+      kind: "HTTPRoute",
+      name: config.targetName
+    };
+
+    return `apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: ${config.name}
+  namespace: ${config.namespace}
+spec:
+  targetRef:
+    group: ${targetRef.group}
+    kind: ${targetRef.kind}
+    name: ${targetRef.name}
+  cors:
+    allowOrigins:${config.allowOrigins.map(origin => `
+      - origin: "${origin}"`).join('')}
+    allowMethods:${config.allowMethods.map(method => `
+      - "${method}"`).join('')}
+    allowHeaders:${config.allowHeaders.map(header => `
+      - "${header}"`).join('')}${config.exposeHeaders.length > 0 ? `
+    exposeHeaders:${config.exposeHeaders.map(header => `
+      - "${header}"`).join('')}` : ''}${config.allowCredentials ? `
+    allowCredentials: true` : ''}${config.maxAge > 0 ? `
+    maxAge: ${config.maxAge}s` : ''}`;
+  };
+
+  const handleViewYaml = (config: CorsConfig) => {
+    setSelectedConfigForYaml(config);
+    setYamlDialogOpen(true);
+  };
+
   return (
     <Box>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
@@ -353,7 +394,7 @@ export const CorsManager: React.FC<CorsManagerProps> = ({
                 <Button 
                   size="small" 
                   startIcon={<ViewIcon />}
-                  onClick={() => {}}
+                  onClick={() => handleViewYaml(config)}
                 >
                   View YAML
                 </Button>
@@ -618,6 +659,52 @@ export const CorsManager: React.FC<CorsManagerProps> = ({
           </Button>
           <Button onClick={handleSave} variant="contained" disabled={isCreating}>
             {isCreating ? "Creating..." : editingConfig ? "Update" : "Create"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* YAML View Dialog */}
+      <Dialog
+        open={yamlDialogOpen}
+        onClose={() => setYamlDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>CORS Policy YAML</DialogTitle>
+        <DialogContent>
+          {selectedConfigForYaml && (
+            <Paper
+              sx={{
+                p: 2,
+                backgroundColor: "grey.900",
+                color: "common.white",
+                border: "1px solid",
+                borderColor: "divider",
+                maxHeight: "500px",
+                overflow: "auto",
+                ...(theme => theme.palette.mode === 'light' && {
+                  backgroundColor: 'grey.100',
+                  color: 'text.primary'
+                })
+              }}
+            >
+              <Typography
+                component="pre"
+                sx={{
+                  fontFamily: "monospace",
+                  fontSize: "0.875rem",
+                  whiteSpace: "pre-wrap",
+                  margin: 0,
+                }}
+              >
+                {generateCorsYAML(selectedConfigForYaml)}
+              </Typography>
+            </Paper>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setYamlDialogOpen(false)} variant="contained">
+            Close
           </Button>
         </DialogActions>
       </Dialog>

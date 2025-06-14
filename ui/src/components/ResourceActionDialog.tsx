@@ -115,7 +115,7 @@ export const ResourceActionDialog: React.FC<ResourceActionDialogProps> = ({
           <Typography variant="body1" gutterBottom>
             Are you sure you want to delete this {resourceType.toLowerCase()}?
           </Typography>
-          <Paper sx={{ p: 2, mt: 2, backgroundColor: "rgba(255, 255, 255, 0.05)" }}>
+          <Paper sx={{ p: 2, mt: 2, backgroundColor: "action.hover" }}>
             <Typography variant="body2" color="text.secondary">
               <strong>Name:</strong> {resourceName}
             </Typography>
@@ -142,10 +142,16 @@ export const ResourceActionDialog: React.FC<ResourceActionDialogProps> = ({
             <Paper
               sx={{
                 p: 2,
-                backgroundColor: "rgba(0, 0, 0, 0.2)",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
+                backgroundColor: "grey.900",
+                color: "common.white",
+                border: "1px solid",
+                borderColor: "divider",
                 maxHeight: "500px",
                 overflow: "auto",
+                ...(theme => theme.palette.mode === 'light' && {
+                  backgroundColor: 'grey.100',
+                  color: 'text.primary'
+                })
               }}
             >
               <Typography
@@ -203,7 +209,8 @@ export const ResourceActionDialog: React.FC<ResourceActionDialogProps> = ({
       PaperProps={{
         sx: {
           backgroundColor: "background.paper",
-          border: "1px solid rgba(255, 255, 255, 0.1)",
+          border: "1px solid",
+          borderColor: "divider",
         },
       }}
     >

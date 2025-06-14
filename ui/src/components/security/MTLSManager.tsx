@@ -90,6 +90,8 @@ export const MTLSManager: React.FC<MTLSManagerProps> = ({
   const [isCreating, setIsCreating] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [activeStep, setActiveStep] = React.useState(0);
+  const [yamlDialogOpen, setYamlDialogOpen] = React.useState(false);
+  const [selectedConfigForYaml, setSelectedConfigForYaml] = React.useState<MTLSConfig | null>(null);
 
   // Form state
   const [formData, setFormData] = React.useState({
@@ -230,6 +232,36 @@ export const MTLSManager: React.FC<MTLSManagerProps> = ({
       ...prev,
       trustedCAs: prev.trustedCAs.filter(ca => ca !== caName)
     }));
+  };
+
+  const generateMTLSYAML = (config: MTLSConfig): string => {
+    return `apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: ${config.targetName}
+  namespace: ${config.namespace}
+spec:
+  gatewayClassName: envoy-gateway
+  listeners:
+    - name: https
+      protocol: HTTPS
+      port: 443
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: server-cert-secret  # Server certificate
+        options:
+          clientValidation:
+            caCertificateRefs:
+              - name: ${config.caCertificateSecret}
+            optional: ${config.clientCertificateMode === 'optional' ? 'true' : 'false'}${config.crlSecret ? `
+            crlRef:
+              name: ${config.crlSecret}` : ''}`;
+  };
+
+  const handleViewYaml = (config: MTLSConfig) => {
+    setSelectedConfigForYaml(config);
+    setYamlDialogOpen(true);
   };
 
   const renderStepContent = (step: number) => {
@@ -551,7 +583,7 @@ export const MTLSManager: React.FC<MTLSManagerProps> = ({
                 <Button 
                   size="small" 
                   startIcon={<ViewIcon />}
-                  onClick={() => {}}
+                  onClick={() => handleViewYaml(config)}
                 >
                   View YAML
                 </Button>
@@ -629,6 +661,52 @@ export const MTLSManager: React.FC<MTLSManagerProps> = ({
         <DialogActions>
           <Button onClick={() => setDialogOpen(false)} disabled={isCreating}>
             Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* YAML View Dialog */}
+      <Dialog
+        open={yamlDialogOpen}
+        onClose={() => setYamlDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>mTLS Gateway Configuration YAML</DialogTitle>
+        <DialogContent>
+          {selectedConfigForYaml && (
+            <Paper
+              sx={{
+                p: 2,
+                backgroundColor: "grey.900",
+                color: "common.white",
+                border: "1px solid",
+                borderColor: "divider",
+                maxHeight: "500px",
+                overflow: "auto",
+                ...(theme => theme.palette.mode === 'light' && {
+                  backgroundColor: 'grey.100',
+                  color: 'text.primary'
+                })
+              }}
+            >
+              <Typography
+                component="pre"
+                sx={{
+                  fontFamily: "monospace",
+                  fontSize: "0.875rem",
+                  whiteSpace: "pre-wrap",
+                  margin: 0,
+                }}
+              >
+                {generateMTLSYAML(selectedConfigForYaml)}
+              </Typography>
+            </Paper>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setYamlDialogOpen(false)} variant="contained">
+            Close
           </Button>
         </DialogActions>
       </Dialog>

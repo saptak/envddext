@@ -99,6 +99,8 @@ export const IPFilterManager: React.FC<IPFilterManagerProps> = ({
   const [editingConfig, setEditingConfig] = React.useState<IPFilterConfig | null>(null);
   const [isCreating, setIsCreating] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [yamlDialogOpen, setYamlDialogOpen] = React.useState(false);
+  const [selectedConfigForYaml, setSelectedConfigForYaml] = React.useState<IPFilterConfig | null>(null);
 
   // Form state
   const [formData, setFormData] = React.useState({
@@ -258,6 +260,43 @@ export const IPFilterManager: React.FC<IPFilterManagerProps> = ({
     setFormData(prev => ({ ...prev, newRuleCidr: cidr }));
   };
 
+  const generateIPFilterYAML = (config: IPFilterConfig): string => {
+    const targetRef = config.targetType === "Gateway" ? {
+      group: "gateway.networking.k8s.io",
+      kind: "Gateway",
+      name: config.targetName
+    } : {
+      group: "gateway.networking.k8s.io", 
+      kind: "HTTPRoute",
+      name: config.targetName
+    };
+
+    return `apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: ${config.name}
+  namespace: ${config.namespace}
+spec:
+  targetRef:
+    group: ${targetRef.group}
+    kind: ${targetRef.kind}
+    name: ${targetRef.name}
+  authorization:
+    defaultAction: ${config.defaultAction}${config.rules.length > 0 ? `
+    rules:${config.rules.map(rule => `
+      - action: ${rule.type}
+        from:
+          - source:
+              remoteIPBlocks:
+                - ${rule.cidr}${rule.description ? `
+        # ${rule.description}` : ''}`).join('')}` : ''}`;
+  };
+
+  const handleViewYaml = (config: IPFilterConfig) => {
+    setSelectedConfigForYaml(config);
+    setYamlDialogOpen(true);
+  };
+
   return (
     <Box>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
@@ -344,7 +383,7 @@ export const IPFilterManager: React.FC<IPFilterManagerProps> = ({
                 <Button 
                   size="small" 
                   startIcon={<ViewIcon />}
-                  onClick={() => {}}
+                  onClick={() => handleViewYaml(config)}
                 >
                   View YAML
                 </Button>
@@ -647,6 +686,52 @@ export const IPFilterManager: React.FC<IPFilterManagerProps> = ({
           </Button>
           <Button onClick={handleSave} variant="contained" disabled={isCreating}>
             {isCreating ? "Creating..." : editingConfig ? "Update" : "Create"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* YAML View Dialog */}
+      <Dialog
+        open={yamlDialogOpen}
+        onClose={() => setYamlDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>IP Filter Policy YAML</DialogTitle>
+        <DialogContent>
+          {selectedConfigForYaml && (
+            <Paper
+              sx={{
+                p: 2,
+                backgroundColor: "grey.900",
+                color: "common.white",
+                border: "1px solid",
+                borderColor: "divider",
+                maxHeight: "500px",
+                overflow: "auto",
+                ...(theme => theme.palette.mode === 'light' && {
+                  backgroundColor: 'grey.100',
+                  color: 'text.primary'
+                })
+              }}
+            >
+              <Typography
+                component="pre"
+                sx={{
+                  fontFamily: "monospace",
+                  fontSize: "0.875rem",
+                  whiteSpace: "pre-wrap",
+                  margin: 0,
+                }}
+              >
+                {generateIPFilterYAML(selectedConfigForYaml)}
+              </Typography>
+            </Paper>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setYamlDialogOpen(false)} variant="contained">
+            Close
           </Button>
         </DialogActions>
       </Dialog>
