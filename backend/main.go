@@ -1026,6 +1026,13 @@ func (s *Server) handleStartTrafficTest(w http.ResponseWriter, r *http.Request) 
 		s.sendError(w, "Target URL is required", http.StatusBadRequest)
 		return
 	}
+
+	// Transform localhost URLs for container access
+	originalURL := config.TargetURL
+	config.TargetURL = s.transformURLForContainer(config.TargetURL)
+	if originalURL != config.TargetURL {
+		log.Printf("Transformed URL for container access: %s -> %s", originalURL, config.TargetURL)
+	}
 	if config.RPS <= 0 {
 		config.RPS = 10 // Default RPS
 	}
@@ -1280,6 +1287,18 @@ func (s *Server) calculateMetrics() TrafficMetrics {
 		RPS:             rps,
 		IsRunning:       s.trafficTest.isRunning,
 	}
+}
+
+func (s *Server) transformURLForContainer(targetURL string) string {
+	// Transform localhost and 127.0.0.1 URLs to work from inside Docker container
+	// Replace localhost with host.docker.internal for Docker Desktop
+	if strings.Contains(targetURL, "://localhost") {
+		return strings.Replace(targetURL, "://localhost", "://host.docker.internal", 1)
+	}
+	if strings.Contains(targetURL, "://127.0.0.1") {
+		return strings.Replace(targetURL, "://127.0.0.1", "://host.docker.internal", 1)
+	}
+	return targetURL
 }
 
 func (s *Server) sendError(w http.ResponseWriter, message string, statusCode int) {

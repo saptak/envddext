@@ -266,6 +266,7 @@ export const TrafficGenerator: React.FC = () => {
                   onChange={(e) => setConfig(prev => ({ ...prev, targetUrl: e.target.value }))}
                   placeholder="http://localhost:8080/"
                   disabled={isRunning}
+                  helperText="localhost and 127.0.0.1 URLs are automatically transformed for container access"
                 />
               </Grid>
 
