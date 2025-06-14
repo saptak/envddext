@@ -51,7 +51,11 @@ import {
   CheckCircle as CheckIcon,
   Schedule as ClockIcon,
   Person as AuthorIcon,
-  Tag as TagIcon
+  Tag as TagIcon,
+  Security as SecurityIcon,
+  Hub as HubIcon,
+  Router as RouterIcon,
+  Speed as SpeedIcon
 } from "@mui/icons-material";
 
 interface Template {
@@ -106,8 +110,7 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       featured: true,
       downloads: 1250,
       rating: 4.8,
-      lastUpdated: "2025-06-10",
-      thumbnail: "/api/placeholder/300/200"
+      lastUpdated: "2025-06-10"
     },
     {
       id: "tls-termination",
@@ -283,6 +286,19 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
     }
   };
 
+  const getCategoryIcon = (category: string) => {
+    switch (category.toLowerCase()) {
+      case "security":
+        return <SecurityIcon sx={{ fontSize: 40, color: 'error.main' }} />;
+      case "traffic management":
+        return <RouterIcon sx={{ fontSize: 40, color: 'warning.main' }} />;
+      case "basic":
+        return <HubIcon sx={{ fontSize: 40, color: 'success.main' }} />;
+      default:
+        return <CodeIcon sx={{ fontSize: 40, color: 'primary.main' }} />;
+    }
+  };
+
   return (
     <Box>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
@@ -386,13 +402,35 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                 }
               }}
             >
-              {template.thumbnail && (
+              {template.thumbnail ? (
                 <CardMedia
                   component="img"
                   height="140"
                   image={template.thumbnail}
                   alt={template.name}
+                  onError={(e) => {
+                    // Hide the image if it fails to load
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
                 />
+              ) : (
+                <Box
+                  sx={{
+                    height: 140,
+                    bgcolor: 'action.hover',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexDirection: 'column',
+                    gap: 1
+                  }}
+                >
+                  {getCategoryIcon(template.category)}
+                  <Typography variant="caption" color="text.secondary" fontWeight="medium">
+                    {template.category}
+                  </Typography>
+                </Box>
               )}
               
               <CardContent sx={{ flexGrow: 1 }}>
