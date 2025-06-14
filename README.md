@@ -1,9 +1,10 @@
 # Envoy Gateway Docker Desktop Extension v0.12.0
 
-A production-ready Docker Desktop extension for managing Envoy Gateway resources with enterprise-grade performance optimizations, comprehensive security policies, and interactive visual interface.
+A production-ready Docker Desktop extension for managing Envoy Gateway resources with enterprise-grade performance optimizations, comprehensive security policies, and an intuitive 4-tab interface with Envoy branding.
 
 ## Key Features
 
+- **Streamlined Interface**: Clean 4-tab design with Envoy logo and progressive complexity
 - **Comprehensive Security**: JWT authentication, Basic Auth, CORS, IP filtering, mTLS, and rate limiting
 - **Interactive Interface**: Contextual help, step-by-step tutorials, and guided wizards
 - **Traffic Management**: Traffic splitting, synthetic load testing, and real-time metrics
@@ -13,39 +14,26 @@ A production-ready Docker Desktop extension for managing Envoy Gateway resources
 
 ## Core Functionality
 
-### 📊 Dashboard
+### 🚀 Quick Start Tab
+- **Overview Dashboard**: System health monitoring with Gateway, HTTPRoute, and Service status
+- **Template Gallery**: Curated templates with search and one-click deployment
+- **Visual Resource Cards**: Relationship mapping and real-time status indicators
 
-- System health monitoring with Gateway, HTTPRoute, and Service status
-- Visual resource cards with relationship mapping
-- Real-time status indicators and deployment monitoring
-
-### ⚙️ Resource Management
-
-- **Gateways**: Create/delete with TLS listener configuration
-- **HTTPRoutes**: Advanced routing rules with path matching and backend services
-- **Security Policies**: JWT, Basic Auth, CORS, IP filtering, mTLS, rate limiting
+### 🏗️ Infrastructure Tab
+- **Gateways**: Create/delete with TLS listener configuration and LoadBalancer management
+- **HTTP Routes**: Advanced routing rules with path matching and backend services
 - **TLS Certificates**: Automated cert-manager integration and certificate lifecycle
 
-### 🧪 Testing & Traffic
-
-- **HTTP Testing**: Built-in client with JWT support and request history
-- **Traffic Generator**: Synthetic load testing with real-time metrics
-- **Traffic Splitting**: Canary deployments and A/B testing patterns
-- **Proxy Management**: Integrated kubectl proxy with lifecycle management
-
-### 🛡️ Security & Policies
-
-- **JWT Authentication**: Provider configuration with claim mapping
-- **Rate Limiting**: Multi-dimensional policies (global, per-IP, per-header)
-- **Access Control**: IP filtering, Basic Auth, and mTLS policies
-- **CORS Management**: Cross-origin resource sharing configuration
-
-### 🎨 Advanced Features
-
-- **Template Gallery**: Curated templates with search and one-click deployment
-- **YAML Editor**: Syntax highlighting with validation and templates
-- **Interactive Tutorials**: Guided setup for Gateway, JWT, and traffic splitting
+### 🛡️ Security & Policies Tab
+- **Security Policies**: JWT authentication, Basic Auth, CORS, IP filtering, mTLS, rate limiting
 - **Resilience Policies**: Timeout and retry configuration with visual management
+- **Policy Wizards**: Step-by-step configuration for complex security setups
+
+### 🚦 Traffic & Testing Tab
+- **Traffic Splitting**: Canary deployments and A/B testing patterns with real-time visualization
+- **HTTP Testing**: Built-in client with JWT support, HTTPS testing, and request history
+- **Performance Testing**: Synthetic load testing with configurable RPS and real-time metrics
+- **Proxy Management**: Integrated kubectl proxy with lifecycle management
 
 ## Quick Start
 

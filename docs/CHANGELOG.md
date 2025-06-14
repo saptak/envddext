@@ -5,6 +5,42 @@ All notable changes to the Envoy Gateway Docker Desktop Extension will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.1] - 2025-06-14 "Interface Redesign & Envoy Branding"
+
+### Added - 🎨 4-Tab Progressive Complexity Interface
+
+- **🚀 Streamlined Navigation**:
+    - **4-Tab Architecture**: Simplified from 9 tabs to 4 main tabs with logical sub-tab organization
+    - **Progressive Disclosure**: Information organized by complexity level (Quick Start → Infrastructure → Security → Testing)
+    - **Enhanced User Experience**: Reduced cognitive load with intuitive workflow-based grouping
+    - **Professional Tab Components**: Enhanced tabs with icons, descriptions, and resource counts
+
+- **🎨 Envoy Branding Integration**:
+    - **Envoy Logo Component**: Custom React SVG component for professional Envoy logo display
+    - **Visual Identity**: Clear Envoy Gateway branding with consistent theming
+    - **Material-UI Theming**: Professional design language aligned with Envoy project standards
+    - **Scalable Graphics**: Vector-based logo rendering for crisp display at all sizes
+
+- **🧹 Interface Simplification**:
+    - **Header Removal**: Eliminated redundant headers from main tabs and sub-tabs for cleaner layout
+    - **Visual Clarity**: Tab names provide sufficient context without additional visual clutter
+    - **Focused Design**: Streamlined interface emphasizing functionality over decoration
+    - **Improved Navigation**: Faster access to features with reduced visual overhead
+
+### Enhanced - 🏗️ Tab Organization & User Workflows
+
+- **Quick Start Tab**: Overview dashboard and template gallery for immediate productivity
+- **Infrastructure Tab**: Gateways, HTTP Routes, and TLS Certificates for system configuration
+- **Security & Policies Tab**: Security policies and resilience configuration for production readiness
+- **Traffic & Testing Tab**: Traffic splitting, HTTP testing, and performance validation
+
+### Technical Implementation - v0.12.1 Interface Architecture
+
+- **React Component Updates**: Enhanced tab components with memoization and professional styling
+- **State Management**: Improved sub-tab navigation with centralized state tracking
+- **TypeScript Improvements**: Strong typing for new tab structure and navigation patterns
+- **Performance Maintained**: All v0.12.0 performance optimizations preserved in new interface
+
 ## [0.12.0] - 2025-06-13 "Performance Optimization & Production Ready"
 
 ### Added - ⚡ Advanced Performance Optimization Framework

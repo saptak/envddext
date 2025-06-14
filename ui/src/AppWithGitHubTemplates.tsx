@@ -3,28 +3,21 @@ import {
   Typography,
   Box,
   Paper,
-  Divider,
   CircularProgress,
   Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Card,
-  CardContent,
-  CardActions,
-  Grid,
-  Snackbar,
-  Alert,
   Tab,
   Tabs,
+  Chip,
+  Stack,
 } from "@mui/material";
-import { useInterval, useDebounce, ApiCallManager } from "./utils/performanceUtils";
+import {
+  Architecture as InfrastructureIcon,
+  Security as SecurityIcon,
+  Traffic as TrafficIcon,
+  // Monitor as MonitoringIcon, // Commented out until Operations tab implemented
+  RocketLaunch as RocketLaunchIcon,
+} from "@mui/icons-material";
+import { ApiCallManager } from "./utils/performanceUtils";
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 import {
   listEnvoyGateways,
@@ -32,14 +25,8 @@ import {
   checkEnvoyGatewayCRDs,
   installEnvoyGateway,
 } from "./helper/kubernetes";
-import {
-  fetchTemplatesMetadata,
-  loadTemplate,
-  applyTemplateFromUrl,
-  Template,
-  TemplateMetadata,
-  checkDeploymentStatus,
-} from "./services/githubTemplateService";
+
+// Import existing components
 import { GatewayManagement } from "./components/GatewayManagement";
 import { HTTPRouteManagement } from "./components/HTTPRouteManagement";
 import { HTTPClient } from "./components/HTTPClient";
@@ -54,8 +41,348 @@ import { SecurityPolicyManager } from "./components/SecurityPolicyManager";
 import { TemplateGallery } from "./components/TemplateGallery";
 import ResiliencePolicyManager from "./components/ResiliencePolicyManager";
 import { TutorialManager, TutorialLauncher } from "./components/InteractiveTutorial";
+import { EnvoyLogo } from "./components/EnvoyLogo";
 
 const ddClient = createDockerDesktopClient();
+
+// New Tab Structure Constants
+const TAB_IDS = {
+  QUICK_START: 0,
+  INFRASTRUCTURE: 1,
+  SECURITY_POLICIES: 2,
+  TRAFFIC_TESTING: 3,
+  // OPERATIONS: 4, // Commented out until implemented
+} as const;
+
+const SUB_TAB_IDS = {
+  // Quick Start sub-tabs
+  OVERVIEW: 0,
+  TEMPLATES: 1,
+  // SETUP_WIZARD: 2, // Commented out until implemented
+  
+  // Infrastructure sub-tabs
+  GATEWAYS: 0,
+  ROUTES: 1,
+  TLS_CERTS: 2,
+  
+  // Security & Policies sub-tabs
+  SECURITY_POLICIES: 0,
+  RESILIENCE_POLICIES: 1,
+  
+  // Traffic & Testing sub-tabs
+  TRAFFIC_SPLITTING: 0,
+  HTTP_TESTING: 1,
+  PERFORMANCE_TESTING: 2,
+  
+  // Operations sub-tabs (commented out until implemented)
+  // MONITORING: 0,
+  // TROUBLESHOOTING: 1,
+} as const;
+
+// Enhanced Tab Component with Icons and Descriptions
+const EnhancedTab = memo(({ 
+  icon, 
+  label, 
+  description, 
+  count, 
+  ...tabProps 
+}: {
+  icon: React.ReactNode;
+  label: string;
+  description?: string;
+  count?: number;
+} & Parameters<typeof Tab>[0]) => (
+  <Tab
+    {...tabProps}
+    label={
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, textAlign: 'left' }}>
+        {icon}
+        <Box>
+          <Typography variant="body2" fontWeight="medium">
+            {label}
+            {count !== undefined && (
+              <Chip 
+                size="small" 
+                label={count} 
+                sx={{ ml: 1, height: 16, fontSize: '0.75rem' }}
+              />
+            )}
+          </Typography>
+          {description && (
+            <Typography variant="caption" color="text.secondary" display="block">
+              {description}
+            </Typography>
+          )}
+        </Box>
+      </Box>
+    }
+    sx={{ 
+      minHeight: 72,
+      textTransform: 'none',
+      alignItems: 'flex-start',
+      justifyContent: 'flex-start',
+    }}
+  />
+));
+
+// Quick Start Tab Component
+const QuickStartTab = memo(({ 
+  currentSubTab, 
+  onSubTabChange, 
+  gateways, 
+  routes, 
+  deployedServices, 
+  loading, 
+  onRefresh, 
+  onResourceAction, 
+  ddClient,
+  onTemplateApply,
+}: {
+  currentSubTab: number;
+  onSubTabChange: (value: number) => void;
+  gateways: any[];
+  routes: any[];
+  deployedServices: any[];
+  loading: boolean;
+  onRefresh: () => void;
+  onResourceAction: (action: "delete" | "viewYaml", resourceType: "Gateway" | "HTTPRoute", resourceName: string, resourceNamespace: string) => void;
+  ddClient: any;
+  onTemplateApply: () => void;
+}) => (
+  <Box>
+    <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+      <Tabs 
+        value={currentSubTab} 
+        onChange={(_, value) => onSubTabChange(value)}
+        variant="scrollable"
+        scrollButtons="auto"
+      >
+        <Tab label="Overview" />
+        <Tab label="Template Gallery" />
+        {/* <Tab label="Setup Wizard" /> Commented out until implemented */}
+      </Tabs>
+    </Box>
+
+    {currentSubTab === SUB_TAB_IDS.OVERVIEW && (
+      <Dashboard
+        gateways={gateways}
+        routes={routes}
+        deployedServices={deployedServices}
+        loading={loading}
+        onRefresh={onRefresh}
+        onResourceAction={onResourceAction}
+        ddClient={ddClient}
+      />
+    )}
+
+    {currentSubTab === SUB_TAB_IDS.TEMPLATES && (
+      <TemplateGallery onTemplateApply={onTemplateApply} />
+    )}
+
+    {/* Setup Wizard commented out until implemented
+    {currentSubTab === SUB_TAB_IDS.SETUP_WIZARD && (
+      <Paper sx={{ p: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          Interactive Setup Wizard
+        </Typography>
+        <Typography variant="body2" color="text.secondary" paragraph>
+          Coming soon: Step-by-step guided setup for common Envoy Gateway configurations.
+        </Typography>
+        <Button variant="outlined" disabled>
+          Launch Setup Wizard
+        </Button>
+      </Paper>
+    )}
+    */}
+  </Box>
+));
+
+// Infrastructure Tab Component
+const InfrastructureTab = memo(({ 
+  currentSubTab, 
+  onSubTabChange, 
+  onResourceAction,
+}: {
+  currentSubTab: number;
+  onSubTabChange: (value: number) => void;
+  onResourceAction: () => void;
+}) => (
+  <Box>
+    <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+      <Tabs 
+        value={currentSubTab} 
+        onChange={(_, value) => onSubTabChange(value)}
+        variant="scrollable"
+        scrollButtons="auto"
+      >
+        <Tab label="Gateways" />
+        <Tab label="HTTP Routes" />
+        <Tab label="TLS Certificates" />
+      </Tabs>
+    </Box>
+
+    {currentSubTab === SUB_TAB_IDS.GATEWAYS && (
+      <GatewayManagement onGatewayCreated={onResourceAction} />
+    )}
+
+    {currentSubTab === SUB_TAB_IDS.ROUTES && (
+      <HTTPRouteManagement onHTTPRouteCreated={onResourceAction} />
+    )}
+
+    {currentSubTab === SUB_TAB_IDS.TLS_CERTS && (
+      <CertificateManager onCertificateCreated={onResourceAction} />
+    )}
+  </Box>
+));
+
+// Security & Policies Tab Component
+const SecurityPoliciesTab = memo(({ 
+  currentSubTab, 
+  onSubTabChange, 
+  onPolicyCreated,
+}: {
+  currentSubTab: number;
+  onSubTabChange: (value: number) => void;
+  onPolicyCreated: () => void;
+}) => (
+  <Box>
+    <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+      <Tabs 
+        value={currentSubTab} 
+        onChange={(_, value) => onSubTabChange(value)}
+        variant="scrollable"
+        scrollButtons="auto"
+      >
+        <Tab label="Security Policies" />
+        <Tab label="Resilience Policies" />
+      </Tabs>
+    </Box>
+
+    {currentSubTab === SUB_TAB_IDS.SECURITY_POLICIES && (
+      <SecurityPolicyManager onPolicyCreated={onPolicyCreated} />
+    )}
+
+    {currentSubTab === SUB_TAB_IDS.RESILIENCE_POLICIES && (
+      <ResiliencePolicyManager />
+    )}
+  </Box>
+));
+
+// Traffic & Testing Tab Component
+const TrafficTestingTab = memo(({ 
+  currentSubTab, 
+  onSubTabChange,
+}: {
+  currentSubTab: number;
+  onSubTabChange: (value: number) => void;
+}) => (
+  <Box>
+    <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+      <Tabs 
+        value={currentSubTab} 
+        onChange={(_, value) => onSubTabChange(value)}
+        variant="scrollable"
+        scrollButtons="auto"
+      >
+        <Tab label="Traffic Splitting" />
+        <Tab label="HTTP Testing" />
+        <Tab label="Performance Testing" />
+      </Tabs>
+    </Box>
+
+    {currentSubTab === SUB_TAB_IDS.TRAFFIC_SPLITTING && (
+      <TrafficSplittingManager />
+    )}
+
+    {currentSubTab === SUB_TAB_IDS.HTTP_TESTING && (
+      <Box>
+        {/* Proxy Manager Section */}
+        <Box sx={{ mb: 4 }}>
+          <ProxyManager />
+        </Box>
+
+        {/* HTTP Testing Section */}
+        <Box sx={{ mb: 4 }}>
+          <HTTPClient />
+        </Box>
+
+        {/* Rate Limit Testing Section */}
+        <Box>
+          <RateLimitTester onTestComplete={(summary) => {
+            console.log("Rate limit test completed:", summary);
+          }} />
+        </Box>
+      </Box>
+    )}
+
+    {currentSubTab === SUB_TAB_IDS.PERFORMANCE_TESTING && (
+      <TrafficGenerator />
+    )}
+  </Box>
+));
+
+// Operations Tab Component (commented out until implemented)
+/*
+const OperationsTab = memo(({ 
+  currentSubTab, 
+  onSubTabChange,
+}: {
+  currentSubTab: number;
+  onSubTabChange: (value: number) => void;
+}) => (
+  <Box>
+    <Box sx={{ mb: 3 }}>
+      <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <MonitoringIcon color="primary" />
+        Operations
+      </Typography>
+      <Typography variant="body2" color="text.secondary">
+        Monitor system health, troubleshoot issues, and maintain your gateway
+      </Typography>
+    </Box>
+
+    <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+      <Tabs 
+        value={currentSubTab} 
+        onChange={(_, value) => onSubTabChange(value)}
+        variant="scrollable"
+        scrollButtons="auto"
+      >
+        <Tab label="Monitoring" />
+        <Tab label="Troubleshooting" />
+      </Tabs>
+    </Box>
+
+    {currentSubTab === SUB_TAB_IDS.MONITORING && (
+      <Paper sx={{ p: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          System Monitoring
+        </Typography>
+        <Typography variant="body2" color="text.secondary" paragraph>
+          Coming soon: Real-time metrics, health checks, and performance monitoring.
+        </Typography>
+        <Button variant="outlined" disabled>
+          View Metrics Dashboard
+        </Button>
+      </Paper>
+    )}
+
+    {currentSubTab === SUB_TAB_IDS.TROUBLESHOOTING && (
+      <Paper sx={{ p: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          Troubleshooting Tools
+        </Typography>
+        <Typography variant="body2" color="text.secondary" paragraph>
+          Coming soon: Diagnostic tools, log analysis, and automated issue detection.
+        </Typography>
+        <Button variant="outlined" disabled>
+          Run Diagnostics
+        </Button>
+      </Paper>
+    )}
+  </Box>
+));
+*/
 
 export function App() {
   // State for Envoy Gateway resources
@@ -69,29 +396,18 @@ export function App() {
   const [installationError, setInstallationError] = React.useState<
     string | null
   >(null);
-  const [quickStartDialogOpen, setQuickStartDialogOpen] =
-    React.useState<boolean>(false);
 
-  // Template related state
-  const [templates, setTemplates] = React.useState<TemplateMetadata[]>([]);
-  const [selectedTemplate, setSelectedTemplate] =
-    React.useState<Template | null>(null);
-  const [templateYaml, setTemplateYaml] = React.useState<string>("");
-  const [isApplyingTemplate, setIsApplyingTemplate] = React.useState(false);
-  const [templateError, setTemplateError] = React.useState<string | null>(null);
-  const [templateSuccess, setTemplateSuccess] = React.useState<boolean>(false);
-  const [isLoadingTemplates, setIsLoadingTemplates] =
-    React.useState<boolean>(false);
+  // Updated tab state - now includes sub-tabs
+  const [currentTab, setCurrentTab] = React.useState<number>(TAB_IDS.QUICK_START);
+  const [currentSubTabs, setCurrentSubTabs] = React.useState<Record<number, number>>({
+    [TAB_IDS.QUICK_START]: SUB_TAB_IDS.OVERVIEW,
+    [TAB_IDS.INFRASTRUCTURE]: SUB_TAB_IDS.GATEWAYS,
+    [TAB_IDS.SECURITY_POLICIES]: SUB_TAB_IDS.SECURITY_POLICIES,
+    [TAB_IDS.TRAFFIC_TESTING]: SUB_TAB_IDS.TRAFFIC_SPLITTING,
+    // [TAB_IDS.OPERATIONS]: SUB_TAB_IDS.MONITORING, // Commented out until implemented
+  });
 
-  // Add new state variables
-  const [deploymentStatus, setDeploymentStatus] = React.useState<{
-    status: "pending" | "ready" | "failed";
-    message?: string;
-  } | null>(null);
-
-  // Add tab state and deployed services tracking
-  const [currentTab, setCurrentTab] = React.useState<number>(0);
-  const [deployedServices, setDeployedServices] = React.useState<
+  const [deployedServices] = React.useState<
     {
       namespace: string;
       deploymentName: string;
@@ -175,15 +491,13 @@ export function App() {
   const handleInstallClick = async () => {
     setIsInstalling(true);
     setInstallationError(null);
-    setError(null); // Clear general error when starting installation
+    setError(null);
     try {
-      // TODO: Allow user to specify version?
-      const result = await installEnvoyGateway(ddClient, "latest"); // Using latest version
+      const result = await installEnvoyGateway(ddClient, "latest");
       if (result.error) {
         console.error("Installation error:", result.error);
         setInstallationError(result.error);
       } else {
-        // Installation successful, re-check CRDs and fetch data
         await fetchData();
       }
     } catch (e: any) {
@@ -195,215 +509,19 @@ export function App() {
     setIsInstalling(false);
   };
 
-  // Memoized event handlers for better performance
-  const handleQuickStartOpen = useCallback(async () => {
-    setIsLoadingTemplates(true);
-    setTemplateError(null);
-    setTemplateSuccess(false);
-    setQuickStartDialogOpen(true);
-
-    try {
-      // Use cached template fetching
-      const templatesMetadata = await apiManager.call(
-        'templates-metadata',
-        () => fetchTemplatesMetadata()
-      );
-      setTemplates(templatesMetadata);
-    } catch (error: any) {
-      console.error("Error fetching templates:", error);
-      setTemplateError(
-        typeof error === "string" ? error : JSON.stringify(error, null, 2),
-      );
-    } finally {
-      setIsLoadingTemplates(false);
-    }
-
-    setSelectedTemplate(null);
-    setTemplateYaml("");
-  }, [apiManager]);
-
-  const handleQuickStartClose = useCallback(() => {
-    setQuickStartDialogOpen(false);
-  }, []);
-
-  // Handle tab change with memoization
+  // Enhanced tab change handlers
   const handleTabChange = useCallback((_event: React.SyntheticEvent, newValue: number) => {
     setCurrentTab(newValue);
     // Clear cache for the new tab to ensure fresh data
     apiManager.clearCache();
   }, [apiManager]);
 
-  const handleTemplateSelect = async (templateId: string) => {
-    setTemplateError(null);
-    setTemplateSuccess(false);
-    setIsLoadingTemplates(true);
-
-    try {
-      const template = await loadTemplate(templateId);
-      setSelectedTemplate(template);
-
-      if (template) {
-        // Set the YAML content
-        setTemplateYaml(template.yamlContent);
-      } else {
-        setTemplateError(`Failed to load template: ${templateId}`);
-      }
-    } catch (e: any) {
-      console.error("Error loading template:", e);
-      setTemplateError(typeof e === "string" ? e : JSON.stringify(e, null, 2));
-    } finally {
-      setIsLoadingTemplates(false);
-    }
-  };
-
-  // Optimized status checking with proper interval management
-  const [isStatusChecking, setIsStatusChecking] = React.useState(false);
-  const [statusCheckInterval, setStatusCheckInterval] = React.useState<NodeJS.Timeout | null>(null);
-  
-  const checkTemplateDeploymentStatus = useCallback(async () => {
-    if (!selectedTemplate) return;
-
-    try {
-      const status = await checkDeploymentStatus(ddClient, selectedTemplate);
-      setDeploymentStatus(status);
-
-      if (status.status === "ready" || status.status === "failed") {
-        setIsStatusChecking(false);
-      }
-    } catch (error) {
-      console.error("Error checking deployment status:", error);
-      setDeploymentStatus({
-        status: "failed",
-        message: "Failed to check deployment status",
-      });
-      setIsStatusChecking(false);
-    }
-  }, [selectedTemplate, ddClient]);
-
-  // Use optimized interval hook
-  useInterval(
-    checkTemplateDeploymentStatus,
-    isStatusChecking ? 2000 : null,
-    [selectedTemplate]
-  );
-
-  // Update handleApplyTemplate
-  const handleApplyTemplate = async () => {
-    if (!selectedTemplate) return;
-
-    setIsApplyingTemplate(true);
-    setTemplateError(null);
-    setTemplateSuccess(false);
-    setDeploymentStatus(null);
-
-    try {
-      // Apply the template using the GitHub template service
-      const result = await applyTemplateFromUrl(
-        ddClient,
-        selectedTemplate.metadata.yamlUrl,
-      );
-
-      if (result.success) {
-        setTemplateSuccess(true);
-        // Start optimized status checking
-        setIsStatusChecking(true);
-        // Initial check
-        await checkTemplateDeploymentStatus();
-
-        // Refresh the UI with the latest gateways and routes
-        await fetchData();
-
-        // Track deployed services based on template ID
-        if (selectedTemplate.metadata.id === "basic-http-echo") {
-          // Check if service is already tracked
-          const exists = deployedServices.some(
-            (service) =>
-              service.namespace === "demo" &&
-              service.deploymentName === "echo-service",
-          );
-
-          if (!exists) {
-            setDeployedServices((prev) => [
-              ...prev,
-              {
-                namespace: "demo",
-                deploymentName: "echo-service",
-                serviceName: "echo-service",
-              },
-            ]);
-          }
-
-          // Switch to the Dashboard tab
-          setCurrentTab(0);
-        }
-      } else {
-        setTemplateError(result.error || "Failed to apply template");
-      }
-    } catch (error: any) {
-      setTemplateError(
-        typeof error === "string" ? error : JSON.stringify(error, null, 2),
-      );
-    } finally {
-      setIsApplyingTemplate(false);
-    }
-  };
-
-  // Add function to apply template directly from URL
-  const handleApplyTemplateFromUrl = async (url: string) => {
-    setIsApplyingTemplate(true);
-    setTemplateError(null);
-    setTemplateSuccess(false);
-    setDeploymentStatus(null);
-
-    try {
-      // Apply the template directly from the URL
-      const result = await applyTemplateFromUrl(ddClient, url);
-
-      if (result.success) {
-        setTemplateSuccess(true);
-        // Start optimized status checking
-        setIsStatusChecking(true);
-        // Initial check
-        await checkTemplateDeploymentStatus();
-
-        // Refresh the UI with the latest gateways and routes
-        await fetchData();
-
-        // Track deployed services based on URL
-        // Check if it's a basic-http template
-        if (url.includes("basic-http") || url.includes("echo-service")) {
-          // Check if service is already tracked
-          const exists = deployedServices.some(
-            (service) =>
-              service.namespace === "demo" &&
-              service.deploymentName === "echo-service",
-          );
-
-          if (!exists) {
-            setDeployedServices((prev) => [
-              ...prev,
-              {
-                namespace: "demo",
-                deploymentName: "echo-service",
-                serviceName: "echo-service",
-              },
-            ]);
-          }
-
-          // Switch to the Dashboard tab
-          setCurrentTab(0);
-        }
-      } else {
-        setTemplateError(result.error || "Failed to apply template from URL");
-      }
-    } catch (error: any) {
-      setTemplateError(
-        typeof error === "string" ? error : JSON.stringify(error, null, 2),
-      );
-    } finally {
-      setIsApplyingTemplate(false);
-    }
-  };
+  const handleSubTabChange = useCallback((tabId: number, subTabValue: number) => {
+    setCurrentSubTabs(prev => ({
+      ...prev,
+      [tabId]: subTabValue
+    }));
+  }, []);
 
   // Memoized dialog helper functions for better performance
   const openActionDialog = useCallback((
@@ -431,171 +549,15 @@ export function App() {
     fetchData(true);
   }, [apiManager, fetchData]);
 
-  // Memoized tutorial handlers
-  const handleTutorialLaunch = useCallback((tutorialId?: string) => {
-    setSelectedTutorialId(tutorialId);
-    setTutorialDialogOpen(true);
-  }, []);
-
-  const handleTutorialClose = useCallback(() => {
-    setTutorialDialogOpen(false);
-    setSelectedTutorialId(undefined);
-  }, []);
-
-  // Memoized tab content components for better performance
-  const DashboardTab = useMemo(() => 
-    currentTab === 0 ? (
-      <Dashboard
-        gateways={gateways}
-        routes={routes}
-        deployedServices={deployedServices}
-        loading={loading}
-        onRefresh={fetchData}
-        onResourceAction={openActionDialog}
-        ddClient={ddClient}
-      />
-    ) : null,
-    [currentTab, gateways, routes, deployedServices, loading, fetchData, openActionDialog, ddClient]
-  );
-
-  const GatewayManagementTab = useMemo(() =>
-    currentTab === 1 ? (
-      <GatewayManagement
-        onGatewayCreated={handleActionSuccess}
-      />
-    ) : null,
-    [currentTab, handleActionSuccess]
-  );
-
-  const HTTPRouteManagementTab = useMemo(() =>
-    currentTab === 2 ? (
-      <HTTPRouteManagement
-        onHTTPRouteCreated={handleActionSuccess}
-      />
-    ) : null,
-    [currentTab, handleActionSuccess]
-  );
-
-  const TestingProxyTab = useMemo(() =>
-    currentTab === 3 ? (
-      <>
-        <Typography variant="h6" gutterBottom>
-          Testing & Proxy
-        </Typography>
-        <Typography variant="body2" color="text.secondary" paragraph>
-          Test your deployed Envoy Gateway services and manage kubectl proxy connections.
-          Use these tools to verify your routes and gateways are working correctly.
-        </Typography>
-        
-        {/* Proxy Manager Section */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h6" gutterBottom>
-            Proxy Manager
-          </Typography>
-          <Typography variant="body2" color="text.secondary" paragraph>
-            Manage kubectl proxy connections to access Kubernetes services
-            directly. Enable proxy to test internal services and APIs.
-          </Typography>
-          <ProxyManager />
-        </Box>
-
-        {/* HTTP Testing Section */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h6" gutterBottom>
-            HTTP Testing
-          </Typography>
-          <Typography variant="body2" color="text.secondary" paragraph>
-            Test your deployed Envoy Gateway services with HTTP requests.
-            Use this tool to verify your routes and gateways are working
-            correctly.
-          </Typography>
-          <HTTPClient />
-        </Box>
-
-        {/* Traffic Generator Section */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h6" gutterBottom>
-            Synthetic Traffic Generator
-          </Typography>
-          <Typography variant="body2" color="text.secondary" paragraph>
-            Generate synthetic traffic to test traffic splitting, performance,
-            and load balancing configurations. Create realistic load patterns
-            to validate your Gateway and HTTPRoute setups.
-          </Typography>
-          <TrafficGenerator />
-        </Box>
-
-        {/* Rate Limit Testing Section */}
-        <Box>
-          <Typography variant="h6" gutterBottom>
-            Rate Limit Testing
-          </Typography>
-          <Typography variant="body2" color="text.secondary" paragraph>
-            Test your rate limiting policies with burst traffic patterns.
-            Send multiple requests quickly to validate rate limit enforcement,
-            monitor 429 responses, and analyze rate limit headers.
-          </Typography>
-          <RateLimitTester onTestComplete={(summary) => {
-            console.log("Rate limit test completed:", summary);
-          }} />
-        </Box>
-      </>
-    ) : null,
-    [currentTab]
-  );
-
-  const TLSManagementTab = useMemo(() =>
-    currentTab === 4 ? (
-      <>
-        <Typography variant="h6" gutterBottom>
-          TLS Certificate Management
-        </Typography>
-        <Typography variant="body2" color="text.secondary" paragraph>
-          Generate and manage TLS certificates for secure HTTPS connections.
-          Create self-signed certificates for testing or manage existing certificates.
-        </Typography>
-        
-        <CertificateManager onCertificateCreated={handleActionSuccess} />
-      </>
-    ) : null,
-    [currentTab, handleActionSuccess]
-  );
-
-  const TrafficSplittingTab = useMemo(() =>
-    currentTab === 5 ? (
-      <TrafficSplittingManager />
-    ) : null,
-    [currentTab]
-  );
-
-  const SecurityPoliciesTab = useMemo(() =>
-    currentTab === 6 ? (
-      <SecurityPolicyManager onPolicyCreated={handleActionSuccess} />
-    ) : null,
-    [currentTab, handleActionSuccess]
-  );
-
-  const ResiliencePoliciesTab = useMemo(() =>
-    currentTab === 7 ? (
-      <ResiliencePolicyManager />
-    ) : null,
-    [currentTab]
-  );
-
-  const TemplateGalleryTab = useMemo(() =>
-    currentTab === 8 ? (
-      <TemplateGallery 
-        onTemplateApply={() => handleActionSuccess()}
-      />
-    ) : null,
-    [currentTab, handleActionSuccess]
-  );
 
   return (
     <Box sx={{ p: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        Envoy Gateway
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+        <EnvoyLogo width={40} height={40} />
+        <Typography variant="h4" gutterBottom sx={{ mb: 0 }}>
+          Envoy Gateway
+        </Typography>
+      </Box>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
         Manage and observe Envoy Gateway resources in your local Kubernetes
         cluster using Docker Desktop.
@@ -603,18 +565,40 @@ export function App() {
 
       {/* Backend Status and Summary */}
       <Paper sx={{ p: 2, mb: 3 }}>
-        <Typography variant="subtitle1">
-          Backend Status: <b>{error || installationError ? "error" : "ok"}</b>
-        </Typography>
-        <Typography variant="subtitle1">
-          Kubernetes: <b>{loading || isInstalling ? "Loading..." : "Ready"}</b>
-        </Typography>
-        <Typography variant="subtitle1">
-          Gateways: <b>{gateways.length}</b>
-        </Typography>
-        <Typography variant="subtitle1">
-          Routes: <b>{routes.length}</b>
-        </Typography>
+        <Stack direction="row" spacing={4} alignItems="center">
+          <Box>
+            <Typography variant="subtitle2" color="text.secondary">
+              Backend Status
+            </Typography>
+            <Typography variant="body1" fontWeight="medium">
+              {error || installationError ? "Error" : "Ready"}
+            </Typography>
+          </Box>
+          <Box>
+            <Typography variant="subtitle2" color="text.secondary">
+              Kubernetes
+            </Typography>
+            <Typography variant="body1" fontWeight="medium">
+              {loading || isInstalling ? "Loading..." : "Ready"}
+            </Typography>
+          </Box>
+          <Box>
+            <Typography variant="subtitle2" color="text.secondary">
+              Gateways
+            </Typography>
+            <Typography variant="body1" fontWeight="medium">
+              {gateways.length}
+            </Typography>
+          </Box>
+          <Box>
+            <Typography variant="subtitle2" color="text.secondary">
+              Routes
+            </Typography>
+            <Typography variant="body1" fontWeight="medium">
+              {routes.length}
+            </Typography>
+          </Box>
+        </Stack>
       </Paper>
 
       {loading || isInstalling ? (
@@ -650,18 +634,6 @@ export function App() {
             color="primary"
             onClick={handleInstallClick}
             disabled={isInstalling}
-            sx={(theme) =>
-              theme.palette.mode === "light"
-                ? {
-                    bgcolor: theme.palette.primary.main,
-                    color: theme.palette.primary.contrastText,
-                    border: `1px solid ${theme.palette.primary.dark}`,
-                    "&:hover": {
-                      bgcolor: theme.palette.primary.dark,
-                    },
-                  }
-                : {}
-            }
           >
             {isInstalling ? "Installing..." : "Install Envoy Gateway"}
           </Button>
@@ -676,457 +648,117 @@ export function App() {
         </Paper>
       ) : (
         <>
-          {/* Main Content */}
-          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
-            <Box sx={{ display: "flex", gap: 2 }}>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handleQuickStartOpen}
-                sx={(theme) =>
-                  theme.palette.mode === "light"
-                    ? {
-                        bgcolor: theme.palette.primary.main,
-                        color: theme.palette.primary.contrastText,
-                        border: `1px solid ${theme.palette.primary.dark}`,
-                        "&:hover": {
-                          bgcolor: theme.palette.primary.dark,
-                        },
-                      }
-                    : {}
-                }
-              >
-                Quick Start
-              </Button>
-              <Button
-                variant="outlined"
-                color="secondary"
-                onClick={() => fetchData(true)}
-                disabled={loading}
-              >
-                {loading ? "Refreshing..." : "Refresh Resources"}
-              </Button>
-            </Box>
-          </Box>
-
-          {/* Tabs for different views */}
+          {/* Enhanced Tab Navigation */}
           <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 3 }}>
             <Tabs
               value={currentTab}
               onChange={handleTabChange}
-              aria-label="envoy gateway tabs"
+              aria-label="envoy gateway main tabs"
               variant="scrollable"
               scrollButtons="auto"
               allowScrollButtonsMobile
+              sx={{
+                '& .MuiTab-root': {
+                  minWidth: 'auto',
+                  maxWidth: 'none',
+                }
+              }}
             >
-              <Tab label="Dashboard" id="tab-0" aria-controls="tabpanel-0" />
-              <Tab
-                label="Gateway Management"
-                id="tab-1"
-                aria-controls="tabpanel-1"
+              <EnhancedTab
+                icon={<RocketLaunchIcon />}
+                label="Quick Start"
+                description="Templates & Getting Started"
+                value={TAB_IDS.QUICK_START}
               />
-              <Tab
-                label="HTTPRoute Management"
-                id="tab-2"
-                aria-controls="tabpanel-2"
+              <EnhancedTab
+                icon={<InfrastructureIcon />}
+                label="Infrastructure"
+                description="Gateways, Routes & TLS"
+                count={gateways.length + routes.length}
+                value={TAB_IDS.INFRASTRUCTURE}
               />
-              <Tab label="Testing & Proxy" id="tab-3" aria-controls="tabpanel-3" />
-              <Tab label="TLS Management" id="tab-4" aria-controls="tabpanel-4" />
-              <Tab label="Traffic Splitting" id="tab-5" aria-controls="tabpanel-5" />
-              <Tab label="Security Policies" id="tab-6" aria-controls="tabpanel-6" />
-              <Tab label="Resilience Policies" id="tab-7" aria-controls="tabpanel-7" />
-              <Tab label="Template Gallery" id="tab-8" aria-controls="tabpanel-8" />
+              <EnhancedTab
+                icon={<SecurityIcon />}
+                label="Security & Policies"
+                description="Auth, Rate Limiting & Resilience"
+                value={TAB_IDS.SECURITY_POLICIES}
+              />
+              <EnhancedTab
+                icon={<TrafficIcon />}
+                label="Traffic & Testing"
+                description="Splitting, HTTP Testing & Performance"
+                value={TAB_IDS.TRAFFIC_TESTING}
+              />
+              {/* Operations tab commented out until implemented
+              <EnhancedTab
+                icon={<MonitoringIcon />}
+                label="Operations"
+                description="Monitoring & Troubleshooting"
+                value={TAB_IDS.OPERATIONS}
+              />
+              */}
             </Tabs>
           </Box>
 
-          {/* Optimized Tab Content - Only renders active tab */}
-          <Box
-            role="tabpanel"
-            hidden={currentTab !== 0}
-            id="tabpanel-0"
-            aria-labelledby="tab-0"
-          >
-            {DashboardTab}
+          {/* Enhanced Tab Content */}
+          <Box role="tabpanel" hidden={currentTab !== TAB_IDS.QUICK_START}>
+            {currentTab === TAB_IDS.QUICK_START && (
+              <QuickStartTab
+                currentSubTab={currentSubTabs[TAB_IDS.QUICK_START]}
+                onSubTabChange={(value) => handleSubTabChange(TAB_IDS.QUICK_START, value)}
+                gateways={gateways}
+                routes={routes}
+                deployedServices={deployedServices}
+                loading={loading}
+                onRefresh={fetchData}
+                onResourceAction={openActionDialog}
+                ddClient={ddClient}
+                onTemplateApply={handleActionSuccess}
+              />
+            )}
           </Box>
 
-          <Box
-            role="tabpanel"
-            hidden={currentTab !== 1}
-            id="tabpanel-1"
-            aria-labelledby="tab-1"
-          >
-            {GatewayManagementTab}
+          <Box role="tabpanel" hidden={currentTab !== TAB_IDS.INFRASTRUCTURE}>
+            {currentTab === TAB_IDS.INFRASTRUCTURE && (
+              <InfrastructureTab
+                currentSubTab={currentSubTabs[TAB_IDS.INFRASTRUCTURE]}
+                onSubTabChange={(value) => handleSubTabChange(TAB_IDS.INFRASTRUCTURE, value)}
+                onResourceAction={handleActionSuccess}
+              />
+            )}
           </Box>
 
-          <Box
-            role="tabpanel"
-            hidden={currentTab !== 2}
-            id="tabpanel-2"
-            aria-labelledby="tab-2"
-          >
-            {HTTPRouteManagementTab}
+          <Box role="tabpanel" hidden={currentTab !== TAB_IDS.SECURITY_POLICIES}>
+            {currentTab === TAB_IDS.SECURITY_POLICIES && (
+              <SecurityPoliciesTab
+                currentSubTab={currentSubTabs[TAB_IDS.SECURITY_POLICIES]}
+                onSubTabChange={(value) => handleSubTabChange(TAB_IDS.SECURITY_POLICIES, value)}
+                onPolicyCreated={handleActionSuccess}
+              />
+            )}
           </Box>
 
-          <Box
-            role="tabpanel"
-            hidden={currentTab !== 3}
-            id="tabpanel-3"
-            aria-labelledby="tab-3"
-          >
-            {TestingProxyTab}
+          <Box role="tabpanel" hidden={currentTab !== TAB_IDS.TRAFFIC_TESTING}>
+            {currentTab === TAB_IDS.TRAFFIC_TESTING && (
+              <TrafficTestingTab
+                currentSubTab={currentSubTabs[TAB_IDS.TRAFFIC_TESTING]}
+                onSubTabChange={(value) => handleSubTabChange(TAB_IDS.TRAFFIC_TESTING, value)}
+              />
+            )}
           </Box>
 
-          <Box
-            role="tabpanel"
-            hidden={currentTab !== 4}
-            id="tabpanel-4"
-            aria-labelledby="tab-4"
-          >
-            {TLSManagementTab}
+          {/* Operations tab content commented out until implemented
+          <Box role="tabpanel" hidden={currentTab !== TAB_IDS.OPERATIONS}>
+            {currentTab === TAB_IDS.OPERATIONS && (
+              <OperationsTab
+                currentSubTab={currentSubTabs[TAB_IDS.OPERATIONS]}
+                onSubTabChange={(value) => handleSubTabChange(TAB_IDS.OPERATIONS, value)}
+              />
+            )}
           </Box>
-
-          <Box
-            role="tabpanel"
-            hidden={currentTab !== 5}
-            id="tabpanel-5"
-            aria-labelledby="tab-5"
-          >
-            {TrafficSplittingTab}
-          </Box>
-
-          <Box
-            role="tabpanel"
-            hidden={currentTab !== 6}
-            id="tabpanel-6"
-            aria-labelledby="tab-6"
-          >
-            {SecurityPoliciesTab}
-          </Box>
-
-          <Box
-            role="tabpanel"
-            hidden={currentTab !== 7}
-            id="tabpanel-7"
-            aria-labelledby="tab-7"
-          >
-            {ResiliencePoliciesTab}
-          </Box>
-
-          <Box
-            role="tabpanel"
-            hidden={currentTab !== 8}
-            id="tabpanel-8"
-            aria-labelledby="tab-8"
-          >
-            {TemplateGalleryTab}
-          </Box>
+          */}
         </>
       )}
-
-      {/* Quick Start Dialog */}
-      <Dialog
-        open={quickStartDialogOpen}
-        onClose={handleQuickStartClose}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>🚀 Envoy Gateway Quick Start</DialogTitle>
-        <DialogContent>
-          <DialogContentText sx={{ mb: 2 }}>
-            Welcome to the Envoy Gateway Quick Start! This wizard will help you
-            get started with common Envoy Gateway use cases. Choose one of the
-            examples below to deploy a complete working configuration to your
-            Kubernetes cluster.
-          </DialogContentText>
-
-          {isLoadingTemplates && (
-            <Box sx={{ display: "flex", justifyContent: "center", my: 4 }}>
-              <CircularProgress />
-              <Typography variant="body1" sx={{ ml: 2 }}>
-                Loading templates...
-              </Typography>
-            </Box>
-          )}
-
-          {templateError && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              <Typography variant="subtitle2" fontWeight="bold">
-                Error:
-              </Typography>
-              <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
-                {templateError}
-              </Typography>
-              {templateError.includes("Gateway API CRDs are not installed") && (
-                <Box sx={{ mt: 1 }}>
-                  <Typography variant="subtitle2">Troubleshooting:</Typography>
-                  <Typography variant="body2">
-                    1. Make sure Envoy Gateway is installed by clicking the
-                    "Install Envoy Gateway" button on the main page.
-                  </Typography>
-                  <Typography variant="body2">
-                    2. If the issue persists, try restarting Docker Desktop and
-                    Kubernetes.
-                  </Typography>
-                </Box>
-              )}
-              {templateError.includes("Failed to create GatewayClass") && (
-                <Box sx={{ mt: 1 }}>
-                  <Typography variant="subtitle2">Troubleshooting:</Typography>
-                  <Typography variant="body2">
-                    1. Check if Kubernetes is running properly.
-                  </Typography>
-                  <Typography variant="body2">
-                    2. Verify that Envoy Gateway is installed correctly.
-                  </Typography>
-                </Box>
-              )}
-            </Alert>
-          )}
-
-          {templateSuccess && (
-            <Alert severity="success" sx={{ mb: 2 }}>
-              Template applied successfully!
-            </Alert>
-          )}
-
-          {!selectedTemplate ? (
-            <>
-              <Typography variant="subtitle1" sx={{ mt: 3, mb: 1 }}>
-                Available Examples:
-              </Typography>
-              <Grid container spacing={2}>
-                {templates.map((template) => (
-                  <Grid item xs={12} md={6} key={template.id}>
-                    <Card variant="outlined">
-                      <CardContent>
-                        <Typography variant="h6" gutterBottom>
-                          {template.name}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {template.description}
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          sx={{ display: "block", mt: 1 }}
-                        >
-                          Difficulty: {template.difficulty}
-                        </Typography>
-                      </CardContent>
-                      <CardActions>
-                        <Button
-                          size="small"
-                          color="primary"
-                          onClick={() => handleTemplateSelect(template.id)}
-                          sx={
-                            (theme) =>
-                              theme.palette.mode === "light"
-                                ? {
-                                    // Ensure it looks like a contained button for better visibility
-                                    bgcolor: theme.palette.primary.main,
-                                    color: theme.palette.primary.contrastText,
-                                    border: `1px solid ${theme.palette.primary.dark}`, // Add a border for definition
-                                    "&:hover": {
-                                      bgcolor: theme.palette.primary.dark,
-                                    },
-                                  }
-                                : {} // Apply no specific sx overrides for dark mode, rely on theme defaults
-                          }
-                        >
-                          Select
-                        </Button>
-                        <Button
-                          size="small"
-                          color="secondary"
-                          onClick={() =>
-                            handleApplyTemplateFromUrl(template.yamlUrl)
-                          }
-                          sx={
-                            (theme) =>
-                              theme.palette.mode === "light"
-                                ? {
-                                    // Ensure it looks like an outlined button for better visibility
-                                    borderColor: theme.palette.secondary.main,
-                                    color: theme.palette.secondary.main,
-                                    borderWidth: "1px",
-                                    borderStyle: "solid",
-                                    "&:hover": {
-                                      // Standard hover for outlined secondary button
-                                      backgroundColor:
-                                        theme.palette.action.hover, // Or alpha(theme.palette.secondary.main, theme.palette.action.hoverOpacity) if alpha is imported
-                                    },
-                                  }
-                                : {} // Apply no specific sx overrides for dark mode, rely on theme defaults
-                          }
-                        >
-                          Apply Directly
-                        </Button>
-                      </CardActions>
-                    </Card>
-                  </Grid>
-                ))}
-              </Grid>
-            </>
-          ) : (
-            <>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  mb: 2,
-                }}
-              >
-                <Typography variant="h6">
-                  {selectedTemplate.metadata.name}
-                </Typography>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={() => {
-                    setSelectedTemplate(null);
-                    if (statusCheckInterval) {
-                      clearInterval(statusCheckInterval);
-                      setStatusCheckInterval(null);
-                    }
-                    setDeploymentStatus(null);
-                  }}
-                >
-                  Back to Templates
-                </Button>
-              </Box>
-
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                {selectedTemplate.metadata.description}
-              </Typography>
-
-              {deploymentStatus && (
-                <Alert
-                  severity={
-                    deploymentStatus.status === "ready"
-                      ? "success"
-                      : deploymentStatus.status === "failed"
-                        ? "error"
-                        : "info"
-                  }
-                  sx={{ mb: 2 }}
-                >
-                  <Typography variant="subtitle2" fontWeight="bold">
-                    {deploymentStatus.status === "ready"
-                      ? "Deployment Status: Ready"
-                      : deploymentStatus.status === "failed"
-                        ? "Deployment Status: Failed"
-                        : "Deployment Status: In Progress"}
-                  </Typography>
-                  <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
-                    {deploymentStatus.message}
-                  </Typography>
-                </Alert>
-              )}
-
-              <Typography variant="subtitle1" sx={{ mt: 3, mb: 1 }}>
-                Template YAML:
-              </Typography>
-
-              <Paper
-                elevation={0}
-                variant="outlined"
-                sx={{
-                  mb: 2,
-                  maxHeight: "300px",
-                  overflow: "auto",
-                  backgroundColor: "rgba(0, 0, 0, 0.04)",
-                }}
-              >
-                <Box
-                  component="pre"
-                  sx={{
-                    fontFamily: "monospace",
-                    fontSize: "0.875rem",
-                    p: 2,
-                    m: 0,
-                    overflowX: "auto",
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
-                  }}
-                >
-                  {templateYaml}
-                </Box>
-              </Paper>
-
-              <Box sx={{ display: "flex", gap: 2 }}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleApplyTemplate}
-                  disabled={isApplyingTemplate}
-                  sx={(theme) => ({
-                    mt: 2,
-                    ...(theme.palette.mode === "light"
-                      ? {
-                          bgcolor: theme.palette.primary.main,
-                          color: theme.palette.primary.contrastText,
-                          border: `1px solid ${theme.palette.primary.dark}`,
-                          "&:hover": {
-                            bgcolor: theme.palette.primary.dark,
-                          },
-                        }
-                      : {}),
-                  })}
-                >
-                  {isApplyingTemplate ? "Applying..." : "Apply Template"}
-                </Button>
-
-                <Button
-                  variant="outlined"
-                  color="secondary"
-                  onClick={() =>
-                    handleApplyTemplateFromUrl(
-                      selectedTemplate.metadata.yamlUrl,
-                    )
-                  }
-                  disabled={isApplyingTemplate}
-                  sx={{ mt: 2 }}
-                >
-                  Apply Directly from GitHub
-                </Button>
-              </Box>
-            </>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button
-            variant="contained"
-            onClick={handleQuickStartClose}
-            color="primary"
-            sx={(theme) =>
-              theme.palette.mode === "light"
-                ? {
-                    bgcolor: theme.palette.primary.main,
-                    color: theme.palette.primary.contrastText,
-                    border: `1px solid ${theme.palette.primary.dark}`,
-                    "&:hover": {
-                      bgcolor: theme.palette.primary.dark,
-                    },
-                  }
-                : {}
-            }
-          >
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Success Snackbar */}
-      <Snackbar
-        open={templateSuccess}
-        autoHideDuration={6000}
-        onClose={() => setTemplateSuccess(false)}
-      >
-        <Alert onClose={() => setTemplateSuccess(false)} severity="success">
-          Template applied successfully!
-        </Alert>
-      </Snackbar>
 
       {/* Resource Action Dialog */}
       <ResourceActionDialog
