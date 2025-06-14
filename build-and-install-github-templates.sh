@@ -16,7 +16,7 @@ fi
 
 # Uninstall existing extension
 log "Uninstalling existing Envoy Gateway extension..."
-docker extension rm envoyproxy/envoy-gateway-extension || true
+docker extension rm saptak/envoy-gateway-extension || true
 
 # Use the GitHub templates version
 log "Preparing to build with GitHub templates support and VM backend..."
@@ -30,11 +30,11 @@ fi
 
 # Build the extension with VM service backend
 log "Building the extension with VM service backend..."
-docker build -t envoyproxy/envoy-gateway-extension:latest .
+make build-extension
 
 # Install the extension
 log "Installing the extension with VM service backend and GitHub templates support..."
-docker extension install envoyproxy/envoy-gateway-extension:latest --force
+docker extension install saptak/envoy-gateway-extension:latest --force
 
 log "Done! The Envoy Gateway extension with VM service backend is now installed."
 log "This version resolves all file system and process management limitations."
