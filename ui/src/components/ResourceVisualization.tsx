@@ -107,7 +107,7 @@ export const ResourceVisualization: React.FC<ResourceVisualizationProps> = ({
           mb: 2,
           cursor: onResourceClick ? "pointer" : "default",
           transition: "all 0.2s ease-in-out",
-          border: isReady ? "2px solid #4caf50" : "2px solid #ff9800",
+          border: (theme) => isReady ? `2px solid ${theme.palette.success.main}` : `2px solid ${theme.palette.warning.main}`,
           "&:hover": onResourceClick ? {
             transform: "translateY(-2px)",
             boxShadow: 4,
@@ -207,8 +207,8 @@ export const ResourceVisualization: React.FC<ResourceVisualizationProps> = ({
           mb: 2,
           cursor: onResourceClick ? "pointer" : "default",
           transition: "all 0.2s ease-in-out",
-          border: isReady ? "2px solid #4caf50" : 
-                  isAccepted ? "2px solid #ff9800" : "2px solid #f44336",
+          border: (theme) => isReady ? `2px solid ${theme.palette.success.main}` : 
+                  isAccepted ? `2px solid ${theme.palette.warning.main}` : `2px solid ${theme.palette.error.main}`,
           "&:hover": onResourceClick ? {
             transform: "translateY(-2px)",
             boxShadow: 4,

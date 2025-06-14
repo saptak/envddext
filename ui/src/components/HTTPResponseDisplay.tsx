@@ -378,7 +378,7 @@ export const HTTPResponseDisplay: React.FC<HTTPResponseDisplayProps> = ({ respon
               component="pre"
               sx={{
                 backgroundColor: 'grey.900',
-                color: 'grey.100',
+                color: 'common.white',
                 p: 2,
                 borderRadius: 1,
                 overflow: 'auto',
@@ -387,7 +387,13 @@ export const HTTPResponseDisplay: React.FC<HTTPResponseDisplayProps> = ({ respon
                 fontFamily: 'monospace',
                 margin: 0,
                 whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word'
+                wordBreak: 'break-word',
+                ...(theme => theme.palette.mode === 'light' && {
+                  backgroundColor: 'grey.100',
+                  color: 'text.primary',
+                  border: '1px solid',
+                  borderColor: 'divider'
+                })
               }}
             >
               {formatting.formatted}

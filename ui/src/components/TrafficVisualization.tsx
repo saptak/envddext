@@ -15,7 +15,8 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Alert
+  Alert,
+  useTheme
 } from '@mui/material';
 import {
   Timeline as TimelineIcon,
@@ -58,6 +59,7 @@ export const TrafficVisualization: React.FC<TrafficVisualizationProps> = ({
   metrics, 
   className 
 }) => {
+  const theme = useTheme();
   const [metricsHistory, setMetricsHistory] = useState<MetricsHistory[]>([]);
 
   // Store metrics history for trend visualization
@@ -133,10 +135,10 @@ export const TrafficVisualization: React.FC<TrafficVisualizationProps> = ({
             y={80 - (minResponseTime / maxTime) * 60}
             width="60"
             height={(minResponseTime / maxTime) * 60}
-            fill="#2196f3"
+            fill={theme.palette.primary.main}
             opacity={0.7}
           />
-          <text x="50" y="95" textAnchor="middle" fontSize="10" fill="#666">
+          <text x="50" y="95" textAnchor="middle" fontSize="10" fill={theme.palette.text.secondary}>
             Min
           </text>
           
@@ -146,10 +148,10 @@ export const TrafficVisualization: React.FC<TrafficVisualizationProps> = ({
             y={80 - (avgResponseTime / maxTime) * 60}
             width="60"
             height={(avgResponseTime / maxTime) * 60}
-            fill="#4caf50"
+            fill={theme.palette.success.main}
             opacity={0.7}
           />
-          <text x="150" y="95" textAnchor="middle" fontSize="10" fill="#666">
+          <text x="150" y="95" textAnchor="middle" fontSize="10" fill={theme.palette.text.secondary}>
             Avg
           </text>
           
@@ -159,21 +161,21 @@ export const TrafficVisualization: React.FC<TrafficVisualizationProps> = ({
             y={80 - (maxResponseTime / maxTime) * 60}
             width="60"
             height={(maxResponseTime / maxTime) * 60}
-            fill="#ff9800"
+            fill={theme.palette.warning.main}
             opacity={0.7}
           />
-          <text x="250" y="95" textAnchor="middle" fontSize="10" fill="#666">
+          <text x="250" y="95" textAnchor="middle" fontSize="10" fill={theme.palette.text.secondary}>
             Max
           </text>
           
           {/* Values */}
-          <text x="50" y={75 - (minResponseTime / maxTime) * 60} textAnchor="middle" fontSize="9" fill="#333">
+          <text x="50" y={75 - (minResponseTime / maxTime) * 60} textAnchor="middle" fontSize="9" fill={theme.palette.text.primary}>
             {formatResponseTime(minResponseTime)}
           </text>
-          <text x="150" y={75 - (avgResponseTime / maxTime) * 60} textAnchor="middle" fontSize="9" fill="#333">
+          <text x="150" y={75 - (avgResponseTime / maxTime) * 60} textAnchor="middle" fontSize="9" fill={theme.palette.text.primary}>
             {formatResponseTime(avgResponseTime)}
           </text>
-          <text x="250" y={75 - (maxResponseTime / maxTime) * 60} textAnchor="middle" fontSize="9" fill="#333">
+          <text x="250" y={75 - (maxResponseTime / maxTime) * 60} textAnchor="middle" fontSize="9" fill={theme.palette.text.primary}>
             {formatResponseTime(maxResponseTime)}
           </text>
         </svg>
@@ -209,7 +211,7 @@ export const TrafficVisualization: React.FC<TrafficVisualizationProps> = ({
           <polyline
             points={points}
             fill="none"
-            stroke="#2196f3"
+            stroke={theme.palette.primary.main}
             strokeWidth="2"
           />
           {/* Data points */}
@@ -222,7 +224,7 @@ export const TrafficVisualization: React.FC<TrafficVisualizationProps> = ({
                 cx={x}
                 cy={y}
                 r="2"
-                fill="#2196f3"
+                fill={theme.palette.primary.main}
               />
             );
           })}

@@ -113,7 +113,7 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({
             sx={{ 
               mb: 2, 
               fontStyle: "italic",
-              backgroundColor: "rgba(255, 255, 255, 0.05)",
+              backgroundColor: "action.hover",
               padding: 1,
               borderRadius: 1,
             }}

@@ -196,7 +196,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
               Gateways ({gateways.length})
             </Typography>
             {gateways.length === 0 ? (
-              <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'grey.50' }}>
+              <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'action.hover' }}>
                 <Typography variant="body2" color="text.secondary">
                   No gateways found. Create your first gateway in the Gateway Management tab.
                 </Typography>
@@ -225,7 +225,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
               HTTP Routes ({routes.length})
             </Typography>
             {routes.length === 0 ? (
-              <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'grey.50' }}>
+              <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'action.hover' }}>
                 <Typography variant="body2" color="text.secondary">
                   No HTTP routes found. Create your first route in the HTTPRoute Management tab.
                 </Typography>
@@ -304,7 +304,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
 
           <Collapse in={showDeployments}>
             {deployedServices.length === 0 ? (
-              <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'grey.50' }}>
+              <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'action.hover' }}>
                 <Typography variant="body2" color="text.secondary">
                   No services are being monitored. Deploy templates to see service status here.
                 </Typography>

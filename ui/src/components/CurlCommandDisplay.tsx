@@ -184,7 +184,7 @@ export const CurlCommandDisplay: React.FC<CurlCommandDisplayProps> = ({
             component="pre"
             sx={{
               backgroundColor: 'grey.900',
-              color: 'grey.100',
+              color: 'common.white',
               p: 2,
               borderRadius: 1,
               overflow: 'auto',
@@ -192,7 +192,13 @@ export const CurlCommandDisplay: React.FC<CurlCommandDisplayProps> = ({
               fontFamily: 'monospace',
               margin: 0,
               whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word'
+              wordBreak: 'break-word',
+              ...(theme => theme.palette.mode === 'light' && {
+                backgroundColor: 'grey.100',
+                color: 'text.primary',
+                border: '1px solid',
+                borderColor: 'divider'
+              })
             }}
           >
             {showOptions ? customCurlCommand : curlCommand}
@@ -249,7 +255,7 @@ export const CurlCommandDisplay: React.FC<CurlCommandDisplayProps> = ({
                 component="pre"
                 sx={{
                   backgroundColor: 'grey.900',
-                  color: 'grey.100',
+                  color: 'common.white',
                   p: 1.5,
                   borderRadius: 1,
                   overflow: 'auto',
@@ -258,7 +264,13 @@ export const CurlCommandDisplay: React.FC<CurlCommandDisplayProps> = ({
                   margin: 0,
                   mb: index < Object.keys(examples).length - 1 ? 2 : 0,
                   whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word'
+                  wordBreak: 'break-word',
+                  ...(theme => theme.palette.mode === 'light' && {
+                    backgroundColor: 'grey.100',
+                    color: 'text.primary',
+                    border: '1px solid',
+                    borderColor: 'divider'
+                  })
                 }}
               >
                 {example.command}
