@@ -3,8 +3,8 @@
 ## Document Information
 - **Document Title**: Envoy Gateway Extension Enhancement PRD
 - **Version**: 1.5
-- **Date**: June 13, 2025
-- **Status**: v0.12.0 Implementation Complete
+- **Date**: June 14, 2025
+- **Status**: v0.12.1 Implementation Complete
 
 ## Executive Summary
 

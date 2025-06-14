@@ -1,4 +1,4 @@
-# Envoy Gateway Docker Desktop Extension v0.12.0 - FAQ
+# Envoy Gateway Docker Desktop Extension v0.12.1 - FAQ
 
 ## Getting Started
 
@@ -30,7 +30,7 @@ Absolutely! This extension was designed specifically for developers who want API
 - Access contextual help throughout the interface with smart tooltips and detailed explanations
 - Follow interactive step-by-step tutorials for Gateway setup, JWT authentication, and traffic splitting
 - Configure advanced resilience policies with timeout and retry management for production reliability
-- Access everything from a nine-tab responsive interface that works on any screen size
+- Access everything from a streamlined four-tab interface with progressive complexity design
 
 ### I'm already using Kubernetes tools. Why switch?
 
@@ -75,7 +75,7 @@ Click "Quick Start" and choose "Basic HTTP" template. You'll have a working Gate
 
 ### I don't want to use templates. Can I create custom gateways?
 
-Of course! Go to "Gateway Management" and click "Create New Gateway". Fill out the simple form for basic Gateway configuration - no YAML required. Then create HTTPRoutes to define your routing rules using the "HTTPRoute Management" tab. The extension shows you exactly what it's creating, validates everything in real-time, clears validation errors when you fix them, and automatically closes forms after successful creation.
+Of course! Go to "Infrastructure" tab, then "Gateways" sub-tab and click "Create New Gateway". Fill out the simple form for basic Gateway configuration - no YAML required. Then create HTTPRoutes to define your routing rules using the "HTTP Routes" sub-tab. The extension shows you exactly what it's creating, validates everything in real-time, clears validation errors when you fix them, and automatically closes forms after successful creation.
 
 ### How do I know if my gateway is working?
 
@@ -157,7 +157,7 @@ The latest performance improvements include optimized component rendering, API c
 
 ### The tabs don't fit on my screen
 
-The extension includes responsive design with scrollable tabs. With the enhanced interface now featuring 9 tabs (including Security Policies, Resilience Policies, and Template Gallery), the interface automatically adapts to your screen size. When tabs don't fit your screen width, you'll see left/right arrow buttons to scroll through them. This works on mobile devices and narrow windows automatically.
+The extension includes responsive design with a streamlined 4-tab interface. The new progressive complexity design organizes functionality into logical groups (Quick Start, Infrastructure, Security & Policies, Traffic & Testing), making navigation intuitive on any screen size. The interface automatically adapts to your screen width and includes scrollable sub-tabs when needed.
 
 ### What's new about the Dashboard?
 

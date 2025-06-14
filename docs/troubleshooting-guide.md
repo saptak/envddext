@@ -1,6 +1,6 @@
 # Troubleshooting Guide - Envoy Gateway Extension
 
-This guide helps troubleshoot common issues with the Envoy Gateway extension (v0.7.0). **Note**: Previous Docker Desktop extension limitations have been resolved with the VM service backend architecture!
+This guide helps troubleshoot common issues with the Envoy Gateway extension (v0.12.1). **Note**: Previous Docker Desktop extension limitations have been resolved with the VM service backend architecture!
 
 ## Common Error Messages and Solutions
 
