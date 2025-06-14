@@ -1,6 +1,6 @@
 {
   "name": "Envoy Gateway",
-  "description": "Production-ready Docker Desktop extension for managing Envoy Gateway resources with enterprise-grade performance optimizations, JWT authentication, comprehensive security policies, synthetic traffic generation, and advanced testing tools for local Kubernetes clusters.",
+  "description": "Production-ready Docker Desktop extension for comprehensive Envoy Gateway management. Features enterprise-grade performance optimizations (40-50% faster), JWT authentication, advanced security policies, synthetic traffic generation, TLS certificate management, traffic splitting, contextual help system, and professional testing tools for local Kubernetes clusters.",
   "icon": "docker.svg",
   "vm": {
     "composefile": "docker-compose.yaml",

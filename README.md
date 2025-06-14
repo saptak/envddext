@@ -31,9 +31,10 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 ## Current Limitations
 
 - **No Resource Editing**: Can create and delete but not modify existing Gateways or HTTPRoutes
-- **Limited Advanced Policies**: Some advanced traffic policies not yet supported (JWT Authentication, Basic Auth, CORS, IP Filtering, mTLS, Rate Limiting supported)
 - **HTTP Only**: Limited to HTTP/HTTPS routing (no TCP, UDP, or gRPC support)
 - **No Advanced Envoy Features**: EnvoyProxy custom resources and patches not supported
+
+*Note: Most advanced traffic policies are now supported including JWT Authentication, Basic Auth, CORS, IP Filtering, mTLS, and Rate Limiting in v0.12.0.*
 
 ## Features
 
@@ -126,7 +127,11 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 
 ## Current Status
 
-**Latest Update: June 13, 2025** - **v0.12.0 "Performance Optimization & Production Ready" Release Complete!** Comprehensive performance optimizations with intelligent caching, API call deduplication, memory leak prevention, and 40-50% faster load times. Advanced performance monitoring, bundle size optimization (20-30% reduction), and production-ready architecture. Enterprise-grade performance improvements including batch API operations, lazy loading, and resource-efficient rendering. Builds on v0.11.0's documentation and resilience foundation.
+**Latest Update: June 13, 2025** - **v0.12.0 "Performance Optimization & Production Ready" Release Complete!** 
+
+🚀 **PRODUCTION READY FOR MARKETPLACE SUBMISSION** 🚀
+
+Comprehensive performance optimizations with intelligent caching, API call deduplication, memory leak prevention, and 40-50% faster load times. Advanced performance monitoring, bundle size optimization (20-30% reduction), and enterprise-grade architecture. Production-ready performance improvements including batch API operations, lazy loading, and resource-efficient rendering. Complete feature set with JWT authentication, security policies, traffic splitting, synthetic traffic generation, and comprehensive testing tools.
 
 ### ✅ Completed Features (Iteration 1-12)
 
@@ -312,9 +317,9 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 - **Status Legend**: Comprehensive legend explaining all visual indicators and connection types
 - **Empty State Guidance**: Helpful instructions when no resources exist with clear next steps
 
-### 🚧 Next Iterations (Planned)
+### 🚧 Future Enhancements (Post-Marketplace)
 
-#### Iteration 8: Advanced Resource Management
+#### Advanced Resource Management
 - **Resource Editing**: Update existing Gateway and HTTPRoute configurations
 - **Resource Cloning**: Duplicate and modify existing resources  
 - **Bulk Operations**: Multi-resource management capabilities
@@ -322,17 +327,15 @@ A comprehensive Docker Desktop extension for managing Envoy Gateway resources wi
 
 ### 📋 Planned Features (Roadmap)
 
-#### Next Priority: Policy Management
-- **Security Policies**: JWT authentication, authorization, and access control
-- **Traffic Policies**: Rate limiting, circuit breakers, and retry policies  
-- **Advanced TLS**: Certificate rotation, CA management, and mutual TLS
-- **Backend Policies**: Load balancing, health checking, and failover
-
-#### Future: Advanced Features
+#### Post-v1.0 Roadmap
 - **Multi-Protocol Support**: TCP, UDP, and gRPC routing configuration
 - **EnvoyProxy Resources**: Custom Envoy configuration and patches
 - **Observability Integration**: Metrics, tracing, and logging visualization
-- **Interactive Tutorials**: Guided learning experiences for complex scenarios
+- **Multi-Cluster Support**: Management across multiple Kubernetes clusters
+- **CI/CD Integration**: Export configurations for deployment pipelines
+- **Advanced Observability**: Integration with monitoring and tracing solutions
+
+*Note: Most core policy management features are now complete in v0.12.0 including JWT authentication, rate limiting, security policies, and resilience policies.*
 
 
 ## Build and Install
