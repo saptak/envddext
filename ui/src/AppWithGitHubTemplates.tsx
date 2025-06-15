@@ -272,9 +272,13 @@ const SecurityPoliciesTab = memo(({
 const TrafficTestingTab = memo(({ 
   currentSubTab, 
   onSubTabChange,
+  proxyUrl,
+  onProxyUrlChange,
 }: {
   currentSubTab: number;
   onSubTabChange: (value: number) => void;
+  proxyUrl: string;
+  onProxyUrlChange: (url: string) => void;
 }) => (
   <Box>
     <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
@@ -298,12 +302,12 @@ const TrafficTestingTab = memo(({
       <Box>
         {/* Proxy Manager Section */}
         <Box sx={{ mb: 4 }}>
-          <ProxyManager />
+          <ProxyManager onUrlGenerated={onProxyUrlChange} />
         </Box>
 
         {/* HTTP Testing Section */}
         <Box sx={{ mb: 4 }}>
-          <HTTPClient />
+          <HTTPClient proxyUrl={proxyUrl} />
         </Box>
 
         {/* Rate Limit Testing Section */}
@@ -440,6 +444,9 @@ export function App() {
   // Tutorial state
   const [tutorialDialogOpen, setTutorialDialogOpen] = React.useState<boolean>(false);
   const [selectedTutorialId, setSelectedTutorialId] = React.useState<string | undefined>(undefined);
+
+  // Proxy URL state for connecting ProxyManager to HTTPClient
+  const [proxyUrl, setProxyUrl] = React.useState<string>('');
 
   // Optimized fetchData with caching and error handling
   const apiManager = useMemo(() => ApiCallManager.getInstance(), []);
@@ -743,6 +750,8 @@ export function App() {
               <TrafficTestingTab
                 currentSubTab={currentSubTabs[TAB_IDS.TRAFFIC_TESTING]}
                 onSubTabChange={(value) => handleSubTabChange(TAB_IDS.TRAFFIC_TESTING, value)}
+                proxyUrl={proxyUrl}
+                onProxyUrlChange={setProxyUrl}
               />
             )}
           </Box>

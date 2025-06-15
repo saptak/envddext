@@ -22,118 +22,109 @@ export class HTTPClientService {
   }
 
   /**
-   * Make an HTTP request using fetch API
-   * Automatically handles port forwarding for Kubernetes service endpoints
+   * Make an HTTP request using the backend service
+   * This bypasses CORS and DNS issues by using the backend
    */
   async makeRequest(request: HTTPRequest): Promise<TestResult> {
-    // Check if this is a Kubernetes service endpoint and set up port forwarding
-    const processedRequest = await this.processServiceEndpoint(request);
     const startTime = Date.now();
     const testId = `test_${startTime}_${Math.random().toString(36).substr(2, 9)}`;
-    let timeoutId: NodeJS.Timeout | undefined;
 
     try {
       // Validate request
-      const validation = this.validateRequest(processedRequest);
+      const validation = this.validateRequest(request);
       if (!validation.isValid) {
         throw new Error(`Invalid request: ${validation.errors.join(', ')}`);
       }
 
-      console.log('Making HTTP request:', processedRequest);
+      console.log('Making HTTP request via backend:', request);
 
-      // Prepare fetch options
-      const controller = new AbortController();
-      timeoutId = setTimeout(() => controller.abort(), (processedRequest.timeout || 30) * 1000);
-
-      const fetchOptions: RequestInit = {
-        method: processedRequest.method,
-        headers: processedRequest.headers,
-        signal: controller.signal
+      // Prepare request data for backend
+      const backendRequest = {
+        method: request.method,
+        url: request.url,
+        headers: request.headers,
+        body: request.body || undefined,
+        timeout: request.timeout || 30
       };
 
-      // Add body for methods that support it
-      if (processedRequest.body && ['POST', 'PUT', 'PATCH'].includes(processedRequest.method)) {
-        fetchOptions.body = processedRequest.body;
+      // Make request to backend HTTP proxy endpoint
+      const backendResponse = await this.ddClient.extension.vm?.service?.post('/http-request', backendRequest) as any;
+
+      if (!backendResponse) {
+        throw new Error(`No response from backend service. Request was: ${JSON.stringify(backendRequest, null, 2)}`);
       }
 
-      // Make the request
-      const fetchResponse = await fetch(processedRequest.url, fetchOptions);
+      // Handle nested response structure from Docker Desktop VM service
+      const actualResponse = backendResponse.data || backendResponse;
+      
+      if (!actualResponse.success) {
+        const debugInfo = `
+Backend Error Details:
+- Error: ${actualResponse.error || 'Unknown error'}
+- Request: ${JSON.stringify(backendRequest, null, 2)}
+- Backend Response: ${JSON.stringify(backendResponse, null, 2)}
+- Actual Response: ${JSON.stringify(actualResponse, null, 2)}`;
+        throw new Error(debugInfo);
+      }
 
-      // Clear the timeout since request completed
-      if (timeoutId) clearTimeout(timeoutId);
-
-      // Get response headers
-      const headers: Record<string, string> = {};
-      fetchResponse.headers.forEach((value, key) => {
-        headers[key] = value;
-      });
-
-      // Get response body
-      const body = await fetchResponse.text();
-      const responseTime = Date.now() - startTime;
-
+      const responseData = actualResponse.data;
       const response: HTTPResponse = {
-        status: fetchResponse.status,
-        statusText: fetchResponse.statusText,
-        headers,
-        body,
-        responseTime,
-        contentType: fetchResponse.headers.get('content-type') || 'text/plain',
-        size: body.length
+        status: responseData.status,
+        statusText: responseData.statusText,
+        headers: responseData.headers,
+        body: responseData.body,
+        responseTime: responseData.responseTime,
+        contentType: responseData.contentType || 'text/plain',
+        size: responseData.size
       };
 
-      const curlCommand = this.generateCurlCommand(processedRequest);
+      const curlCommand = this.generateCurlCommand(request);
 
-      console.log('HTTP response:', response);
+      console.log('HTTP response via backend:', response);
 
       return {
         id: testId,
-        request: processedRequest, // Use processed request to show the actual URL used
+        request,
         response,
         timestamp: new Date(),
         curlCommand
       };
 
     } catch (error: any) {
-      // Clear the timeout in case of error
-      if (timeoutId) clearTimeout(timeoutId);
-
       console.error('HTTP request error:', error);
-      const curlCommand = this.generateCurlCommand(processedRequest);
+      const curlCommand = this.generateCurlCommand(request);
 
       let errorMessage = 'Unknown error occurred';
-      if (error?.name === 'AbortError') {
-        // Check if this is a Kubernetes service endpoint that needs port forwarding
-        const url = new URL(processedRequest.url);
-        if (url.hostname.includes('.svc.cluster.local') ||
-            url.hostname.includes('echo-service') ||
-            (url.hostname === '10.244.0.7' && url.port === '8080')) {
-          const port = url.port || '80';
-          errorMessage = `Connection timeout - This appears to be a Kubernetes service endpoint.
-
-To test this endpoint, please set up port forwarding manually:
-
-1. Open a terminal
-2. Run: kubectl port-forward service/echo-service 8080:${port} -n demo
-3. Then test using: http://localhost:8080${url.pathname}${url.search}
-
-Or use the service name directly if you have kubectl proxy running:
-kubectl proxy --port=8001
-Then use: http://localhost:8001/api/v1/namespaces/demo/services/echo-service:${port}/proxy${url.pathname}${url.search}`;
-        } else {
-          errorMessage = 'Request timed out - The server did not respond within the timeout period';
-        }
-      } else if (error?.name === 'TypeError' && error?.message?.includes('fetch')) {
-        errorMessage = `Network error: ${error.message}`;
+      if (error?.message) {
+        errorMessage = error.message;
       } else if (typeof error === 'string') {
         errorMessage = error;
-      } else if (error?.message) {
-        errorMessage = error.message;
+      }
+
+      // Provide helpful guidance for common issues
+      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('Network error')) {
+        const url = new URL(request.url);
+        if (url.hostname.includes('local') || url.hostname.includes('echo')) {
+          errorMessage += `
+
+This appears to be testing a local service. Try these options:
+
+1. **Gateway External IP**: Check if your Gateway has an external IP:
+   - Go to Infrastructure > Gateways
+   - Use the external IP instead of '${url.hostname}'
+
+2. **kubectl proxy**: Start kubectl proxy and use:
+   - http://localhost:8001/api/v1/namespaces/demo/services/echo-service:80/proxy/
+
+3. **Port forwarding**: Set up port forwarding:
+   - kubectl port-forward service/echo-service 8080:80 -n demo
+   - Then use: http://localhost:8080/`;
+        }
       }
 
       return {
         id: testId,
-        request: processedRequest,
+        request,
         error: errorMessage,
         timestamp: new Date(),
         curlCommand
@@ -141,44 +132,6 @@ Then use: http://localhost:8001/api/v1/namespaces/demo/services/echo-service:${p
     }
   }
 
-  /**
-   * Process service endpoint URLs and set up port forwarding if needed
-   */
-  private async processServiceEndpoint(request: HTTPRequest): Promise<HTTPRequest> {
-    try {
-      const url = new URL(request.url);
-
-      // Check if this looks like a Kubernetes service endpoint (internal IP)
-      const isInternalIP = /^10\.\d+\.\d+\.\d+$/.test(url.hostname) ||
-                          /^172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+$/.test(url.hostname) ||
-                          /^192\.168\.\d+\.\d+$/.test(url.hostname);
-
-      if (isInternalIP) {
-        console.log('Detected Kubernetes service endpoint:', request.url);
-
-        // For now, throw a helpful error with instructions
-        const port = url.port || '80';
-        const errorMessage = `Cannot directly access Kubernetes service endpoint ${url.hostname}:${port}.
-
-To test this endpoint, please set up port forwarding manually:
-
-1. Open a terminal
-2. Run: kubectl port-forward service/echo-service 8080:${port} -n demo
-3. Then test using: http://localhost:8080${url.pathname}${url.search}
-
-Or use the service name directly if you have kubectl proxy running:
-kubectl proxy --port=8001
-Then use: http://localhost:8001/api/v1/namespaces/demo/services/echo-service:${port}/proxy${url.pathname}${url.search}`;
-
-        throw new Error(errorMessage);
-      }
-
-      return request;
-    } catch (error) {
-      console.error('Error processing service endpoint:', error);
-      return request;
-    }
-  }
 
   /**
    * Generate curl command string for copying

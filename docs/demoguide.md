@@ -2,14 +2,7 @@
 
 🚀 **Welcome to your API Gateway mastery journey!**
 
-This comprehensive guide transforms the Envoy Gateway Docker Desktop Extension v0.12.0 into your complete learning laboratory. With **40-50% faster performance**, **enterprise-grade security**, and **interactive tutorials**, you'll master modern gateway concepts through hands-on scenarios that mirror real-world production challenges.
-
-## 🎯 What Makes This Guide Special
-
-- **📚 Complete Coverage**: All 10 demos from basic routing to enterprise security
-- **🔬 Hands-On Learning**: Every concept demonstrated with working examples
-- **🏭 Production Ready**: All patterns tested and ready for real environments
-- **⚡ Performance Optimized**: Built on the fastest Docker Desktop extension for gateways
+This comprehensive guide transforms the Envoy Gateway Docker Desktop Extension into your complete learning laboratory for mastering modern gateway concepts through hands-on scenarios that mirror real-world production challenges.
 
 ## 🎓 Complete Skill Mastery
 
@@ -102,6 +95,72 @@ This comprehensive guide transforms the Envoy Gateway Docker Desktop Extension v
      - **Infrastructure**: Gateways, HTTP Routes, and TLS certificates
      - **Security & Policies**: Security policies and resilience configuration
      - **Traffic & Testing**: Traffic splitting, HTTP testing, and performance validation
+
+## 🧪 Testing with Envoy Gateway: Essential Knowledge
+
+### Understanding Testing URLs vs Actual Endpoints
+
+**Important**: When working with Envoy Gateway, understand the difference between routing configuration and actual testing:
+
+- **Routing Configuration**: Use domains like `echo.local`, `api.local` in your Gateway and HTTPRoute configs
+- **Actual Testing**: Use real IPs or proxy endpoints to make HTTP requests
+
+### 🎯 Three Methods for Testing Your Gateway
+
+#### Method 1: kubectl proxy (Recommended for Docker Desktop)
+```bash
+# 1. Start kubectl proxy (use Proxy Manager in extension)
+kubectl proxy --port=8001
+
+# 2. Use proxy URL in HTTP Client  
+URL: http://localhost:8001/api/v1/namespaces/demo/services/echo-service:80/proxy/
+Headers: (No Host header needed)
+```
+
+#### Method 2: Gateway External IP (if reachable)
+```bash
+# 1. Find your Gateway's external IP
+Go to Infrastructure tab → Gateways section → Note the External IP
+
+# 2. Test if reachable first
+curl http://<GATEWAY-EXTERNAL-IP>/
+
+# 3. If successful, use in HTTP Client
+URL: http://<GATEWAY-EXTERNAL-IP>/
+Headers: Host: echo.local
+
+# Note: In Docker Desktop, external IPs may not be reachable
+# If you get "no route to host", use kubectl proxy instead
+```
+
+#### Method 3: Port Forwarding
+```bash
+# 1. Set up port forwarding to the Gateway service
+kubectl port-forward service/<gateway-name> 8080:80 -n envoy-gateway-system
+
+# 2. Use forwarded port
+URL: http://localhost:8080/
+Headers: Host: echo.local
+```
+
+### 🔍 Why This Matters
+
+**The `.local` Domain Issue**: Domains ending in `.local` (like `echo.local`, `api.local`) are for routing rules only. They cannot be resolved by DNS, so direct HTTP requests to `http://echo.local/` will fail with "Network error: Failed to fetch".
+
+**Smart URL Analysis (v0.12.1)**: The HTTP Client now automatically detects potentially problematic URLs and provides proactive guidance:
+- **`.local` Domain Detection**: Shows helpful info alert with specific testing suggestions
+- **Private IP Detection**: Warns when using private IPs that may not be reachable in Docker Desktop
+- **Alternative Method Suggestions**: Recommends kubectl proxy or port forwarding automatically
+
+**Enhanced Error Handling**: The extension's backend detects connectivity issues and provides comprehensive guidance with formatted error messages and actionable solutions.
+
+**Docker Desktop Networking**: External IPs from LoadBalancer services may not be reachable due to Docker Desktop's networking limitations. The "no route to host" error is common and expected - the HTTP Client will guide you to use kubectl proxy instead.
+
+**Enhanced Headers Interface**: Version 0.12.1 introduces a professional headers management interface with:
+- Toggle controls for individual headers
+- Visual header count indicators  
+- "Add Header" functionality
+- Integration with JWT and TLS testing
 
 ## Learning Path
 
@@ -224,11 +283,9 @@ Now let's test the gateway you just created.
 1. **Navigate to HTTP Testing**:
    * Click the **Traffic & Testing** tab
    * Click the **HTTP Testing** sub-tab
-   * This tab includes enhanced proxy reliability features (v0.8.1)
 
 2. **Start the Proxy** (Enhanced Reliability):
    * Click **"Start Proxy"** in the Proxy Manager section
-   * **New in v0.8.1**: Automatic kubeconfig detection and enhanced error handling
    * Wait for status to show "Running"
 
 3. **Get Gateway Information**:
@@ -238,10 +295,28 @@ Now let's test the gateway you just created.
 
 4. **Test with HTTP Client**:
    * In the **HTTP Testing** sub-tab
-   * **URL**: `http://echo.local/` (add Host header)
-   * **Method**: `GET`
-   * **Headers**: Add `Host: echo.local`
+   * **Important**: `echo.local` is for routing configuration only. For actual testing, use one of these options:
+   
+   **Option A - Gateway External IP (Recommended)**:
+   * Go to **Infrastructure** tab → **Gateways** section
+   * Find your gateway's **External IP** (e.g., `10.96.1.100`)
+   * **URL**: `http://<GATEWAY-EXTERNAL-IP>/` (replace with actual IP)
+   * **Smart URL Detection**: If you enter a private IP, the HTTP Client will show a helpful info alert
+   * **Headers**: Click to expand the Headers section (new in v0.12.1)
+     * Add custom header: `Host: echo.local`
+     * Toggle headers on/off as needed
+     * Use "Add Header" button for additional headers
    * Click **"Send Request"**
+   
+   **Option B - kubectl proxy**:
+   * **URL**: `http://localhost:8001/api/v1/namespaces/demo/services/echo-service:80/proxy/`
+   * **Headers**: No Host header needed for proxy testing
+   * Click **"Send Request"**
+   
+   **Option C - If you accidentally use `.local` domains**:
+   * The HTTP Client will automatically detect URLs like `http://echo.local/`
+   * Shows an informational alert with specific guidance
+   * Provides direct suggestions for kubectl proxy or port forwarding
 
 5. **Examine the Response**:
    * You should see JSON containing request details
@@ -331,18 +406,22 @@ Route different HTTP methods to different services.
 ### Step 2.4: Test Advanced Routing
 
 1. **Test Header Routing**:
-   * URL: `http://api.local/api`
-   * Headers: `Host: api.local`, `X-API-Version: v2`
+   * **Testing Method**: Use Gateway External IP or kubectl proxy (see [Testing Guide](#-testing-with-envoy-gateway-essential-knowledge))
+   * Headers: Use the Headers section in HTTP Client (v0.12.1)
+     * Add `Host: api.local`
+     * Add `X-API-Version: v2`
+     * Toggle headers as needed for testing
    * Expected: Response from v2 service
 
 2. **Test Default Routing**:
-   * URL: `http://api.local/api`
-   * Headers: `Host: api.local`
+   * **Testing Method**: Use Gateway External IP or kubectl proxy
+   * Headers: Only `Host: api.local`
    * Expected: Response from v1 service
 
 3. **Test Method Routing**:
-   * URL: `http://api.local/api/data`
+   * **Testing Method**: Use Gateway External IP or kubectl proxy
    * Method: `POST`
+   * Headers: `Host: api.local`
    * Expected: Routed to v2 service
 
 ### Key Concepts Learned
@@ -383,7 +462,9 @@ In Docker Desktop, services need a LoadBalancer to receive external IP addresses
 2. **Test External Access**:
    * Use the external IP directly in the HTTP client
    * URL: `http://<EXTERNAL-IP>/`
-   * Headers: `Host: echo.local`
+   * Headers: Use the enhanced Headers interface (v0.12.1)
+     * Add `Host: echo.local`
+     * Easily manage multiple headers with toggle controls
 
 ### Step 3.3: Enhanced Proxy Management (v0.8.1)
 
@@ -472,10 +553,12 @@ The extension provides automated certificate management.
 ### Step 4.4: Test HTTPS Connectivity
 
 1. **Advanced HTTPS Testing**:
-   * In **Traffic & Testing** tab, **HTTP Testing** sub-tab, expand **TLS Options**
+   * In **Traffic & Testing** tab, **HTTP Testing** sub-tab
    * **URL**: `https://<SECURE-GATEWAY-IP>/`
-   * **Headers**: `Host: secure.local`
-   * **TLS Options**: Enable "Ignore Certificate Errors" for self-signed certificates
+   * **Headers**: Use the Headers section (v0.12.1)
+     * Add `Host: secure.local`
+     * Manage multiple headers with the enhanced interface
+   * **TLS Options**: Expand and enable "Ignore Certificate Errors" for self-signed certificates
 
 2. **Verify Secure Communication**:
    * Response should include TLS connection details
@@ -581,7 +664,10 @@ Performance testing with gateways helps you:
    * **Concurrent Connections**: `10`
 
 3. **Advanced Settings**:
-   * **Custom Headers**: Add `Host: api.local`
+   * **Custom Headers**: Use the enhanced Headers interface (v0.12.1)
+     * Add `Host: api.local`
+     * Toggle headers on/off during testing
+     * Easily add multiple headers with "Add Header" button
    * **Request Body**: (for POST requests)
    * **Timeout**: `10` seconds
 
@@ -667,7 +753,9 @@ Modern applications require comprehensive security policies to protect against t
 
 3. **Test Authentication**:
    * In **Traffic & Testing** tab, **HTTP Testing** sub-tab, test the protected route
-   * Add Authorization header: `Basic ZGVtbzpzZWN1cmUxMjM=` (base64 of demo:secure123)
+   * Use the Headers section (v0.12.1) to add authentication:
+     * Add `Authorization: Basic ZGVtbzpzZWN1cmUxMjM=` (base64 of demo:secure123)
+     * Toggle header on/off to test access control
    * Verify access is restricted without proper credentials
 
 ### Step 7.3: Implement CORS Policy
@@ -765,11 +853,12 @@ Modern applications require comprehensive security policies to protect against t
 5. **Analyze Results**:
    * Monitor real-time metrics and response times
    * Observe 429 (Too Many Requests) responses
-   * Check rate limit headers in HTTP client:
+   * Check rate limit headers in HTTP client Response tab:
      * `X-RateLimit-Limit`: Total requests allowed
      * `X-RateLimit-Remaining`: Requests remaining
      * `X-RateLimit-Reset`: When limit resets
      * `Retry-After`: Suggested retry timing
+   * Use the enhanced Headers interface (v0.12.1) to add custom headers for testing
 
 6. **Advanced Configuration**:
    * **Per-IP Rate Limiting**: Limit requests per client IP
@@ -881,10 +970,11 @@ JSON Web Tokens (JWT) provide a modern, stateless authentication mechanism that'
    * In the **HTTP Testing Client**, configure JWT authentication:
    * **URL**: Your echo service endpoint
    * **Method**: `GET`
-   * **JWT Authentication**: Enable
+   * **JWT Authentication**: Enable in the JWT Authentication accordion
    * **Token**: Paste the generated JWT token
    * **Header Name**: `Authorization`
    * **Token Prefix**: `Bearer `
+   * **Headers**: The enhanced Headers interface (v0.12.1) will show the JWT header automatically
    * Click **"Send Request"**
 
 4. **Analyze JWT Token Details**:
@@ -920,6 +1010,7 @@ JSON Web Tokens (JWT) provide a modern, stateless authentication mechanism that'
 3. **Integration with HTTP Client**:
    * Use the enhanced HTTP client with JWT authentication support
    * **JWT Configuration Panel**: Easy token management
+   * **Headers Interface**: Enhanced header management (v0.12.1) with toggle controls
    * **Local Validation**: Client-side token validation before sending
    * **Request History**: Save and replay JWT-authenticated requests
 
@@ -1187,3 +1278,34 @@ Congratulations! You've completed a comprehensive tour of the Envoy Gateway Dock
 * **Extension Updates**: Check for new features and improvements
 
 You now have the knowledge and tools to implement modern, scalable, and secure API gateway solutions. Start applying these concepts to your own projects and continue exploring the powerful capabilities of Envoy Gateway!
+
+## 🎉 What's New in v0.12.1
+
+This demo guide reflects the enhanced HTTP Client experience introduced in v0.12.1:
+
+**🎯 Enhanced Headers Management**:
+- Professional headers interface with toggle controls
+- Visual header count indicators and "Add Header" functionality  
+- Seamless integration with JWT authentication and TLS testing
+
+**🔧 Improved Testing Experience**:
+
+- **Smart URL Analysis**: Proactive detection of `.local` domains and private IPs with helpful guidance
+- **Enhanced Error Handling**: Comprehensive error messages with formatted display and actionable solutions
+- **Alternative Method Suggestions**: Automatic recommendations for kubectl proxy or port forwarding
+- Backend HTTP proxy for reliable testing without CORS issues
+- Clear instructions for the three testing methods (Gateway IP, kubectl proxy, port forwarding)
+
+**🛡️ Proactive User Guidance**:
+
+- **Real-time URL Analysis**: Shows informational alerts before you encounter connectivity issues
+- **Docker Desktop Networking Support**: Automatic detection of networking limitations with helpful suggestions
+- **Enhanced Error Display**: Better formatted error messages with line breaks and structured guidance
+
+**📚 Updated Documentation**:
+
+- Comprehensive testing guide explaining configuration vs. actual testing
+- Updated examples throughout all demos with proper testing methods
+- Best practices for API gateway testing workflows with smart URL detection
+
+The extension now provides an enterprise-grade HTTP testing experience that rivals dedicated API testing tools while maintaining seamless integration with Envoy Gateway management and proactive user guidance.

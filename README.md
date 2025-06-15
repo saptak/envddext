@@ -1,6 +1,6 @@
-# Envoy Gateway Docker Desktop Extension v0.12.0
+# Envoy Gateway Docker Desktop Extension v0.12.1
 
-A production-ready Docker Desktop extension for managing Envoy Gateway resources with enterprise-grade performance optimizations, comprehensive security policies, and an intuitive 4-tab interface with Envoy branding.
+A production-ready Docker Desktop extension for managing Envoy Gateway resources with enterprise-grade performance optimizations, enhanced HTTP client capabilities, and an intuitive 4-tab interface with Envoy branding.
 
 ## Key Features
 
@@ -31,7 +31,7 @@ A production-ready Docker Desktop extension for managing Envoy Gateway resources
 
 ### 🚦 Traffic & Testing Tab
 - **Traffic Splitting**: Canary deployments and A/B testing patterns with real-time visualization
-- **HTTP Testing**: Built-in client with JWT support, HTTPS testing, and request history
+- **HTTP Testing**: Built-in client with enhanced headers management, JWT support, HTTPS testing, and request history
 - **Performance Testing**: Synthetic load testing with configurable RPS and real-time metrics
 - **Proxy Management**: Integrated kubectl proxy with lifecycle management
 
@@ -54,7 +54,7 @@ A production-ready Docker Desktop extension for managing Envoy Gateway resources
 
 ## Current Status
 
-**v0.12.0 - Production Ready** (June 13, 2025)
+**v0.12.1 - Production Ready** (June 14, 2025)
 
 ✅ **Complete Feature Set**: All major functionality implemented  
 ✅ **Performance Optimized**: Enterprise-grade performance improvements  

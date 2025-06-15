@@ -207,6 +207,7 @@ func (s *Server) setupRoutes() {
 	s.router.HandleFunc("/start-traffic-test", s.handleStartTrafficTest).Methods("POST")
 	s.router.HandleFunc("/stop-traffic-test", s.handleStopTrafficTest).Methods("POST")
 	s.router.HandleFunc("/traffic-metrics", s.handleTrafficMetrics).Methods("GET")
+	s.router.HandleFunc("/http-request", s.handleHTTPRequest).Methods("POST")
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
@@ -1299,6 +1300,167 @@ func (s *Server) transformURLForContainer(targetURL string) string {
 		return strings.Replace(targetURL, "://127.0.0.1", "://host.docker.internal", 1)
 	}
 	return targetURL
+}
+
+type HTTPRequestData struct {
+	Method  string            `json:"method"`
+	URL     string            `json:"url"`
+	Headers map[string]string `json:"headers"`
+	Body    string            `json:"body,omitempty"`
+	Timeout int               `json:"timeout,omitempty"`
+}
+
+type HTTPResponseData struct {
+	Status      int               `json:"status"`
+	StatusText  string            `json:"statusText"`
+	Headers     map[string]string `json:"headers"`
+	Body        string            `json:"body"`
+	ResponseTime int64            `json:"responseTime"`
+	ContentType string            `json:"contentType"`
+	Size        int               `json:"size"`
+}
+
+func (s *Server) handleHTTPRequest(w http.ResponseWriter, r *http.Request) {
+	var requestData HTTPRequestData
+	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
+		s.sendError(w, "Invalid request data: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	log.Printf("Making HTTP request: %s %s", requestData.Method, requestData.URL)
+
+	// Check for common testing domains that won't resolve
+	if strings.Contains(requestData.URL, ".local") {
+		errorMsg := `Cannot resolve domain ending in '.local' - this appears to be a test configuration.
+
+For testing Envoy Gateway services, try these options:
+
+1. **Use Gateway External IP**: 
+   - Check Infrastructure > Gateways for the external IP
+   - Replace 'echo.local' with the actual IP: http://<GATEWAY-IP>/
+   - Keep the Host header: Host: echo.local
+
+2. **Use kubectl proxy**:
+   - Start: kubectl proxy --port=8001
+   - URL: http://localhost:8001/api/v1/namespaces/demo/services/echo-service:80/proxy/
+   - No Host header needed
+
+3. **Use port forwarding**:
+   - Run: kubectl port-forward service/echo-service 8080:80 -n demo
+   - URL: http://localhost:8080/
+   - Keep Host header: Host: echo.local
+
+The '.local' domain is for testing routing rules, not actual DNS resolution.`
+		s.sendError(w, errorMsg, http.StatusBadRequest)
+		return
+	}
+
+	startTime := time.Now()
+	
+	// Set default timeout
+	timeout := 30
+	if requestData.Timeout > 0 {
+		timeout = requestData.Timeout
+	}
+
+	// Create HTTP client with timeout
+	client := &http.Client{
+		Timeout: time.Duration(timeout) * time.Second,
+	}
+
+	// Create request
+	var reqBody *strings.Reader
+	if requestData.Body != "" && (requestData.Method == "POST" || requestData.Method == "PUT" || requestData.Method == "PATCH") {
+		reqBody = strings.NewReader(requestData.Body)
+	}
+
+	var req *http.Request
+	var err error
+	if reqBody != nil {
+		req, err = http.NewRequest(requestData.Method, requestData.URL, reqBody)
+	} else {
+		req, err = http.NewRequest(requestData.Method, requestData.URL, nil)
+	}
+
+	if err != nil {
+		s.sendError(w, "Failed to create request: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Add headers
+	for key, value := range requestData.Headers {
+		req.Header.Set(key, value)
+	}
+
+	// Make the request
+	resp, err := client.Do(req)
+	if err != nil {
+		errorMsg := err.Error()
+		
+		// Check for common Docker Desktop networking issues
+		if strings.Contains(errorMsg, "no route to host") || strings.Contains(errorMsg, "network is unreachable") {
+			enhancedError := `Gateway External IP not reachable from Docker Desktop.
+
+This is common in Docker Desktop environments where external IPs may not be routable.
+
+Alternative testing methods:
+
+1. **kubectl proxy (Recommended)**:
+   - Start kubectl proxy from Proxy Manager
+   - Use URL: http://localhost:8001/api/v1/namespaces/demo/services/echo-service:80/proxy/
+   - No Host header needed
+
+2. **Port Forwarding**:
+   - Run: kubectl port-forward service/echo-service 8080:80 -n demo
+   - Use URL: http://localhost:8080/
+   - Add Host header: Host: echo.local
+
+3. **Check LoadBalancer Status**:
+   - Go to Infrastructure > LoadBalancer
+   - Verify MetalLB is running properly
+   - Some Docker Desktop setups don't support external LoadBalancer IPs
+
+Original error: ` + errorMsg
+			s.sendError(w, enhancedError, http.StatusBadRequest)
+			return
+		}
+		
+		// Generic error for other cases
+		s.sendError(w, "Request failed: "+errorMsg, http.StatusBadRequest)
+		return
+	}
+	defer resp.Body.Close()
+
+	// Read response body
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		s.sendError(w, "Failed to read response body: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	responseTime := time.Since(startTime).Milliseconds()
+
+	// Extract response headers
+	responseHeaders := make(map[string]string)
+	for key, values := range resp.Header {
+		if len(values) > 0 {
+			responseHeaders[key] = values[0]
+		}
+	}
+
+	// Create response
+	httpResponse := HTTPResponseData{
+		Status:       resp.StatusCode,
+		StatusText:   resp.Status,
+		Headers:      responseHeaders,
+		Body:         string(bodyBytes),
+		ResponseTime: responseTime,
+		ContentType:  resp.Header.Get("Content-Type"),
+		Size:         len(bodyBytes),
+	}
+
+	response := APIResponse{Success: true, Data: httpResponse}
+	json.NewEncoder(w).Encode(response)
 }
 
 func (s *Server) sendError(w http.ResponseWriter, message string, statusCode int) {

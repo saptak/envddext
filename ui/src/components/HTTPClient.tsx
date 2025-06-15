@@ -33,6 +33,8 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import HttpsIcon from '@mui/icons-material/Https';
 import TokenIcon from '@mui/icons-material/Token';
 import VerifiedIcon from '@mui/icons-material/Verified';
+import AddIcon from '@mui/icons-material/Add';
+import InfoIcon from '@mui/icons-material/Info';
 import { createDockerDesktopClient } from "@docker/extension-api-client";
 import {
   HTTPClientState,
@@ -283,6 +285,45 @@ export const HTTPClient: React.FC<HTTPClientProps> = ({
   })();
 
   const isHttpsUrl = state.url.startsWith('https://');
+  
+  // Check if URL might have connectivity issues in Docker Desktop
+  const urlAnalysis = (() => {
+    if (!state.url) return null;
+    
+    try {
+      const url = new URL(state.url);
+      
+      // Check for .local domains
+      if (url.hostname.endsWith('.local')) {
+        return {
+          type: 'local-domain',
+          message: `Testing with .local domain: This appears to be a demo/testing URL that requires kubectl proxy or port forwarding.`,
+          suggestions: [
+            'Start kubectl proxy: Go to Proxy Manager and start kubectl proxy',
+            `Use proxy URL: http://localhost:8001/api/v1/namespaces/demo/services/echo-service:80/proxy/`,
+            'Or use port forwarding: kubectl port-forward service/echo-service 8080:80 -n demo'
+          ]
+        };
+      }
+      
+      // Check for private IP ranges that might not work in Docker Desktop
+      if (url.hostname.match(/^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.)/)) {
+        return {
+          type: 'private-ip',
+          message: `Private IP detected: ${url.hostname} might not be reachable from Docker Desktop.`,
+          suggestions: [
+            'If this is a Gateway External IP, try using kubectl proxy instead',
+            'Start kubectl proxy from Proxy Manager tab',
+            'Use localhost URLs with proper service proxying'
+          ]
+        };
+      }
+      
+      return null;
+    } catch {
+      return null;
+    }
+  })();
 
   return (
     <Paper
@@ -389,6 +430,22 @@ export const HTTPClient: React.FC<HTTPClientProps> = ({
             </Button>
           </Grid>
         </Grid>
+
+        {/* URL Analysis Warning */}
+        {urlAnalysis && (
+          <Alert severity="info" sx={{ mt: 2 }} icon={<InfoIcon />}>
+            <Typography variant="subtitle2" gutterBottom>
+              {urlAnalysis.message}
+            </Typography>
+            <Box component="ul" sx={{ mt: 1, mb: 0, pl: 2 }}>
+              {urlAnalysis.suggestions.map((suggestion, index) => (
+                <li key={index}>
+                  <Typography variant="body2">{suggestion}</Typography>
+                </li>
+              ))}
+            </Box>
+          </Alert>
+        )}
 
         {/* TLS/HTTPS Options */}
         {isHttpsUrl && (
@@ -502,6 +559,102 @@ export const HTTPClient: React.FC<HTTPClientProps> = ({
                 </Grid>
               </AccordionDetails>
             </Accordion>
+          </Box>
+        )}
+
+        {/* Headers */}
+        <Box sx={{ mt: 3 }}>
+          <Accordion defaultExpanded>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="subtitle2">Headers</Typography>
+                <Chip 
+                  label={`${state.headers.filter(h => h.enabled && h.key).length} headers`} 
+                  size="small" 
+                  color="primary"
+                />
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Grid container spacing={2}>
+                {state.headers.map((header, index) => (
+                  <React.Fragment key={index}>
+                    <Grid item xs={1}>
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={header.enabled}
+                            onChange={(e) => handleHeaderChange(index, 'enabled', e.target.checked)}
+                            size="small"
+                          />
+                        }
+                        label=""
+                        sx={{ m: 0 }}
+                      />
+                    </Grid>
+                    <Grid item xs={5}>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        label="Header Name"
+                        value={header.key}
+                        onChange={(e) => handleHeaderChange(index, 'key', e.target.value)}
+                        placeholder="Content-Type"
+                        disabled={!header.enabled}
+                      />
+                    </Grid>
+                    <Grid item xs={5}>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        label="Value"
+                        value={header.value}
+                        onChange={(e) => handleHeaderChange(index, 'value', e.target.value)}
+                        placeholder="application/json"
+                        disabled={!header.enabled}
+                      />
+                    </Grid>
+                    <Grid item xs={1}>
+                      <IconButton
+                        onClick={() => removeHeader(index)}
+                        size="small"
+                        color="error"
+                        sx={{ mt: 1 }}
+                      >
+                        <ClearIcon />
+                      </IconButton>
+                    </Grid>
+                  </React.Fragment>
+                ))}
+                
+                <Grid item xs={12}>
+                  <Button
+                    variant="outlined"
+                    onClick={addHeader}
+                    startIcon={<AddIcon />}
+                    sx={{ mt: 1 }}
+                  >
+                    Add Header
+                  </Button>
+                </Grid>
+              </Grid>
+            </AccordionDetails>
+          </Accordion>
+        </Box>
+
+        {/* Request Body */}
+        {['POST', 'PUT', 'PATCH'].includes(state.method) && (
+          <Box sx={{ mt: 3 }}>
+            <TextField
+              fullWidth
+              multiline
+              rows={6}
+              label="Request Body"
+              value={state.body}
+              onChange={(e) => handleBodyChange(e.target.value)}
+              placeholder="Enter request body (JSON, XML, etc.)"
+              helperText="Request body content for POST, PUT, and PATCH requests"
+            />
           </Box>
         )}
 
@@ -648,7 +801,7 @@ export const HTTPClient: React.FC<HTTPClientProps> = ({
 
         {state.error && (
           <Alert severity="error" sx={{ mt: 2 }}>
-            {state.error}
+            <div style={{ whiteSpace: 'pre-wrap' }}>{state.error}</div>
           </Alert>
         )}
       </TabPanel>
