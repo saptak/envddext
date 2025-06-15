@@ -15,9 +15,9 @@ A production-ready Docker Desktop extension for managing Envoy Gateway resources
 ## Core Functionality
 
 ### 🚀 Quick Start Tab
-- **Overview Dashboard**: System health monitoring with Gateway, HTTPRoute, and Service status
-- **Template Gallery**: Curated templates with search and one-click deployment
-- **Visual Resource Cards**: Relationship mapping and real-time status indicators
+- **Overview Dashboard**: Dynamic deployment monitoring with automatic service discovery and real-time status
+- **Template Gallery**: Enhanced template management with deployment status badges and comprehensive undeploy functionality
+- **Visual Resource Cards**: Relationship mapping with intelligent resource tracking
 
 ### 🏗️ Infrastructure Tab
 - **Gateways**: Create/delete with TLS listener configuration and LoadBalancer management
@@ -31,7 +31,7 @@ A production-ready Docker Desktop extension for managing Envoy Gateway resources
 
 ### 🚦 Traffic & Testing Tab
 - **Traffic Splitting**: Canary deployments and A/B testing patterns with real-time visualization
-- **HTTP Testing**: Built-in client with enhanced headers management, JWT support, HTTPS testing, and request history
+- **HTTP Testing**: Built-in client with professional headers interface, smart URL analysis, enhanced error handling, JWT support, and HTTPS testing
 - **Performance Testing**: Synthetic load testing with configurable RPS and real-time metrics
 - **Proxy Management**: Integrated kubectl proxy with lifecycle management
 

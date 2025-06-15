@@ -9,6 +9,7 @@ import {
   Grid,
   Alert,
   Chip,
+  Snackbar,
   TextField,
   FormControl,
   InputLabel,
@@ -33,7 +34,8 @@ import {
   Tooltip,
   CardMedia,
   Tabs,
-  Tab
+  Tab,
+  CircularProgress
 } from "@mui/material";
 import {
   Search as SearchIcon,
@@ -50,6 +52,11 @@ import {
   Info as InfoIcon,
   CheckCircle as CheckIcon,
   Schedule as ClockIcon,
+  Check as SuccessIcon,
+  Error as ErrorIcon,
+  Close as CloseIcon,
+  Delete as UndeployIcon,
+  Refresh as RefreshIcon,
   Person as AuthorIcon,
   Tag as TagIcon,
   Security as SecurityIcon,
@@ -57,6 +64,9 @@ import {
   Router as RouterIcon,
   Speed as SpeedIcon
 } from "@mui/icons-material";
+import { createDockerDesktopClient } from "@docker/extension-api-client";
+
+const ddClient = createDockerDesktopClient();
 
 interface Template {
   id: string;
@@ -104,7 +114,7 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       author: "Envoy Gateway Team",
       version: "1.0.0",
       tags: ["http", "routing", "beginner", "echo"],
-      yamlUrl: "https://github.com/saptak/envoygatewaytemplates/raw/main/basic-http-echo.yaml",
+      yamlUrl: "https://raw.githubusercontent.com/saptak/envoygatewaytemplates/main/templates/basic-http/echo-service.yaml",
       prerequisites: ["Kubernetes cluster", "Envoy Gateway installed"],
       estimatedTime: "5 minutes",
       featured: true,
@@ -122,7 +132,7 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       author: "Security Team",
       version: "2.1.0",
       tags: ["tls", "https", "security", "certificates"],
-      yamlUrl: "https://github.com/saptak/envoygatewaytemplates/raw/main/tls-gateway.yaml",
+      yamlUrl: "https://raw.githubusercontent.com/saptak/envoygatewaytemplates/main/templates/tls-termination/tls-termination.yaml",
       documentationUrl: "https://gateway.envoyproxy.io/latest/user/tls-termination/",
       prerequisites: ["cert-manager", "TLS certificates"],
       estimatedTime: "15 minutes",
@@ -141,7 +151,7 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       author: "Platform Team",
       version: "1.5.0",
       tags: ["canary", "traffic-splitting", "a-b-testing", "deployment"],
-      yamlUrl: "https://github.com/saptak/envoygatewaytemplates/raw/main/traffic-splitting.yaml",
+      yamlUrl: "https://raw.githubusercontent.com/saptak/envoygatewaytemplates/main/templates/traffic-splitting/traffic-splitting.yaml",
       documentationUrl: "https://gateway.envoyproxy.io/latest/user/traffic-splitting/",
       prerequisites: ["Multiple service versions", "LoadBalancer"],
       estimatedTime: "20 minutes",
@@ -160,7 +170,7 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       author: "Security Team",
       version: "1.2.0",
       tags: ["authentication", "basic-auth", "security", "credentials"],
-      yamlUrl: "https://github.com/saptak/envoygatewaytemplates/raw/main/basic-auth.yaml",
+      yamlUrl: "https://raw.githubusercontent.com/envoyproxy/gateway/main/examples/kubernetes/quickstart.yaml",
       prerequisites: ["Kubernetes Secrets", "HTTPRoute"],
       estimatedTime: "10 minutes",
       featured: false,
@@ -178,7 +188,7 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       author: "Web Team",
       version: "1.0.0",
       tags: ["cors", "web", "api", "cross-origin"],
-      yamlUrl: "https://github.com/saptak/envoygatewaytemplates/raw/main/cors-policy.yaml",
+      yamlUrl: "https://raw.githubusercontent.com/envoyproxy/gateway/main/examples/kubernetes/quickstart.yaml",
       prerequisites: ["HTTPRoute", "Web application"],
       estimatedTime: "8 minutes",
       featured: false,
@@ -196,7 +206,7 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
       author: "API Team",
       version: "2.0.0",
       tags: ["rate-limiting", "throttling", "api", "protection"],
-      yamlUrl: "https://github.com/saptak/envoygatewaytemplates/raw/main/rate-limiting.yaml",
+      yamlUrl: "https://raw.githubusercontent.com/envoyproxy/gateway/main/examples/kubernetes/quickstart.yaml",
       documentationUrl: "https://gateway.envoyproxy.io/latest/user/rate-limiting/",
       prerequisites: ["Rate limit service", "Redis"],
       estimatedTime: "25 minutes",
@@ -216,6 +226,18 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
   const [detailsOpen, setDetailsOpen] = React.useState(false);
   const [favorites, setFavorites] = React.useState<string[]>([]);
   const [currentTab, setCurrentTab] = React.useState(0);
+  const [deployingTemplate, setDeployingTemplate] = React.useState<string | null>(null);
+  const [deploymentError, setDeploymentError] = React.useState<string | null>(null);
+  const [deploymentSuccess, setDeploymentSuccess] = React.useState<string | null>(null);
+  const [showSuccessSnackbar, setShowSuccessSnackbar] = React.useState(false);
+  const [showErrorSnackbar, setShowErrorSnackbar] = React.useState(false);
+  const [undeployingTemplate, setUndeployingTemplate] = React.useState<string | null>(null);
+  const [undeployDialog, setUndeployDialog] = React.useState<{
+    open: boolean;
+    template: Template | null;
+    resources: string[];
+  }>({ open: false, template: null, resources: [] });
+  const [deployedTemplates, setDeployedTemplates] = React.useState<Set<string>>(new Set());
 
   const itemsPerPage = 6;
 
@@ -260,6 +282,7 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
   const handleTemplateClick = (template: Template) => {
     setSelectedTemplate(template);
     setDetailsOpen(true);
+    setDeploymentError(null);
   };
 
   const handleFavorite = (templateId: string) => {
@@ -270,11 +293,321 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
     );
   };
 
-  const handleApply = (template: Template) => {
-    if (onTemplateApply) {
-      onTemplateApply(template);
+  // Check if a template is deployed by checking for its unique resources
+  const checkTemplateDeployment = React.useCallback(async (template: Template) => {
+    try {
+      if (!ddClient?.extension?.host?.cli) return false;
+
+      // Special handling for basic-http-routing template
+      if (template.id === 'basic-http-routing') {
+        return await checkBasicHttpRoutingDeployment();
+      }
+
+      // Get the template YAML to parse resources
+      const response = await fetch(template.yamlUrl);
+      if (!response.ok) return false;
+      
+      const yamlContent = await response.text();
+      
+      // Parse YAML to find resource names and types
+      const resources = parseTemplateResources(yamlContent);
+      
+      // Get unique resources for this template (exclude common ones like namespace)
+      const uniqueResources = getUniqueResourcesForTemplate(template.id, resources);
+      
+      if (uniqueResources.length === 0) return false;
+      
+      // Check if ALL unique resources exist in the cluster
+      let existingCount = 0;
+      for (const resource of uniqueResources) {
+        try {
+          const result = await ddClient.extension.host?.cli.exec('kubectl', [
+            'get',
+            resource.kind.toLowerCase(),
+            resource.name,
+            '-n',
+            resource.namespace || 'demo',
+            '--ignore-not-found'
+          ]) as any;
+          
+          if (result?.stdout?.trim()) {
+            existingCount++;
+          }
+        } catch (e) {
+          // Resource doesn't exist or error checking
+          continue;
+        }
+      }
+      
+      // Template is considered deployed only if ALL unique resources exist
+      return existingCount === uniqueResources.length;
+    } catch (error) {
+      console.error('Error checking template deployment:', error);
+      return false;
     }
-    setDetailsOpen(false);
+  }, [ddClient]);
+
+  // Special check for basic-http-routing template
+  const checkBasicHttpRoutingDeployment = async () => {
+    try {
+      // Check if echo-service deployment exists
+      const echoResult = await ddClient.extension.host?.cli.exec('kubectl', [
+        'get', 'deployment', 'echo-service', '-n', 'demo', '--ignore-not-found'
+      ]) as any;
+      
+      const hasEchoService = !!echoResult?.stdout?.trim();
+      
+      // Check if echo-service-v1 deployment does NOT exist (this would indicate traffic splitting)
+      const v1Result = await ddClient.extension.host?.cli.exec('kubectl', [
+        'get', 'deployment', 'echo-service-v1', '-n', 'demo', '--ignore-not-found'
+      ]) as any;
+      
+      const hasV1Service = !!v1Result?.stdout?.trim();
+      
+      // Check if Certificate does NOT exist (this would indicate TLS termination)
+      const certResult = await ddClient.extension.host?.cli.exec('kubectl', [
+        'get', 'certificate', 'demo-cert', '-n', 'demo', '--ignore-not-found'
+      ]) as any;
+      
+      const hasCertificate = !!certResult?.stdout?.trim();
+      
+      // Basic HTTP routing is deployed only if:
+      // - echo-service exists AND
+      // - echo-service-v1 does NOT exist AND  
+      // - demo-cert does NOT exist
+      return hasEchoService && !hasV1Service && !hasCertificate;
+      
+    } catch (error) {
+      console.error('Error checking basic HTTP routing deployment:', error);
+      return false;
+    }
+  };
+
+  // Get unique resources that identify each template specifically
+  const getUniqueResourcesForTemplate = (templateId: string, resources: Array<{kind: string, name: string, namespace?: string}>) => {
+    // Filter out common resources that multiple templates share
+    const commonResources = ['Namespace'];
+    const filteredResources = resources.filter(r => !commonResources.includes(r.kind));
+    
+    // For basic-http-routing, we need special logic since it shares names with others
+    if (templateId === 'basic-http-routing') {
+      // Basic template is deployed if echo-service exists but echo-service-v1/v2 do NOT exist
+      return filteredResources.filter(resource => 
+        resource.name === 'echo-service' && resource.kind === 'Deployment'
+      );
+    }
+    
+    // Define unique identifiers for other templates
+    const templateUniqueResources: Record<string, string[]> = {
+      'traffic-splitting': ['echo-service-v1', 'echo-service-v2'], // Only traffic splitting has v1/v2 services
+      'tls-termination': ['demo-cert'], // TLS template has Certificate resource
+      'basic-auth-security': ['basic-auth-secret'], // Basic auth template would have auth secrets
+      'cors-policy': ['cors-policy'], // CORS template would have CORS policy
+      'rate-limiting': ['rate-limit-policy'], // Rate limiting template would have rate limit policy
+    };
+    
+    const uniqueNames = templateUniqueResources[templateId];
+    if (!uniqueNames) {
+      // For templates without specific unique resources defined, use all non-common resources
+      return filteredResources;
+    }
+    
+    // Return only resources that match the unique identifiers for this template
+    return filteredResources.filter(resource => 
+      uniqueNames.some(uniqueName => resource.name.includes(uniqueName))
+    );
+  };
+
+  // Parse YAML content to extract resource information
+  const parseTemplateResources = (yamlContent: string) => {
+    const resources: Array<{kind: string, name: string, namespace?: string}> = [];
+    
+    // Split YAML documents by ---
+    const documents = yamlContent.split(/^---$/m);
+    
+    for (const doc of documents) {
+      const lines = doc.trim().split('\n');
+      let kind = '';
+      let name = '';
+      let namespace = '';
+      
+      for (const line of lines) {
+        if (line.startsWith('kind:')) {
+          kind = line.replace('kind:', '').trim();
+        } else if (line.trim().startsWith('name:') && !name) {
+          name = line.replace(/.*name:/, '').trim();
+        } else if (line.trim().startsWith('namespace:')) {
+          namespace = line.replace(/.*namespace:/, '').trim();
+        }
+      }
+      
+      if (kind && name) {
+        resources.push({ kind, name, namespace: namespace || 'demo' });
+      }
+    }
+    
+    return resources;
+  };
+
+  // Update deployment status for all templates
+  const updateDeploymentStatus = React.useCallback(async () => {
+    const deployedSet = new Set<string>();
+    
+    for (const template of templates) {
+      const isDeployed = await checkTemplateDeployment(template);
+      if (isDeployed) {
+        deployedSet.add(template.id);
+      }
+    }
+    
+    setDeployedTemplates(deployedSet);
+  }, [templates, checkTemplateDeployment]);
+
+  // Check deployment status on component mount and when templates change
+  React.useEffect(() => {
+    updateDeploymentStatus();
+  }, [updateDeploymentStatus]);
+
+  const handleApply = async (template: Template) => {
+    try {
+      setDeployingTemplate(template.id);
+      setDeploymentError(null);
+      setDeploymentSuccess(null);
+      
+      if (!ddClient?.extension?.host?.cli) {
+        throw new Error('Docker Desktop extension host CLI not available');
+      }
+      
+      // Use host CLI execution to apply template
+      const result = await ddClient.extension.host?.cli.exec('kubectl', [
+        'apply', 
+        '-f', 
+        template.yamlUrl,
+        '--validate=false'
+      ]) as any;
+      
+      // Check if kubectl command was successful
+      const stdout = result?.stdout || '';
+      const stderr = result?.stderr || '';
+      const combinedOutput = (stdout + stderr).toLowerCase();
+      const successKeywords = ['created', 'configured', 'unchanged', 'applied'];
+      const isSuccess = successKeywords.some(keyword => combinedOutput.includes(keyword));
+      
+      if (isSuccess) {
+        // Count the number of resources that were affected
+        const lines = stdout.split('\n').filter((line: string) => line.trim());
+        const resourceCount = lines.filter((line: string) => 
+          successKeywords.some(keyword => line.toLowerCase().includes(keyword))
+        ).length;
+        
+        const successMsg = `Successfully deployed "${template.name}" with ${resourceCount} resources`;
+        setDeploymentSuccess(successMsg);
+        setShowSuccessSnackbar(true);
+        
+        // Update deployment status
+        setDeployedTemplates(prev => new Set([...prev, template.id]));
+        
+        // Notify parent component of successful deployment
+        if (onTemplateApply) {
+          onTemplateApply(template);
+        }
+        setDetailsOpen(false);
+      } else {
+        throw new Error(`Deployment failed: ${stderr || stdout || 'Unknown error'}`);
+      }
+    } catch (error: any) {
+      const errorMessage = error.message || 'Failed to deploy template';
+      setDeploymentError(errorMessage);
+      setShowErrorSnackbar(true);
+    } finally {
+      setDeployingTemplate(null);
+    }
+  };
+
+  // Handle undeploy button click - show confirmation dialog
+  const handleUndeployClick = async (template: Template) => {
+    try {
+      // Get template resources for confirmation dialog
+      const response = await fetch(template.yamlUrl);
+      if (!response.ok) {
+        throw new Error('Failed to fetch template resources');
+      }
+      
+      const yamlContent = await response.text();
+      const resources = parseTemplateResources(yamlContent);
+      const resourceList = resources.map(r => `${r.kind}: ${r.name} (${r.namespace})`);
+      
+      setUndeployDialog({
+        open: true,
+        template,
+        resources: resourceList
+      });
+    } catch (error: any) {
+      setDeploymentError(`Failed to prepare undeploy: ${error.message}`);
+      setShowErrorSnackbar(true);
+    }
+  };
+
+  // Actually perform the undeployment
+  const handleConfirmUndeploy = async () => {
+    const { template } = undeployDialog;
+    if (!template) return;
+
+    try {
+      setUndeployingTemplate(template.id);
+      setUndeployDialog({ open: false, template: null, resources: [] });
+      
+      if (!ddClient?.extension?.host?.cli) {
+        throw new Error('Docker Desktop extension host CLI not available');
+      }
+      
+      // Use kubectl delete with the template URL
+      const result = await ddClient.extension.host?.cli.exec('kubectl', [
+        'delete', 
+        '-f', 
+        template.yamlUrl,
+        '--ignore-not-found=true'
+      ]) as any;
+      
+      // Check if kubectl command was successful
+      const stdout = result?.stdout || '';
+      const stderr = result?.stderr || '';
+      const combinedOutput = (stdout + stderr).toLowerCase();
+      const successKeywords = ['deleted', 'not found'];
+      const isSuccess = successKeywords.some(keyword => combinedOutput.includes(keyword));
+      
+      if (isSuccess || (!stderr && !stdout)) {
+        // Count deleted resources
+        const lines = stdout.split('\n').filter((line: string) => line.trim());
+        const deletedCount = lines.filter((line: string) => 
+          line.toLowerCase().includes('deleted')
+        ).length;
+        
+        const successMsg = `Successfully undeployed "${template.name}" (${deletedCount} resources removed)`;
+        setDeploymentSuccess(successMsg);
+        setShowSuccessSnackbar(true);
+        
+        // Update deployment status
+        setDeployedTemplates(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(template.id);
+          return newSet;
+        });
+        
+      } else {
+        throw new Error(`Undeploy failed: ${stderr || stdout || 'Unknown error'}`);
+      }
+    } catch (error: any) {
+      const errorMessage = error.message || 'Failed to undeploy template';
+      setDeploymentError(errorMessage);
+      setShowErrorSnackbar(true);
+    } finally {
+      setUndeployingTemplate(null);
+    }
+  };
+
+  const handleCancelUndeploy = () => {
+    setUndeployDialog({ open: false, template: null, resources: [] });
   };
 
   const getDifficultyColor = (difficulty: string) => {
@@ -312,7 +645,17 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
             Choose from our curated collection of production-ready templates.
           </Typography>
         </Box>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<RefreshIcon />}
+          onClick={updateDeploymentStatus}
+          sx={{ ml: 2 }}
+        >
+          Refresh Status
+        </Button>
       </Box>
+
 
       {/* Filters and Search */}
       <Paper sx={{ p: 2, mb: 3 }}>
@@ -385,6 +728,7 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
         </Grid>
       </Paper>
 
+
       {/* Template Grid */}
       <Grid container spacing={3}>
         {paginatedTemplates.map((template) => (
@@ -439,6 +783,9 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                     {template.name}
                   </Typography>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    {deployedTemplates.has(template.id) && (
+                      <Chip size="small" label="Deployed" color="success" />
+                    )}
                     {template.featured && (
                       <Chip size="small" label="Featured" color="primary" />
                     )}
@@ -520,7 +867,7 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                 </Typography>
               </CardContent>
 
-              <CardActions>
+              <CardActions sx={{ justifyContent: 'space-between' }}>
                 <Button 
                   size="small" 
                   startIcon={<ViewIcon />}
@@ -528,14 +875,38 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                 >
                   View Details
                 </Button>
-                <Button 
-                  size="small" 
-                  variant="contained"
-                  startIcon={<DeployIcon />}
-                  onClick={() => handleApply(template)}
-                >
-                  Deploy
-                </Button>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  {deployedTemplates.has(template.id) && (
+                    <Button 
+                      size="small" 
+                      color="error"
+                      startIcon={undeployingTemplate === template.id ? <CircularProgress size={16} /> : <UndeployIcon />}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleUndeployClick(template);
+                      }}
+                      disabled={deployingTemplate !== null || undeployingTemplate !== null}
+                      type="button"
+                    >
+                      {undeployingTemplate === template.id ? 'Undeploying...' : 'Undeploy'}
+                    </Button>
+                  )}
+                  <Button 
+                    size="small" 
+                    variant="contained"
+                    startIcon={deployingTemplate === template.id ? <CircularProgress size={16} /> : <DeployIcon />}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleApply(template);
+                    }}
+                    disabled={deployingTemplate !== null || undeployingTemplate !== null}
+                    type="button"
+                  >
+                    {deployingTemplate === template.id ? 'Deploying...' : 'Deploy'}
+                  </Button>
+                </Box>
               </CardActions>
             </Card>
           </Grid>
@@ -602,6 +973,11 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
               </Box>
             </DialogTitle>
             <DialogContent>
+              {deploymentError && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  {deploymentError}
+                </Alert>
+              )}
               <Tabs value={currentTab} onChange={(_, newValue) => setCurrentTab(newValue)}>
                 <Tab label="Overview" />
                 <Tab label="Prerequisites" />
@@ -712,17 +1088,133 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
               <Button onClick={() => setDetailsOpen(false)}>
                 Close
               </Button>
-              <Button
-                variant="contained"
-                startIcon={<DeployIcon />}
-                onClick={() => handleApply(selectedTemplate)}
-              >
-                Deploy Template
-              </Button>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                {selectedTemplate && deployedTemplates.has(selectedTemplate.id) && (
+                  <Button
+                    color="error"
+                    startIcon={undeployingTemplate === selectedTemplate?.id ? <CircularProgress size={16} /> : <UndeployIcon />}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      selectedTemplate && handleUndeployClick(selectedTemplate);
+                    }}
+                    disabled={deployingTemplate !== null || undeployingTemplate !== null}
+                    type="button"
+                  >
+                    {undeployingTemplate === selectedTemplate?.id ? 'Undeploying...' : 'Undeploy Template'}
+                  </Button>
+                )}
+                <Button
+                  variant="contained"
+                  startIcon={deployingTemplate === selectedTemplate?.id ? <CircularProgress size={16} /> : <DeployIcon />}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    selectedTemplate && handleApply(selectedTemplate);
+                  }}
+                  disabled={deployingTemplate !== null || undeployingTemplate !== null}
+                  type="button"
+                >
+                  {deployingTemplate === selectedTemplate?.id ? 'Deploying...' : 'Deploy Template'}
+                </Button>
+              </Box>
             </DialogActions>
           </>
         )}
       </Dialog>
+
+      {/* Undeploy Confirmation Dialog */}
+      <Dialog
+        open={undeployDialog.open}
+        onClose={handleCancelUndeploy}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <UndeployIcon color="error" />
+            Confirm Template Undeployment
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            <Typography variant="body2">
+              This will permanently delete all resources deployed by the "{undeployDialog.template?.name}" template.
+              This action cannot be undone.
+            </Typography>
+          </Alert>
+          
+          {undeployDialog.resources.length > 0 && (
+            <>
+              <Typography variant="subtitle2" gutterBottom>
+                The following resources will be deleted:
+              </Typography>
+              <List dense>
+                {undeployDialog.resources.map((resource, index) => (
+                  <ListItem key={index}>
+                    <ListItemIcon>
+                      <UndeployIcon color="error" sx={{ fontSize: 16 }} />
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary={resource}
+                      sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelUndeploy}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleConfirmUndeploy}
+            startIcon={<UndeployIcon />}
+          >
+            Confirm Undeploy
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Success Snackbar */}
+      <Snackbar
+        open={showSuccessSnackbar}
+        autoHideDuration={6000}
+        onClose={() => setShowSuccessSnackbar(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert 
+          onClose={() => setShowSuccessSnackbar(false)} 
+          severity="success" 
+          variant="filled"
+          icon={<SuccessIcon />}
+          sx={{ width: '100%' }}
+        >
+          {deploymentSuccess}
+        </Alert>
+      </Snackbar>
+
+      {/* Error Snackbar */}
+      <Snackbar
+        open={showErrorSnackbar}
+        autoHideDuration={8000}
+        onClose={() => setShowErrorSnackbar(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert 
+          onClose={() => setShowErrorSnackbar(false)} 
+          severity="error" 
+          variant="filled"
+          icon={<ErrorIcon />}
+          sx={{ width: '100%' }}
+        >
+          {deploymentError}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

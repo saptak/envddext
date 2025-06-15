@@ -76,7 +76,7 @@ This comprehensive guide transforms the Envoy Gateway Docker Desktop Extension i
 
 * Docker Desktop with Kubernetes enabled
 * Minimum 4GB RAM allocated to Docker Desktop
-* Envoy Gateway Docker Desktop Extension v0.12.0+
+* Envoy Gateway Docker Desktop Extension v0.12.1+ (Production Ready)
 
 ### Setup Verification
 
@@ -91,7 +91,7 @@ This comprehensive guide transforms the Envoy Gateway Docker Desktop Extension i
 3. **Verify Installation**:
    * Open the Envoy Gateway extension
    * You should see a clean 4-tab interface with Envoy branding:
-     - **Quick Start**: Overview dashboard and template gallery
+     - **Quick Start**: Overview dashboard with dynamic deployment monitoring and enhanced template gallery
      - **Infrastructure**: Gateways, HTTP Routes, and TLS certificates
      - **Security & Policies**: Security policies and resilience configuration
      - **Traffic & Testing**: Traffic splitting, HTTP testing, and performance validation
@@ -208,11 +208,13 @@ We'll start with a simple echo service that returns information about incoming r
    * Find the **"Echo Service - Basic HTTP"** template
    * Click **"Apply Template"**
    * This deploys a simple service that echoes back request information
+   * Watch for deployment notifications in the bottom-right corner
 
 3. **Verify Deployment**:
    * Switch to the **Overview** sub-tab to see the dashboard
-   * Watch the notification for deployment status
-   * The echo service will be deployed to the `demo` namespace
+   * The dashboard automatically discovers and monitors deployed services
+   * Notice the template now shows a **"Deployed"** badge in the Template Gallery
+   * The echo service will be deployed to the `demo` namespace with dynamic monitoring
 
 **What happened?** You just deployed a simple web service that will help us test our gateway configuration. The echo service responds with details about incoming requests, making it perfect for learning.
 
@@ -358,10 +360,18 @@ Let's create a more realistic scenario with multiple services.
    * In the **Quick Start** tab, click the **Template Gallery** sub-tab
    * Apply the **"Traffic Splitting"** template
    * This creates multiple versions of a service for demonstration
+   * Notice the template shows "Deployed" badge after successful deployment
 
 2. **Verify Deployments**:
-   * Services `app-v1` and `app-v2` should now be running
+   * Services `echo-service-v1` and `echo-service-v2` should now be running
    * Each responds with different content to show routing
+   * The Dashboard dynamically detects and monitors these new deployments
+
+3. **Template Management Features** (v0.12.1):
+   * **Deployment Status**: Templates show real-time deployment status with "Deployed" badges
+   * **Undeploy Functionality**: Click the "Undeploy" button on deployed templates
+   * **Confirmation Dialogs**: Safe undeploy process with resource preview
+   * **Smart Detection**: Extension accurately tracks which templates are actually deployed
 
 ### Step 2.2: Header-Based Routing
 
@@ -1279,33 +1289,43 @@ Congratulations! You've completed a comprehensive tour of the Envoy Gateway Dock
 
 You now have the knowledge and tools to implement modern, scalable, and secure API gateway solutions. Start applying these concepts to your own projects and continue exploring the powerful capabilities of Envoy Gateway!
 
-## 🎉 What's New in v0.12.1
+## 🎉 What's New in v0.12.1 - Production Ready
 
-This demo guide reflects the enhanced HTTP Client experience introduced in v0.12.1:
+This demo guide reflects the production-ready release of v0.12.1 with enhanced user experience and reliability improvements:
 
-**🎯 Enhanced Headers Management**:
-- Professional headers interface with toggle controls
-- Visual header count indicators and "Add Header" functionality  
-- Seamless integration with JWT authentication and TLS testing
+**🎯 Enhanced HTTP Client Experience**:
+- **Professional headers interface** with toggle controls and visual header count indicators
+- **"Add Header" functionality** for seamless management of multiple headers
+- **Smart URL analysis** with proactive detection of `.local` domains and private IPs
+- **Enhanced error handling** with comprehensive, formatted error messages and actionable solutions
+- **Alternative method suggestions** with automatic recommendations for kubectl proxy or port forwarding
+- **Seamless integration** with JWT authentication and TLS testing workflows
 
-**🔧 Improved Testing Experience**:
+**🚀 Template Gallery Improvements**:
+- **Real-time deployment status** with "Deployed" badges showing actual deployment state
+- **Comprehensive undeploy functionality** for all templates with confirmation dialogs
+- **Smart template detection** that accurately tracks which templates are actually deployed
+- **Resource preview** during undeploy operations for safe resource management
+- **Enhanced deployment notifications** with bottom-right corner alerts for clear feedback
 
-- **Smart URL Analysis**: Proactive detection of `.local` domains and private IPs with helpful guidance
-- **Enhanced Error Handling**: Comprehensive error messages with formatted display and actionable solutions
-- **Alternative Method Suggestions**: Automatic recommendations for kubectl proxy or port forwarding
-- Backend HTTP proxy for reliable testing without CORS issues
-- Clear instructions for the three testing methods (Gateway IP, kubectl proxy, port forwarding)
+**📊 Dynamic Dashboard Monitoring**:
+- **Automatic deployment discovery** that detects services in demo namespace without hardcoding
+- **Multi-template support** for different deployment patterns (Basic HTTP, Traffic Splitting, TLS Termination)
+- **Real-time service monitoring** that adapts to actual deployed resources (echo-service, echo-service-v1/v2, etc.)
+- **Intelligent resource tracking** that eliminates "Deployment not found" errors
+- **Production-grade monitoring** with comprehensive deployment lifecycle management
 
-**🛡️ Proactive User Guidance**:
+**🛡️ Enterprise-Ready Architecture**:
+- **VM service backend** with full system access eliminating Docker Desktop extension limitations
+- **Robust error handling** throughout the application with user-friendly guidance
+- **Performance optimizations** including API caching and memory leak prevention
+- **Professional UI/UX** with Material-UI design patterns and responsive interface
+- **Comprehensive testing support** with three reliable testing methods
 
-- **Real-time URL Analysis**: Shows informational alerts before you encounter connectivity issues
-- **Docker Desktop Networking Support**: Automatic detection of networking limitations with helpful suggestions
-- **Enhanced Error Display**: Better formatted error messages with line breaks and structured guidance
+**📚 Complete Documentation Updates**:
+- **Updated demo guide** reflecting all v0.12.1 features and improvements
+- **Enhanced testing instructions** with clear guidance for all deployment scenarios  
+- **Best practices documentation** for enterprise API gateway management
+- **Production deployment guidance** with real-world usage patterns
 
-**📚 Updated Documentation**:
-
-- Comprehensive testing guide explaining configuration vs. actual testing
-- Updated examples throughout all demos with proper testing methods
-- Best practices for API gateway testing workflows with smart URL detection
-
-The extension now provides an enterprise-grade HTTP testing experience that rivals dedicated API testing tools while maintaining seamless integration with Envoy Gateway management and proactive user guidance.
+Version 0.12.1 represents the culmination of 12 major iterations, delivering a production-ready Docker Desktop Extension that provides enterprise-grade Envoy Gateway management capabilities with an intuitive, reliable user experience.

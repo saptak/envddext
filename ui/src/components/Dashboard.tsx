@@ -100,14 +100,8 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
 
   return (
     <Box sx={{ p: 3 }}>
-      {/* Dashboard Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <DashboardIcon color="primary" sx={{ fontSize: 32 }} />
-          <Typography variant="h4" component="h1">
-            Dashboard
-          </Typography>
-        </Box>
+      {/* Refresh Button */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 3 }}>
         <Button
           variant="outlined"
           startIcon={loading ? <LinearProgress sx={{ width: 20, height: 20 }} /> : <RefreshIcon />}

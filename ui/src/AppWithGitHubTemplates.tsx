@@ -411,20 +411,13 @@ export function App() {
     // [TAB_IDS.OPERATIONS]: SUB_TAB_IDS.MONITORING, // Commented out until implemented
   });
 
-  const [deployedServices] = React.useState<
+  const [deployedServices, setDeployedServices] = React.useState<
     {
       namespace: string;
       deploymentName: string;
       serviceName: string;
     }[]
-  >([
-    // Default echo service from basic-http template
-    {
-      namespace: "demo",
-      deploymentName: "echo-service",
-      serviceName: "echo-service",
-    },
-  ]);
+  >([]);
 
   // Resource action dialog state
   const [actionDialog, setActionDialog] = React.useState<{
@@ -448,6 +441,36 @@ export function App() {
   // Proxy URL state for connecting ProxyManager to HTTPClient
   const [proxyUrl, setProxyUrl] = React.useState<string>('');
 
+  // Function to discover deployments in demo namespace
+  const discoverDeployments = useCallback(async () => {
+    try {
+      const result = await ddClient?.extension?.host?.cli?.exec('kubectl', [
+        'get', 'deployments', '-n', 'demo', '--no-headers', 
+        '-o', 'custom-columns=NAME:.metadata.name,READY:.status.readyReplicas,DESIRED:.status.replicas'
+      ]);
+      
+      if (result?.stdout) {
+        const deployments = result.stdout.trim().split('\n')
+          .filter((line: string) => line.trim())
+          .map((line: string) => {
+            const [name] = line.trim().split(/\s+/);
+            return {
+              namespace: 'demo',
+              deploymentName: name,
+              serviceName: name // Assume service name matches deployment name for demo apps
+            };
+          });
+        
+        setDeployedServices(deployments);
+      } else {
+        setDeployedServices([]);
+      }
+    } catch (error) {
+      console.log('No deployments found in demo namespace or namespace does not exist');
+      setDeployedServices([]);
+    }
+  }, [ddClient]);
+
   // Optimized fetchData with caching and error handling
   const apiManager = useMemo(() => ApiCallManager.getInstance(), []);
   
@@ -465,10 +488,11 @@ export function App() {
       setIsEnvoyGatewayInstalled(installed);
 
       if (installed) {
-        // Parallel API calls for better performance
+        // Parallel API calls for better performance, including deployment discovery
         const [gwResult, rtResult] = await Promise.all([
           apiManager.call('envoy-gateways', () => listEnvoyGateways(ddClient), forceRefresh),
-          apiManager.call('envoy-routes', () => listEnvoyHTTPRoutes(ddClient), forceRefresh)
+          apiManager.call('envoy-routes', () => listEnvoyHTTPRoutes(ddClient), forceRefresh),
+          discoverDeployments()
         ]);
         
         if (gwResult.error) {
@@ -489,7 +513,7 @@ export function App() {
     } finally {
       setLoading(false);
     }
-  }, [ddClient, apiManager]);
+  }, [ddClient, apiManager, discoverDeployments]);
 
   React.useEffect(() => {
     fetchData();
@@ -560,8 +584,8 @@ export function App() {
   return (
     <Box sx={{ p: 4 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-        <EnvoyLogo width={40} height={40} />
-        <Typography variant="h4" gutterBottom sx={{ mb: 0 }}>
+        <EnvoyLogo width={48} height={48} />
+        <Typography variant="h3" gutterBottom sx={{ mb: 0, fontWeight: 500 }}>
           Envoy Gateway
         </Typography>
       </Box>
