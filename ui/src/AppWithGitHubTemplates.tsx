@@ -31,6 +31,7 @@ import { GatewayManagement } from "./components/GatewayManagement";
 import { HTTPRouteManagement } from "./components/HTTPRouteManagement";
 import { HTTPClient } from "./components/HTTPClient";
 import { ProxyManager } from "./components/ProxyManager";
+import { PortForwardManager } from "./components/PortForwardManager";
 import { ResourceActionDialog } from "./components/ResourceActionDialog";
 import { CertificateManager } from "./components/CertificateManager";
 import { TrafficSplittingManager } from "./components/TrafficSplittingManager";
@@ -300,6 +301,11 @@ const TrafficTestingTab = memo(({
 
     {currentSubTab === SUB_TAB_IDS.HTTP_TESTING && (
       <Box>
+        {/* Port Forward Manager Section */}
+        <Box sx={{ mb: 4 }}>
+          <PortForwardManager onPortForwardReady={onProxyUrlChange} />
+        </Box>
+
         {/* Proxy Manager Section */}
         <Box sx={{ mb: 4 }}>
           <ProxyManager onUrlGenerated={onProxyUrlChange} />

@@ -1,67 +1,48 @@
-import { v1 } from "@docker/extension-api-client-types";
+import { createDockerDesktopClient } from '@docker/extension-api-client';
 
-export interface PortForwardInfo {
+const ddClient = createDockerDesktopClient();
+
+export interface PortForwardRequest {
   serviceName: string;
   namespace: string;
   servicePort: number;
   localPort: number;
-  isActive: boolean;
-  pid?: number;
+  resourceType?: string; // "service", "pod", "deployment"
+}
+
+export interface PortForwardStatus {
+  isRunning: boolean;
+  serviceName: string;
+  namespace: string;
+  servicePort: number;
+  localPort: number;
+  resourceType: string;
+  pid?: string;
+  url?: string;
 }
 
 export class PortForwardService {
-  private ddClient: v1.DockerDesktopClient;
-  private activeForwards: Map<string, PortForwardInfo> = new Map();
-
-  constructor(ddClient: v1.DockerDesktopClient) {
-    this.ddClient = ddClient;
-  }
-
   /**
    * Start port forwarding for a service
-   * Note: This is a simplified implementation that assumes port forwarding
-   * For a production implementation, you'd want to use kubectl proxy or similar
    */
-  async startPortForward(
-    serviceName: string,
-    namespace: string,
-    servicePort: number,
-    localPort?: number
-  ): Promise<PortForwardInfo> {
-    const key = `${namespace}/${serviceName}`;
-
-    // Check if already forwarding
-    if (this.activeForwards.has(key)) {
-      const existing = this.activeForwards.get(key)!;
-      if (existing.isActive) {
-        return existing;
-      }
-    }
-
-    // Use provided local port or find an available one
-    const targetLocalPort = localPort || await this.findAvailablePort();
-
+  async startPortForward(request: PortForwardRequest): Promise<PortForwardStatus> {
     try {
-      console.log(`Setting up port forward: ${serviceName}.${namespace}:${servicePort} -> localhost:${targetLocalPort}`);
+      console.log(`Starting port forward: ${request.namespace}/${request.serviceName}:${request.servicePort} -> localhost:${request.localPort}`);
+      
+      const response = await ddClient.extension.vm?.service?.post('/start-port-forward', {
+        serviceName: request.serviceName,
+        namespace: request.namespace,
+        servicePort: request.servicePort,
+        localPort: request.localPort,
+        resourceType: request.resourceType || 'service'
+      }) as any;
 
-      // For now, we'll simulate the port forward setup
-      // In a real implementation, you'd start a background process
-      // or use kubectl proxy with proper process management
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to start port forward');
+      }
 
-      const forwardInfo: PortForwardInfo = {
-        serviceName,
-        namespace,
-        servicePort,
-        localPort: targetLocalPort,
-        isActive: true
-      };
-
-      this.activeForwards.set(key, forwardInfo);
-
-      // Log the kubectl command that would be used
-      console.log(`Would run: kubectl port-forward service/${serviceName} ${targetLocalPort}:${servicePort} -n ${namespace}`);
-
-      return forwardInfo;
+      console.log('Port forward started successfully:', response.data);
+      return response.data as PortForwardStatus;
 
     } catch (error) {
       console.error('Failed to start port forward:', error);
@@ -72,125 +53,225 @@ export class PortForwardService {
   /**
    * Stop port forwarding for a service
    */
-  async stopPortForward(serviceName: string, namespace: string): Promise<void> {
-    const key = `${namespace}/${serviceName}`;
-    const forwardInfo = this.activeForwards.get(key);
-
-    if (!forwardInfo) {
-      return;
-    }
-
+  async stopPortForward(
+    serviceName: string, 
+    namespace: string, 
+    servicePort: number, 
+    localPort: number
+  ): Promise<void> {
     try {
-      // Kill the port-forward process
-      // Note: This is a simplified approach. In a real implementation,
-      // we'd need to track the actual process ID and kill it properly.
-      console.log(`Stopping port forward for ${serviceName}.${namespace}`);
+      console.log(`Stopping port forward: ${namespace}/${serviceName}:${servicePort} -> localhost:${localPort}`);
+      
+      const response = await ddClient.extension.vm?.service?.post('/stop-port-forward', {
+        serviceName,
+        namespace,
+        servicePort,
+        localPort
+      }) as any;
 
-      // Mark as inactive
-      forwardInfo.isActive = false;
-      this.activeForwards.delete(key);
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to stop port forward');
+      }
+
+      console.log('Port forward stopped successfully');
 
     } catch (error) {
       console.error('Failed to stop port forward:', error);
+      throw new Error(`Failed to stop port forward: ${error}`);
     }
   }
 
   /**
-   * Get active port forwards
+   * Get port forward status for a specific service
    */
-  getActiveForwards(): PortForwardInfo[] {
-    return Array.from(this.activeForwards.values()).filter(f => f.isActive);
+  async getPortForwardStatus(
+    serviceName: string,
+    namespace: string,
+    servicePort: number,
+    localPort: number
+  ): Promise<PortForwardStatus> {
+    try {
+      const params = new URLSearchParams({
+        serviceName,
+        namespace,
+        servicePort: servicePort.toString(),
+        localPort: localPort.toString()
+      });
+
+      const response = await ddClient.extension.vm?.service?.get(`/port-forward-status?${params}`) as any;
+
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to get port forward status');
+      }
+
+      return response.data as PortForwardStatus;
+
+    } catch (error) {
+      console.error('Failed to get port forward status:', error);
+      throw new Error(`Failed to get port forward status: ${error}`);
+    }
   }
 
   /**
-   * Get port forward info for a specific service
+   * List all active port forwards
    */
-  getPortForward(serviceName: string, namespace: string): PortForwardInfo | undefined {
-    const key = `${namespace}/${serviceName}`;
-    return this.activeForwards.get(key);
+  async listPortForwards(): Promise<PortForwardStatus[]> {
+    try {
+      const response = await ddClient.extension.vm?.service?.get('/list-port-forwards') as any;
+
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to list port forwards');
+      }
+
+      return response.data as PortForwardStatus[];
+
+    } catch (error) {
+      console.error('Failed to list port forwards:', error);
+      throw new Error(`Failed to list port forwards: ${error}`);
+    }
   }
 
   /**
    * Find an available local port
    */
-  private async findAvailablePort(startPort: number = 8080): Promise<number> {
-    // Simple implementation - in a real app, you'd check if ports are actually available
-    const usedPorts = Array.from(this.activeForwards.values()).map(f => f.localPort);
+  async findAvailablePort(startPort: number = 8080): Promise<number> {
+    try {
+      const activeForwards = await this.listPortForwards();
+      const usedPorts = activeForwards
+        .filter(pf => pf.isRunning)
+        .map(pf => pf.localPort);
 
-    let port = startPort;
-    while (usedPorts.includes(port)) {
-      port++;
+      let port = startPort;
+      while (usedPorts.includes(port)) {
+        port++;
+      }
+
+      return port;
+    } catch (error) {
+      console.error('Failed to find available port:', error);
+      // Fallback to simple increment
+      return startPort;
     }
-
-    return port;
   }
 
   /**
    * Create a localhost URL for a forwarded service
    */
-  getLocalUrl(serviceName: string, namespace: string, path: string = ''): string | null {
-    const forwardInfo = this.getPortForward(serviceName, namespace);
-    if (!forwardInfo || !forwardInfo.isActive) {
+  async getLocalUrl(serviceName: string, namespace: string, servicePort: number, localPort: number, path: string = ''): Promise<string | null> {
+    try {
+      const status = await this.getPortForwardStatus(serviceName, namespace, servicePort, localPort);
+      
+      if (!status.isRunning) {
+        return null;
+      }
+
+      const basePath = path.startsWith('/') ? path : `/${path}`;
+      return `http://localhost:${status.localPort}${basePath}`;
+    } catch (error) {
+      console.error('Failed to get local URL:', error);
       return null;
     }
-
-    const basePath = path.startsWith('/') ? path : `/${path}`;
-    return `http://localhost:${forwardInfo.localPort}${basePath}`;
   }
 
   /**
-   * Auto-detect and suggest port forward for a service endpoint
+   * Suggest port forward for a gateway service
    */
-  async suggestPortForward(serviceEndpoint: string): Promise<{
+  async suggestGatewayPortForward(gatewayName: string, namespace: string = 'envoy-gateway-system'): Promise<{
     serviceName: string;
     namespace: string;
-    port: number;
-    localUrl: string;
+    servicePort: number;
+    localPort: number;
+    url: string;
   } | null> {
-    // Parse service endpoint like "10.244.0.7:8080"
-    const match = serviceEndpoint.match(/^(\d+\.\d+\.\d+\.\d+):(\d+)$/);
-    if (!match) {
-      return null;
-    }
-
-    const [, ip, port] = match;
-    const servicePort = parseInt(port);
-
     try {
-      // Try to find the service that matches this endpoint
-      const result = await this.ddClient.extension.host?.cli.exec('kubectl', [
-        'get', 'services', '--all-namespaces', '-o', 'json'
-      ]);
+      // Find available local port
+      const localPort = await this.findAvailablePort(8080);
+      
+      // Common gateway service configurations
+      const gatewayConfigs = [
+        { serviceName: 'envoy-gateway-lb', servicePort: 80 },
+        { serviceName: `${gatewayName}-lb`, servicePort: 80 },
+        { serviceName: gatewayName, servicePort: 80 },
+        { serviceName: 'envoy-gateway', servicePort: 8080 }
+      ];
 
-      if (result?.stdout) {
-        const services = JSON.parse(result.stdout);
+      // Try each configuration
+      for (const config of gatewayConfigs) {
+        try {
+          const status = await this.getPortForwardStatus(
+            config.serviceName,
+            namespace,
+            config.servicePort,
+            localPort
+          );
 
-        // Look for a service that might match this endpoint
-        for (const service of services.items) {
-          const serviceName = service.metadata.name;
-          const namespace = service.metadata.namespace;
-
-          // Check if this service has a port that matches
-          if (service.spec.ports) {
-            for (const portSpec of service.spec.ports) {
-              if (portSpec.port === servicePort || portSpec.targetPort === servicePort) {
-                // Found a potential match
-                const localPort = await this.findAvailablePort();
-                return {
-                  serviceName,
-                  namespace,
-                  port: servicePort,
-                  localUrl: `http://localhost:${localPort}`
-                };
-              }
-            }
-          }
+          return {
+            serviceName: config.serviceName,
+            namespace,
+            servicePort: config.servicePort,
+            localPort,
+            url: `http://localhost:${localPort}`
+          };
+        } catch (error) {
+          // Continue to next configuration
+          continue;
         }
       }
-    } catch (error) {
-      console.error('Failed to suggest port forward:', error);
-    }
 
-    return null;
+      // Default suggestion
+      return {
+        serviceName: 'envoy-gateway-lb',
+        namespace,
+        servicePort: 80,
+        localPort,
+        url: `http://localhost:${localPort}`
+      };
+
+    } catch (error) {
+      console.error('Failed to suggest gateway port forward:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get port forward configuration for common demo services
+   */
+  getDemoServiceConfig(serviceName: string, namespace: string = 'demo'): PortForwardRequest {
+    const commonConfigs: Record<string, Partial<PortForwardRequest>> = {
+      'echo-service': { servicePort: 80 },
+      'echo-service-v1': { servicePort: 80 },
+      'echo-service-v2': { servicePort: 80 },
+      'envoy-gateway-lb': { servicePort: 80, namespace: 'envoy-gateway-system' }
+    };
+
+    const config = commonConfigs[serviceName] || { servicePort: 80 };
+    
+    return {
+      serviceName,
+      namespace: config.namespace || namespace,
+      servicePort: config.servicePort || 80,
+      localPort: 8080, // Default, will be updated to available port
+      resourceType: 'service'
+    };
+  }
+
+  /**
+   * Quick start port forward for gateway testing
+   */
+  async quickStartGatewayForward(gatewayName?: string): Promise<PortForwardStatus> {
+    const localPort = await this.findAvailablePort(8080);
+    
+    const request: PortForwardRequest = {
+      serviceName: 'envoy-gateway-lb',
+      namespace: 'envoy-gateway-system',
+      servicePort: 80,
+      localPort,
+      resourceType: 'service'
+    };
+
+    return await this.startPortForward(request);
   }
 }
+
+// Create singleton instance
+export const portForwardService = new PortForwardService();

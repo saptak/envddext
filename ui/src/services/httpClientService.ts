@@ -18,7 +18,7 @@ export class HTTPClientService {
 
   constructor(ddClient: v1.DockerDesktopClient) {
     this.ddClient = ddClient;
-    this.portForwardService = new PortForwardService(ddClient);
+    this.portForwardService = new PortForwardService();
   }
 
   /**

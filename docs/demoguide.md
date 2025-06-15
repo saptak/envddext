@@ -113,8 +113,14 @@ This comprehensive guide transforms the Envoy Gateway Docker Desktop Extension i
 kubectl proxy --port=8001
 
 # 2. Use proxy URL in HTTP Client  
-URL: http://localhost:8001/api/v1/namespaces/demo/services/echo-service:80/proxy/
+URL: http://localhost:8001/api/v1/namespaces/<NAMESPACE>/services/<SERVICE-NAME>:<PORT>/proxy/<PATH>
+Example: http://localhost:8001/api/v1/namespaces/demo/services/echo-service:80/proxy/
 Headers: (No Host header needed)
+
+# To find kubectl proxy URL in the extension:
+# - Go to Traffic & Testing tab → HTTP Testing sub-tab → Proxy Manager section
+# - Ensure proxy shows "Running on http://localhost:8001"
+# - Use format above with your specific namespace, service name, port, and path
 ```
 
 #### Method 2: Gateway External IP (if reachable)
@@ -489,41 +495,66 @@ Now let's verify that your advanced routing rules work correctly using the enhan
    * Ensure the kubectl proxy is running (click "Start Proxy" if needed)
 
 2. **Test V2 Route with Header**:
-   * **URL**: Use your Gateway external IP (e.g., `http://10.96.1.100/api`) OR kubectl proxy URL
+   * **URL Options**:
+     * **Option A - Gateway External IP**: `http://10.96.1.100/api` (replace with your actual gateway IP from Infrastructure tab)
+     * **Option B - kubectl proxy URL**: `http://localhost:8001/api/v1/namespaces/demo/services/echo-service-v2:80/proxy/api`
+       * To find kubectl proxy URL: Go to **Traffic & Testing** tab → **HTTP Testing** sub-tab → **Proxy Manager** section
+       * Ensure proxy shows "Running on http://localhost:8001"
+       * Format: `http://localhost:8001/api/v1/namespaces/<NAMESPACE>/services/<SERVICE-NAME>:<PORT>/proxy/<PATH>`
+       * For this test: `http://localhost:8001/api/v1/namespaces/demo/services/echo-service-v2:80/proxy/api`
    * **Method**: `GET`
    * **Headers Section** (click to expand):
-     * Add `Host: api.local`
-     * Add `X-API-Version: v2`
+     * **For Gateway External IP**: Add `Host: api.local` and `X-API-Version: v2`
+     * **For kubectl proxy URL**: Only add `X-API-Version: v2` (no Host header needed)
      * Use the toggle controls to enable/disable headers as needed
    * Click **"Send Request"**
    * **Expected Result**: Response should come from `echo-service-v2` (check the response body for version indicators)
 
 3. **Test Default Route (No Version Header)**:
-   * Keep the same URL
-   * **Headers**: Remove the `X-API-Version` header (toggle it off)
-   * Keep only `Host: api.local`
+   * **URL Options**:
+     * **Option A - Gateway External IP**: Keep same URL as above
+     * **Option B - kubectl proxy URL**: `http://localhost:8001/api/v1/namespaces/demo/services/echo-service-v1:80/proxy/api`
+   * **Headers**: 
+     * **For Gateway External IP**: Remove `X-API-Version` header, keep only `Host: api.local`
+     * **For kubectl proxy URL**: Remove `X-API-Version` header (no Host header needed)
    * Click **"Send Request"**
    * **Expected Result**: Response should come from `echo-service-v1` (default route)
 
 #### Test 2: Method-Based Routing
 
-1. **Test POST to Data Endpoint**:
-   * **URL**: `http://<GATEWAY-IP>/api/data` (or use proxy URL)
+**⚠️ Important**: Method-based routing only works through the Gateway! kubectl proxy URLs bypass gateway routing and go directly to services.
+
+**🔧 Docker Desktop Limitation**: Gateway External IPs are often not accessible from Docker Desktop. If you get "Network error" or "no route to host", this is expected behavior.
+
+**📋 Testing Options (in order of preference):**
+
+**Option 1: Port Forwarding (Recommended for Docker Desktop)**
+1. **Set up port forwarding**:
+   ```bash
+   kubectl port-forward service/envoy-gateway-lb 8080:80 -n envoy-gateway-system
+   ```
+   
+2. **Test POST to Data Endpoint**:
+   * **URL**: `http://localhost:8080/api/data`
    * **Method**: `POST`
    * **Headers**: `Host: api.local`
-   * **Request Body** (expand the Body section):
-     * Content Type: `application/json`
-     * Body: `{"action": "create", "data": "test"}`
-   * Click **"Send Request"**
+   * **Request Body**: `{"action": "create", "data": "test"}`
    * **Expected Result**: Routed to `echo-service-v2`
 
-2. **Test GET to Same Endpoint**:
-   * **URL**: Same as above
+3. **Test GET to Same Endpoint**:
+   * **URL**: `http://localhost:8080/api/data`
    * **Method**: `GET`
    * **Headers**: `Host: api.local`
-   * **Body**: Empty (GET requests don't need a body)
-   * Click **"Send Request"**
    * **Expected Result**: Routed to `echo-service-v1`
+
+**Option 2: Gateway External IP (if accessible)**
+* **URL**: `http://<GATEWAY-EXTERNAL-IP>/api/data` (find IP in Infrastructure tab)
+* **Note**: May not work in Docker Desktop - if it fails, use port forwarding instead
+
+**Why kubectl proxy doesn't work for this test:**
+* kubectl proxy URLs bypass the gateway entirely and go directly to services
+* Method-based routing rules are ignored when bypassing the gateway
+* Use kubectl proxy only for service connectivity testing, not for routing rule testing
 
 #### Verify Results
 

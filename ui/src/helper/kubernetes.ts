@@ -22,7 +22,7 @@ interface APIResponse<T = any> {
 }
 
 // Helper function to call backend API
-const callBackendAPI = async (
+export const callBackendAPI = async (
   ddClient: v1.DockerDesktopClient,
   endpoint: string,
   method: "GET" | "POST" = "GET",

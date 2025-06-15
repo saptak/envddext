@@ -20,8 +20,10 @@ import (
 )
 
 type Server struct {
-	router      *mux.Router
-	trafficTest *TrafficTestState
+	router       *mux.Router
+	trafficTest  *TrafficTestState
+	portForwards map[string]*PortForwardStatus
+	mutex        sync.RWMutex
 }
 
 type GatewayFormData struct {
@@ -117,6 +119,25 @@ type ProxyStatus struct {
 	PID       string `json:"pid,omitempty"`
 }
 
+type PortForwardRequest struct {
+	ServiceName string `json:"serviceName"`
+	Namespace   string `json:"namespace"`
+	ServicePort int    `json:"servicePort"`
+	LocalPort   int    `json:"localPort"`
+	ResourceType string `json:"resourceType"` // "service", "pod", "deployment"
+}
+
+type PortForwardStatus struct {
+	IsRunning    bool   `json:"isRunning"`
+	ServiceName  string `json:"serviceName"`
+	Namespace    string `json:"namespace"`
+	ServicePort  int    `json:"servicePort"`
+	LocalPort    int    `json:"localPort"`
+	ResourceType string `json:"resourceType"`
+	PID          string `json:"pid,omitempty"`
+	URL          string `json:"url,omitempty"`
+}
+
 type APIResponse struct {
 	Success bool        `json:"success"`
 	Data    interface{} `json:"data,omitempty"`
@@ -184,7 +205,8 @@ type TrafficTestState struct {
 
 func NewServer() *Server {
 	s := &Server{
-		router: mux.NewRouter(),
+		router:       mux.NewRouter(),
+		portForwards: make(map[string]*PortForwardStatus),
 	}
 	s.setupRoutes()
 	return s
@@ -198,6 +220,10 @@ func (s *Server) setupRoutes() {
 	s.router.HandleFunc("/stop-proxy", s.handleStopProxy).Methods("POST")
 	s.router.HandleFunc("/proxy-status", s.handleProxyStatus).Methods("GET")
 	s.router.HandleFunc("/test-proxy", s.handleTestProxy).Methods("GET")
+	s.router.HandleFunc("/start-port-forward", s.handleStartPortForward).Methods("POST")
+	s.router.HandleFunc("/stop-port-forward", s.handleStopPortForward).Methods("POST")
+	s.router.HandleFunc("/port-forward-status", s.handlePortForwardStatus).Methods("GET")
+	s.router.HandleFunc("/list-port-forwards", s.handleListPortForwards).Methods("GET")
 	s.router.HandleFunc("/apply-template", s.handleApplyTemplate).Methods("POST")
 	s.router.HandleFunc("/apply-yaml", s.handleApplyYAML).Methods("POST")
 	s.router.HandleFunc("/kubectl", s.handleKubectl).Methods("POST")
@@ -849,6 +875,256 @@ func (s *Server) getProxyStatus(port int) ProxyStatus {
 	}
 
 	return status
+}
+
+func (s *Server) handleStartPortForward(w http.ResponseWriter, r *http.Request) {
+	var req PortForwardRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.sendError(w, "Invalid JSON payload", http.StatusBadRequest)
+		return
+	}
+
+	// Validate required fields
+	if req.ServiceName == "" || req.Namespace == "" || req.ServicePort <= 0 || req.LocalPort <= 0 {
+		s.sendError(w, "serviceName, namespace, servicePort, and localPort are required", http.StatusBadRequest)
+		return
+	}
+
+	// Set default resource type if not specified
+	if req.ResourceType == "" {
+		req.ResourceType = "service"
+	}
+
+	log.Printf("Starting port forward: %s/%s:%d -> localhost:%d", req.Namespace, req.ServiceName, req.ServicePort, req.LocalPort)
+
+	// Generate unique key for this port forward
+	key := fmt.Sprintf("%s-%s-%d-%d", req.Namespace, req.ServiceName, req.ServicePort, req.LocalPort)
+
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	// Check if port forward already exists
+	if existing, exists := s.portForwards[key]; exists && existing.IsRunning {
+		log.Printf("Port forward already running: %s", key)
+		response := APIResponse{Success: true, Data: existing}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// Ensure kubeconfig is properly configured
+	if err := s.ensureKubeconfig(); err != nil {
+		log.Printf("Kubeconfig setup failed: %v", err)
+		s.sendError(w, fmt.Sprintf("Kubeconfig setup failed: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Check if local port is available
+	if !s.isPortAvailable(req.LocalPort) {
+		s.sendError(w, fmt.Sprintf("Local port %d is already in use", req.LocalPort), http.StatusConflict)
+		return
+	}
+
+	// Start kubectl port-forward
+	kubeconfigPath := os.Getenv("KUBECONFIG")
+	if kubeconfigPath == "" {
+		kubeconfigPath = "/host/.kube/config"
+	}
+
+	var cmd *exec.Cmd
+	switch req.ResourceType {
+	case "service":
+		cmd = exec.Command("kubectl", "port-forward", 
+			fmt.Sprintf("service/%s", req.ServiceName),
+			fmt.Sprintf("%d:%d", req.LocalPort, req.ServicePort),
+			"-n", req.Namespace)
+	case "pod":
+		cmd = exec.Command("kubectl", "port-forward",
+			fmt.Sprintf("pod/%s", req.ServiceName),
+			fmt.Sprintf("%d:%d", req.LocalPort, req.ServicePort),
+			"-n", req.Namespace)
+	case "deployment":
+		cmd = exec.Command("kubectl", "port-forward",
+			fmt.Sprintf("deployment/%s", req.ServiceName),
+			fmt.Sprintf("%d:%d", req.LocalPort, req.ServicePort),
+			"-n", req.Namespace)
+	default:
+		s.sendError(w, fmt.Sprintf("Unsupported resource type: %s", req.ResourceType), http.StatusBadRequest)
+		return
+	}
+
+	cmd.Env = append(os.Environ(), "KUBECONFIG="+kubeconfigPath)
+	
+	log.Printf("Starting port-forward with command: %v", cmd.Args)
+	if err := cmd.Start(); err != nil {
+		log.Printf("Failed to start port-forward process: %v", err)
+		s.sendError(w, fmt.Sprintf("Failed to start port-forward: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("Port-forward started with PID: %d", cmd.Process.Pid)
+
+	// Save PID for later termination
+	pidFile := fmt.Sprintf("/tmp/port-forward-%s.pid", key)
+	if err := ioutil.WriteFile(pidFile, []byte(strconv.Itoa(cmd.Process.Pid)), 0644); err != nil {
+		log.Printf("Warning: Could not save PID file: %v", err)
+	}
+
+	// Create status object
+	status := &PortForwardStatus{
+		IsRunning:    true,
+		ServiceName:  req.ServiceName,
+		Namespace:    req.Namespace,
+		ServicePort:  req.ServicePort,
+		LocalPort:    req.LocalPort,
+		ResourceType: req.ResourceType,
+		PID:          strconv.Itoa(cmd.Process.Pid),
+		URL:          fmt.Sprintf("http://localhost:%d", req.LocalPort),
+	}
+
+	// Store in map
+	s.portForwards[key] = status
+
+	// Wait a moment to ensure port-forward starts
+	time.Sleep(1 * time.Second)
+
+	// Verify it's actually running
+	if !s.isPortAvailable(req.LocalPort) {
+		log.Printf("Port-forward verified: localhost:%d is now occupied", req.LocalPort)
+	} else {
+		log.Printf("Warning: Port-forward may not be ready yet")
+		status.IsRunning = false
+	}
+
+	response := APIResponse{Success: true, Data: status}
+	json.NewEncoder(w).Encode(response)
+}
+
+func (s *Server) handleStopPortForward(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		ServiceName  string `json:"serviceName"`
+		Namespace    string `json:"namespace"`
+		ServicePort  int    `json:"servicePort"`
+		LocalPort    int    `json:"localPort"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.sendError(w, "Invalid JSON payload", http.StatusBadRequest)
+		return
+	}
+
+	key := fmt.Sprintf("%s-%s-%d-%d", req.Namespace, req.ServiceName, req.ServicePort, req.LocalPort)
+	pidFile := fmt.Sprintf("/tmp/port-forward-%s.pid", key)
+
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	// Remove from map
+	delete(s.portForwards, key)
+
+	// Kill the process
+	pidBytes, err := ioutil.ReadFile(pidFile)
+	if err != nil {
+		log.Printf("Warning: Could not read PID file: %v", err)
+		// Try to kill by port (less reliable)
+		exec.Command("pkill", "-f", fmt.Sprintf("port-forward.*:%d", req.LocalPort)).Run()
+	} else {
+		pid := strings.TrimSpace(string(pidBytes))
+		log.Printf("Stopping port-forward with PID: %s", pid)
+		exec.Command("kill", pid).Run()
+		os.Remove(pidFile)
+	}
+
+	response := APIResponse{Success: true, Data: "Port forward stopped"}
+	json.NewEncoder(w).Encode(response)
+}
+
+func (s *Server) handlePortForwardStatus(w http.ResponseWriter, r *http.Request) {
+	serviceName := r.URL.Query().Get("serviceName")
+	namespace := r.URL.Query().Get("namespace")
+	servicePortStr := r.URL.Query().Get("servicePort")
+	localPortStr := r.URL.Query().Get("localPort")
+
+	if serviceName == "" || namespace == "" || servicePortStr == "" || localPortStr == "" {
+		s.sendError(w, "serviceName, namespace, servicePort, and localPort query parameters are required", http.StatusBadRequest)
+		return
+	}
+
+	servicePort, err := strconv.Atoi(servicePortStr)
+	if err != nil {
+		s.sendError(w, "Invalid servicePort", http.StatusBadRequest)
+		return
+	}
+
+	localPort, err := strconv.Atoi(localPortStr)
+	if err != nil {
+		s.sendError(w, "Invalid localPort", http.StatusBadRequest)
+		return
+	}
+
+	key := fmt.Sprintf("%s-%s-%d-%d", namespace, serviceName, servicePort, localPort)
+
+	s.mutex.RLock()
+	status, exists := s.portForwards[key]
+	s.mutex.RUnlock()
+
+	if !exists {
+		// Check if there's actually a process running on this port
+		if !s.isPortAvailable(localPort) {
+			// Port is occupied but we don't have it tracked
+			status = &PortForwardStatus{
+				IsRunning:   true,
+				ServiceName: serviceName,
+				Namespace:   namespace,
+				ServicePort: servicePort,
+				LocalPort:   localPort,
+				URL:         fmt.Sprintf("http://localhost:%d", localPort),
+			}
+		} else {
+			status = &PortForwardStatus{
+				IsRunning:   false,
+				ServiceName: serviceName,
+				Namespace:   namespace,
+				ServicePort: servicePort,
+				LocalPort:   localPort,
+			}
+		}
+	} else {
+		// Verify the status is accurate
+		if status.IsRunning && s.isPortAvailable(localPort) {
+			// Process died
+			status.IsRunning = false
+			s.mutex.Lock()
+			delete(s.portForwards, key)
+			s.mutex.Unlock()
+		}
+	}
+
+	response := APIResponse{Success: true, Data: status}
+	json.NewEncoder(w).Encode(response)
+}
+
+func (s *Server) handleListPortForwards(w http.ResponseWriter, r *http.Request) {
+	s.mutex.RLock()
+	forwards := make([]*PortForwardStatus, 0, len(s.portForwards))
+	for _, pf := range s.portForwards {
+		// Verify each port forward is still running
+		if pf.IsRunning && s.isPortAvailable(pf.LocalPort) {
+			pf.IsRunning = false
+		}
+		forwards = append(forwards, pf)
+	}
+	s.mutex.RUnlock()
+
+	response := APIResponse{Success: true, Data: forwards}
+	json.NewEncoder(w).Encode(response)
+}
+
+func (s *Server) isPortAvailable(port int) bool {
+	conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", port))
+	if err != nil {
+		return true // Port is available
+	}
+	conn.Close()
+	return false // Port is in use
 }
 
 func (s *Server) handleCreateCertificate(w http.ResponseWriter, r *http.Request) {

@@ -1,4 +1,4 @@
-# Envoy Gateway Docker Desktop Extension v0.12.1 - FAQ
+# Envoy Gateway Docker Desktop Extension v0.12.2 - FAQ
 
 ## Getting Started
 
@@ -13,6 +13,7 @@ Absolutely! This extension was designed specifically for developers who want API
 - Create basic Gateway resources with visual forms
 - Set up HTTP routing rules (HTTPRoutes) with path matching and validation
 - Deploy a working example application from templates
+- **NEW: One-click port forwarding** for instant gateway access without complex networking
 - Set up traffic splitting between service versions with the guided wizard
 - Configure TLS certificates with automatic cert-manager installation
 - Test your routes and HTTPS endpoints with the built-in HTTP client
@@ -31,6 +32,7 @@ Absolutely! This extension was designed specifically for developers who want API
 - Follow interactive step-by-step tutorials for Gateway setup, JWT authentication, and traffic splitting
 - Configure advanced resilience policies with timeout and retry management for production reliability
 - Access everything from a streamlined four-tab interface with progressive complexity design
+- **NEW: Port Forward Manager** - eliminate manual kubectl commands with one-click gateway access
 
 ### I'm already using Kubernetes tools. Why switch?
 
@@ -136,7 +138,9 @@ This means you need to set up the LoadBalancer. The extension will show you a "C
 
 ### I can't reach my services from outside
 
-First, check that your gateway has an IP address (green status). Then make sure you're using the right URL format: `http://[gateway-ip]/your-path`. The HTTP client in the extension shows you exactly what URLs to use.
+**NEW: Try Port Forward Manager first!** Go to **Traffic & Testing** tab → **HTTP Testing** sub-tab and use the **Port Forward Manager** section. Click "Start Gateway Port Forward" for one-click access with localhost URLs that work reliably in Docker Desktop.
+
+If you need external access: First, check that your gateway has an IP address (green status). Then make sure you're using the right URL format: `http://[gateway-ip]/your-path`. The HTTP client in the extension shows you exactly what URLs to use.
 
 ### Nothing happens when I click buttons
 
@@ -205,14 +209,16 @@ New in v0.11.0, Resilience Policies provide enterprise-grade reliability feature
 
 ### What about the enhanced user experience features?
 
-Version 0.10.0 includes several major UX improvements:
+Version 0.12.2 includes major UX improvements including the revolutionary **Port Forward Manager**:
 
+- **Port Forward Manager**: One-click gateway port forwarding for seamless testing without manual kubectl commands
+- **Smart Gateway Integration**: Automatic port discovery and URL generation for testing workflows
 - **Resource Creation Wizard**: Multi-step guided interface for creating complex Gateways, HTTPRoutes, and Security Policies with contextual help
 - **Advanced YAML Editor**: Professional editor with syntax highlighting, validation, templates, and real-time error reporting
 - **Enhanced Template Gallery**: Comprehensive gallery with search, filtering, categorization, ratings, and one-click deployment
 - **Professional Interface**: All features use Material-UI theming with responsive design and intuitive workflows
 
-These features make complex configurations accessible to users of all experience levels.
+These features make complex configurations accessible to users of all experience levels while eliminating networking complexity.
 
 ### How does JWT authentication work?
 
@@ -321,8 +327,9 @@ Note: Comprehensive security policy management (Basic Auth, CORS, IP Filtering, 
 
 ### Is this actively maintained?
 
-Yes! The extension receives regular updates with the latest v0.12.0 release featuring comprehensive performance optimizations and production readiness improvements. Major releases include:
+Yes! The extension receives regular updates with the latest v0.12.2 release featuring the revolutionary Port Forward Manager for seamless testing. Major releases include:
 
+- **v0.12.2**: Port Forward Manager & Testing Experience - One-click gateway access, eliminating networking complexity
 - **v0.12.0**: Performance Optimization & Polish - 40-50% faster load times, 20-30% smaller bundle size, enterprise-grade performance monitoring
 - **v0.11.0**: Documentation & Help System, Resilience Policies with contextual help and interactive tutorials
 - **v0.10.0**: JWT Authentication & Policy Management with comprehensive token testing

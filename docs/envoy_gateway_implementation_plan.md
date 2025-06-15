@@ -1,8 +1,18 @@
 # Envoy Gateway Extension Implementation Plan
 
-## Current Status: ✅ v0.12.1 "INTERFACE REDESIGN & ENVOY BRANDING" COMPLETE (June 14, 2025)
+## Current Status: ✅ v0.12.2 "PORT FORWARD MANAGER & TESTING EXPERIENCE" COMPLETE (June 15, 2025)
 
-### Recently Completed: Interface Redesign & Envoy Branding (June 14, 2025) - v0.12.1
+### Recently Completed: Port Forward Manager & Testing Experience (June 15, 2025) - v0.12.2
+- ✅ **Revolutionary Port Forward Manager**: One-click gateway port forwarding eliminates manual kubectl commands
+- ✅ **Seamless Demo Experience**: Complete elimination of networking complexity from all tutorial flows
+- ✅ **Smart Gateway Integration**: Automatic port discovery and URL generation for testing workflows
+- ✅ **Backend API Integration**: Complete port forwarding lifecycle with `/start-port-forward`, `/stop-port-forward`, `/port-forward-status`, `/list-port-forwards` endpoints
+- ✅ **Professional UI Component**: 400+ line React component with Material-UI integration and real-time status monitoring
+- ✅ **HTTP Client Integration**: Instant URL population and seamless testing workflow integration
+- ✅ **Production-Ready Testing**: Reliable localhost URLs that work perfectly in Docker Desktop environments
+- ✅ **Comprehensive Documentation**: Updated all 12 demo guides with port forwarding integration and enhanced user experience
+
+### Previous Release: Interface Redesign & Envoy Branding (June 14, 2025) - v0.12.1
 - ✅ **4-Tab Progressive Design**: Streamlined interface from 9 tabs to 4 main tabs with logical sub-tab organization
 - ✅ **Envoy Branding Integration**: Professional Envoy logo component with proper React SVG implementation
 - ✅ **Progressive Complexity**: Organized functionality by user workflow (Quick Start → Infrastructure → Security → Testing)
@@ -123,9 +133,10 @@
 
 ### **❌ Current Limitations (Planned for Future Releases)**
 - **No Resource Editing**: Cannot modify existing Gateway or HTTPRoute configurations
-- **No Policy Management**: Security policies, rate limiting, traffic policies not supported
 - **HTTP Protocol Only**: Limited to HTTP/HTTPS routing (no TCP, UDP, gRPC)
 - **No Advanced Envoy Features**: EnvoyProxy custom resources and patches not supported
+
+**Note**: Security policies, rate limiting, traffic policies, JWT authentication, resilience policies, and comprehensive testing tools are now fully supported as of v0.12.2.
 
 ## Overview
 This document outlines the implementation plan for the Envoy Gateway Docker Desktop Extension, focusing on delivering a user-friendly experience for common API Gateway use cases.
