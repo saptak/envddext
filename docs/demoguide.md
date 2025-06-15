@@ -333,9 +333,28 @@ Now let's test the gateway you just created.
 * **Path Matching**: How URLs are matched to routes
 * **Backend References**: How routes connect to services
 
+### Demo 1 Cleanup
+
+**Resources to Keep for Next Demo:**
+- ✅ **Keep**: `my-first-gateway` (or `demo-gateway`) - needed for Demo 2
+- ✅ **Keep**: `echo-route` - will be used as reference in Demo 2
+- ✅ **Keep**: `echo-service` - backend service for testing
+
+**Nothing to Clean Up:**
+- All resources created in Demo 1 are foundational and will be used in subsequent demos
+- The gateway and route you created form the base infrastructure for advanced routing patterns
+
+**Verification:**
+```bash
+# Confirm your foundation is ready for Demo 2
+kubectl get gateways -n demo
+kubectl get httproutes -n demo
+kubectl get services -n demo
+```
+
 ### Next Steps
 
-You've successfully created your first gateway! In the next demo, we'll explore more sophisticated routing patterns.
+You've successfully created your first gateway! In the next demo, we'll explore more sophisticated routing patterns that build on this foundation.
 
 ---
 
@@ -375,128 +394,475 @@ Let's create a more realistic scenario with multiple services.
 
 ### Step 2.2: Header-Based Routing
 
-Create routes that respond to request headers.
+Header-based routing allows you to direct traffic based on specific HTTP headers, enabling powerful use cases like API versioning, feature flags, and A/B testing.
 
-1. **Create Version-Specific Route**:
+1. **Navigate to HTTPRoute Management**:
+   * Click the **Infrastructure** tab
+   * Click the **HTTP Routes** sub-tab
+   * You should see your existing `echo-route` from Demo 1
+
+2. **Create Version-Specific Route for V2**:
+   * Click **"+ Create HTTPRoute"**
    * **Route Name**: `api-v2-route`
-   * **Parent Gateway**: `my-first-gateway`
+   * **Namespace**: `demo`
+   * **Parent Gateway**: Select `my-first-gateway` (or `demo-gateway`)
+
+3. **Configure V2 Route Matching Rules**:
    * **Hostname**: `api.local`
+   * **Path Type**: `PathPrefix`
+   * **Path Value**: `/api`
+   * **HTTP Method**: `GET` (leave others unchecked)
+   
+4. **Add Header Matching**:
+   * In the **Advanced Matching** section, click **"Add Header Match"**
+   * **Header Name**: `X-API-Version`
+   * **Header Value**: `v2`
+   * **Match Type**: `Exact`
 
-2. **Configure Advanced Matching**:
-   * **Path**: `/api` (PathPrefix)
-   * **Headers**: 
-     * Name: `X-API-Version`
-     * Value: `v2`
-   * **Backend**: `app-v2` service
+5. **Configure Backend Service**:
+   * **Backend Service**: `echo-service-v2`
+   * **Port**: `80`
+   * **Weight**: `100`
+   * Click **"Create HTTPRoute"**
 
-3. **Create Default Route**:
+6. **Create Default Route for V1**:
+   * Click **"+ Create HTTPRoute"** again
    * **Route Name**: `api-default-route`
+   * **Namespace**: `demo`
+   * **Parent Gateway**: Select `my-first-gateway`
    * **Hostname**: `api.local`
-   * **Path**: `/api` (PathPrefix)
-   * **Backend**: `app-v1` service
+   * **Path Type**: `PathPrefix`
+   * **Path Value**: `/api`
+   * **HTTP Method**: `GET`
+   * **Backend Service**: `echo-service-v1`
+   * **Port**: `80`
+   * **Weight**: `100`
+   * Click **"Create HTTPRoute"**
+
+**What happened?** You created two routes with different matching priorities. The v2 route has more specific matching (includes header requirement) so it will be evaluated first. Traffic with the `X-API-Version: v2` header goes to v2 service, everything else goes to v1.
 
 ### Step 2.3: Method-Based Routing
 
-Route different HTTP methods to different services.
+Method-based routing lets you direct different HTTP operations to specialized services. This is common in microservices where read operations might go to optimized read-replicas and write operations go to primary databases.
 
-1. **Create POST Route**:
+1. **Create POST Route for Write Operations**:
+   * Click **"+ Create HTTPRoute"**
    * **Route Name**: `api-post-route`
+   * **Namespace**: `demo`
+   * **Parent Gateway**: Select `my-first-gateway`
    * **Hostname**: `api.local`
-   * **Path**: `/api/data`
-   * **Method**: `POST`
-   * **Backend**: `app-v2` (newer service handles writes)
 
-2. **Create GET Route**:
+2. **Configure POST Route Matching**:
+   * **Path Type**: `Exact`
+   * **Path Value**: `/api/data`
+   * **HTTP Method**: Check only `POST` (uncheck others)
+   * **Backend Service**: `echo-service-v2`
+   * **Port**: `80`
+   * **Weight**: `100`
+   * Click **"Create HTTPRoute"**
+
+3. **Create GET Route for Read Operations**:
+   * Click **"+ Create HTTPRoute"**
    * **Route Name**: `api-get-route`
+   * **Namespace**: `demo`
+   * **Parent Gateway**: Select `my-first-gateway`
    * **Hostname**: `api.local`
-   * **Path**: `/api/data`
-   * **Method**: `GET`
-   * **Backend**: `app-v1` (stable service handles reads)
+   * **Path Type**: `Exact`
+   * **Path Value**: `/api/data`
+   * **HTTP Method**: Check only `GET`
+   * **Backend Service**: `echo-service-v1`
+   * **Port**: `80`
+   * **Weight**: `100`
+   * Click **"Create HTTPRoute"**
+
+**What happened?** You created method-specific routing where POST requests to `/api/data` go to the v2 service (write operations) and GET requests to the same path go to the v1 service (read operations). This enables read/write splitting patterns.
 
 ### Step 2.4: Test Advanced Routing
 
-1. **Test Header Routing**:
-   * **Testing Method**: Use Gateway External IP or kubectl proxy (see [Testing Guide](#-testing-with-envoy-gateway-essential-knowledge))
-   * Headers: Use the Headers section in HTTP Client (v0.12.1)
+Now let's verify that your advanced routing rules work correctly using the enhanced HTTP Testing client.
+
+#### Test 1: Header-Based Routing
+
+1. **Navigate to HTTP Testing**:
+   * Click the **Traffic & Testing** tab
+   * Click the **HTTP Testing** sub-tab
+   * Ensure the kubectl proxy is running (click "Start Proxy" if needed)
+
+2. **Test V2 Route with Header**:
+   * **URL**: Use your Gateway external IP (e.g., `http://10.96.1.100/api`) OR kubectl proxy URL
+   * **Method**: `GET`
+   * **Headers Section** (click to expand):
      * Add `Host: api.local`
      * Add `X-API-Version: v2`
-     * Toggle headers as needed for testing
-   * Expected: Response from v2 service
+     * Use the toggle controls to enable/disable headers as needed
+   * Click **"Send Request"**
+   * **Expected Result**: Response should come from `echo-service-v2` (check the response body for version indicators)
 
-2. **Test Default Routing**:
-   * **Testing Method**: Use Gateway External IP or kubectl proxy
-   * Headers: Only `Host: api.local`
-   * Expected: Response from v1 service
+3. **Test Default Route (No Version Header)**:
+   * Keep the same URL
+   * **Headers**: Remove the `X-API-Version` header (toggle it off)
+   * Keep only `Host: api.local`
+   * Click **"Send Request"**
+   * **Expected Result**: Response should come from `echo-service-v1` (default route)
 
-3. **Test Method Routing**:
-   * **Testing Method**: Use Gateway External IP or kubectl proxy
-   * Method: `POST`
-   * Headers: `Host: api.local`
-   * Expected: Routed to v2 service
+#### Test 2: Method-Based Routing
+
+1. **Test POST to Data Endpoint**:
+   * **URL**: `http://<GATEWAY-IP>/api/data` (or use proxy URL)
+   * **Method**: `POST`
+   * **Headers**: `Host: api.local`
+   * **Request Body** (expand the Body section):
+     * Content Type: `application/json`
+     * Body: `{"action": "create", "data": "test"}`
+   * Click **"Send Request"**
+   * **Expected Result**: Routed to `echo-service-v2`
+
+2. **Test GET to Same Endpoint**:
+   * **URL**: Same as above
+   * **Method**: `GET`
+   * **Headers**: `Host: api.local`
+   * **Body**: Empty (GET requests don't need a body)
+   * Click **"Send Request"**
+   * **Expected Result**: Routed to `echo-service-v1`
+
+#### Verify Results
+
+1. **Check Response Details**:
+   * Look for service identification in the response body
+   * V1 service might show different metadata than V2
+   * Check response headers for service-specific information
+
+2. **View Request History**:
+   * Use the Request History feature to compare different test results
+   * Save successful configurations for future testing
+
+3. **Troubleshooting**:
+   * If routes don't work as expected, verify your HTTPRoute configurations in the Infrastructure tab
+   * Check that the services are actually running in the Dashboard
+   * Ensure hostname matching is correct (`api.local` vs other hostnames)
+
+### Step 2.5: Understanding Route Priority and Cleanup
+
+When you have multiple routes that could match the same request, understanding priority is crucial.
+
+#### Route Matching Priority
+
+Envoy Gateway evaluates HTTPRoutes based on specificity:
+
+1. **Most Specific Matches First**: Routes with more specific matching criteria (headers, exact paths, methods) are evaluated before generic ones
+2. **Path Specificity**: `Exact` paths take priority over `PathPrefix` matches
+3. **Header Presence**: Routes with header requirements are more specific than those without
+4. **Method Constraints**: Routes with specific HTTP methods are more specific than catch-all routes
+
+#### Example Priority Order
+
+For our `api.local` routes, the evaluation order would be:
+
+1. `api-v2-route` (has header requirement: `X-API-Version: v2`)
+2. `api-post-route` (specific method: POST, exact path: `/api/data`)
+3. `api-get-route` (specific method: GET, exact path: `/api/data`)  
+4. `api-default-route` (no header requirement, generic path prefix)
+
+#### Clean Up Your Routes
+
+To keep your environment clean for the next demo:
+
+**⚠️ Mandatory Cleanup Required:**
+
+To prevent conflicts with subsequent demos, you MUST clean up the test routes created in this demo.
+
+1. **Navigate to Route Management**:
+   * Go to **Infrastructure** tab → **HTTP Routes** sub-tab
+   * You should see your original `echo-route` plus the new routes you created
+
+2. **Delete Test Routes (REQUIRED)**:
+   * **Delete**: `api-v2-route` - click the delete icon and confirm
+   * **Delete**: `api-default-route` - click the delete icon and confirm  
+   * **Delete**: `api-post-route` - click the delete icon and confirm
+   * **Delete**: `api-get-route` - click the delete icon and confirm
+   * **Keep**: `echo-route` from Demo 1 - needed for subsequent demos
+
+3. **Resources to Keep for Next Demo**:
+   * ✅ **Keep**: `my-first-gateway` (or `demo-gateway`) - infrastructure for Demo 3
+   * ✅ **Keep**: `echo-route` - will be used for testing external IP access
+   * ✅ **Keep**: `echo-service`, `echo-service-v1`, `echo-service-v2` - backend services for testing
+
+4. **Verification Commands**:
+   ```bash
+   # Verify only foundation routes remain
+   kubectl get httproutes -n demo
+   # Should show only: echo-route
+   
+   # Verify services are still available
+   kubectl get services -n demo
+   # Should show: echo-service, echo-service-v1, echo-service-v2
+   ```
+
+**Why This Cleanup is Critical:**
+- Multiple routes on same hostname (`api.local`) will conflict with Demo 4's TLS setup
+- Route priority conflicts may cause unpredictable behavior in security demos
+- Clean foundation ensures reliable infrastructure testing in Demo 3
 
 ### Key Concepts Learned
 
-* **Header Matching**: Route based on request headers
-* **Method Matching**: Different HTTP methods to different services
-* **Route Priority**: How multiple matching rules are evaluated
-* **Service Versioning**: Using routing for API version management
+* **Header Matching**: Route based on request headers for feature flags and API versioning
+* **Method Matching**: Different HTTP methods to different services for read/write splitting  
+* **Route Priority**: How multiple matching rules are evaluated based on specificity
+* **Service Versioning**: Using routing for API version management and gradual rollouts
+* **Real-world Testing**: Using the enhanced HTTP Client with headers management for comprehensive testing
+* **Route Organization**: Managing multiple routes and understanding their interaction
 
 ---
 
 ## Demo 3: Infrastructure and LoadBalancer Setup
 
-**What you'll learn**: LoadBalancer configuration, gateway IP assignment, and networking fundamentals
+**What you'll learn**: LoadBalancer configuration, gateway IP assignment, networking fundamentals, and production-ready infrastructure management
 
-### Understanding LoadBalancers
+### Understanding LoadBalancers in Kubernetes
 
-In Docker Desktop, services need a LoadBalancer to receive external IP addresses. This demo shows how the extension handles this automatically.
+LoadBalancers are essential for exposing services to external traffic. In production environments, cloud providers manage this automatically, but in Docker Desktop, we need MetalLB to provide this functionality.
 
-### Step 3.1: Configure LoadBalancer
+**🔍 Key Concepts:**
+* **LoadBalancer Service**: Kubernetes service type that provisions an external IP
+* **MetalLB**: Bare-metal LoadBalancer implementation for local development
+* **External IP Assignment**: How services become accessible from outside the cluster
+* **IP Range Management**: Configuring safe IP ranges for LoadBalancer allocation
 
-1. **Check Current Status**:
-   * In **Infrastructure** tab, **Gateways** sub-tab, view LoadBalancer Configuration
-   * Status should show current state (likely "NOT CONFIGURED")
+### Step 3.1: Analyze Current Infrastructure
 
-2. **Auto-Configure MetalLB**:
-   * Click **"Configure LoadBalancer"**
-   * Enable **"Auto-detect IP range"**
+Before configuring LoadBalancers, let's understand your current setup.
+
+1. **Navigate to Infrastructure Overview**:
+   * Click the **Infrastructure** tab
+   * Click the **Gateways** sub-tab
+   * You should see your existing gateway from previous demos
+
+2. **Examine Current Gateway Status**:
+   * Look at your gateway's **Status** column
+   * Check the **External IP** column - likely shows "Pending" or empty
+   * Note the **Addresses** section - this will be populated after LoadBalancer setup
+
+3. **Understanding the Problem**:
+   * Without a LoadBalancer, gateways can't receive external IPs
+   * Services remain accessible only via kubectl proxy or port forwarding
+   * This is not suitable for production-like testing
+
+4. **Check LoadBalancer Configuration Status**:
+   * Look for the **LoadBalancer Configuration** section
+   * Current status likely shows **"NOT CONFIGURED"** or **"MetalLB not detected"**
+   * This indicates no LoadBalancer controller is available
+
+### Step 3.2: Configure MetalLB LoadBalancer
+
+MetalLB provides LoadBalancer functionality for bare-metal Kubernetes clusters, including Docker Desktop.
+
+1. **Access LoadBalancer Management**:
+   * In the **Infrastructure** tab → **Gateways** sub-tab
+   * Locate the **LoadBalancer Configuration** section at the top
+   * Click **"Configure LoadBalancer"** button
+
+2. **Understand IP Range Selection**:
+   * **Auto-detect IP range** (Recommended): Extension automatically detects Docker Desktop's IP range
+   * **Manual IP range**: Specify custom range if needed
+   * **Important**: IP range must not conflict with existing network infrastructure
+
+3. **Enable Auto-Detection** (Recommended Path):
+   * Check the **"Auto-detect IP range"** checkbox
+   * The extension will:
+     * Detect Docker Desktop's internal network
+     * Calculate a safe IP range for LoadBalancer services
+     * Avoid conflicts with existing services
+   * Example detected range: `10.96.1.100-10.96.1.200`
+
+4. **Install and Configure MetalLB**:
    * Click **"Install & Configure"**
-   * Wait for status to show "CONFIGURED"
+   * **Wait for completion** (typically 30-60 seconds)
+   * Watch the status change from "Installing..." to "Configuring..."
+   * Final status should show **"CONFIGURED"** with IP range details
 
-### Step 3.2: Verify Gateway IP Assignment
+5. **Verify Installation**:
+   * Status section should now show:
+     * **MetalLB Status**: "Running"
+     * **IP Pool**: Your configured range
+     * **Available IPs**: Number of available addresses
 
-1. **Check Gateway Status**:
-   * Your gateway should now have an External IP
-   * Status should show "Ready" with addresses populated
+### Step 3.3: Verify Gateway IP Assignment
 
-2. **Test External Access**:
-   * Use the external IP directly in the HTTP client
-   * URL: `http://<EXTERNAL-IP>/`
-   * Headers: Use the enhanced Headers interface (v0.12.1)
-     * Add `Host: echo.local`
-     * Easily manage multiple headers with toggle controls
+With MetalLB configured, existing gateways should automatically receive external IPs.
 
-### Step 3.3: Enhanced Proxy Management (v0.8.1)
+1. **Check Gateway Status Update**:
+   * Refresh the **Gateways** sub-tab (click refresh icon if needed)
+   * Your gateway status should change from "Pending" to "Ready"
+   * **External IP** column should now show an assigned IP (e.g., `10.96.1.100`)
 
-The proxy manager provides reliable kubectl access with comprehensive error handling.
+2. **Understand IP Assignment Process**:
+   * MetalLB controller watches for LoadBalancer services
+   * When a gateway creates a LoadBalancer service, MetalLB assigns an IP from the pool
+   * The IP becomes the gateway's external address
 
-1. **Proxy Features**:
-   * **Automatic kubeconfig detection**: No hardcoded paths
-   * **Pre-flight connectivity testing**: Validates cluster access
+3. **Examine Gateway Details**:
+   * Click on your gateway name to view details
+   * **Addresses** section should show:
+     * **Type**: "IPAddress"  
+     * **Value**: Your assigned external IP
+   * **Listeners** should show your configured ports (80, 443)
+
+4. **Document Your External IP**:
+   * Note the assigned IP address (e.g., `10.96.1.100`)
+   * You'll use this for direct testing in subsequent steps
+
+### Step 3.4: Test External Access with Direct IP
+
+Now you can test your services using the external IP directly, without kubectl proxy.
+
+1. **Navigate to HTTP Testing**:
+   * Click the **Traffic & Testing** tab
+   * Click the **HTTP Testing** sub-tab
+   * Ensure you're on the HTTP Testing interface
+
+2. **Configure Direct External IP Test**:
+   * **URL**: `http://<EXTERNAL-IP>/` (replace with your actual IP, e.g., `http://10.96.1.100/`)
+   * **Method**: `GET`
+   * **Headers Section** (click to expand - enhanced in v0.12.1):
+     * Click **"Add Header"**
+     * **Header Name**: `Host`
+     * **Header Value**: `echo.local`
+     * Use the toggle switch to enable this header
+   * **Body**: Leave empty for GET requests
+
+3. **Send Test Request**:
+   * Click **"Send Request"**
+   * **Expected Result**: Response from your echo service
+   * **Key Difference**: This request goes directly through the external IP, not kubectl proxy
+
+4. **Compare with Proxy Testing**:
+   * Test the same service using kubectl proxy URL: `http://localhost:8001/api/v1/namespaces/demo/services/echo-service:80/proxy/`
+   * Notice that both methods work, but external IP is more production-like
+
+5. **Smart URL Analysis** (v0.12.1 Feature):
+   * If you enter a private IP range (like 10.x.x.x or 192.168.x.x), the HTTP client shows an informational alert
+   * This helps distinguish between external IPs and proxy URLs
+   * The alert provides context about network accessibility
+
+### Step 3.5: Enhanced Proxy Management and Troubleshooting
+
+While external IPs are preferred, kubectl proxy remains useful for debugging and development.
+
+1. **Access Proxy Management**:
+   * In the **Traffic & Testing** tab → **HTTP Testing** sub-tab
+   * Locate the **Proxy Manager** section above the HTTP client
+
+2. **Proxy Manager Features** (Enhanced in v0.8.1):
+   * **Automatic kubeconfig detection**: No hardcoded paths, works with any cluster
+   * **Pre-flight connectivity testing**: Validates cluster access before starting proxy
    * **Enhanced error reporting**: Specific, actionable error messages
    * **Robust process management**: Reliable PID tracking and cleanup
 
-2. **Advanced Operations**:
-   * **API Server Access**: Direct Kubernetes API exploration
-   * **Resource Inspection**: Raw resource data with error feedback
-   * **Development Workflow**: Improved extension development experience
+3. **Start Proxy for Testing**:
+   * Click **"Start Proxy"** if not already running
+   * Wait for status to show "Running on http://localhost:8001"
+   * **Generated URL**: Use this for accessing Kubernetes API directly
+
+4. **Advanced Proxy Operations**:
+   * **API Server Access**: Access `http://localhost:8001/api/v1` for raw API exploration
+   * **Resource Inspection**: Browse services, pods, and deployments directly
+   * **Development Workflow**: Useful for extension development and debugging
+
+5. **Troubleshooting Network Issues**:
+   * **Gateway Pending IP**: Check MetalLB installation and IP pool configuration
+   * **Connection Refused**: Verify external IP is accessible and service is running
+   * **DNS Issues**: Use IP addresses instead of hostnames for testing
+   * **Proxy Errors**: Restart proxy if kubectl connectivity fails
+
+### Step 3.6: Understanding Network Architecture
+
+Let's explore how traffic flows through your infrastructure.
+
+1. **Traffic Flow Analysis**:
+   ```
+   📱 Client Request
+         ↓
+   🌐 External IP (10.96.1.100:80)
+         ↓
+   🚪 Envoy Gateway (LoadBalancer Service)
+         ↓
+   🔀 HTTPRoute Matching (based on Host/Path)
+         ↓
+   🏢 Backend Service (echo-service:80)
+         ↓
+   🐳 Pod (echo-service container)
+   ```
+
+2. **Component Responsibilities**:
+   * **MetalLB**: Assigns and announces external IPs
+   * **LoadBalancer Service**: Kubernetes service exposing the gateway
+   * **Envoy Gateway**: Processes HTTP rules and forwards traffic
+   * **HTTPRoute**: Defines routing logic and backend services
+   * **Service**: Kubernetes abstraction for pod access
+   * **Pod**: Running application container
+
+3. **Network Layers**:
+   * **L4 (Transport)**: MetalLB handles IP assignment and basic routing
+   * **L7 (Application)**: Envoy Gateway processes HTTP headers, paths, and methods
+   * **Service Discovery**: Kubernetes services provide stable endpoints for pods
+
+### Step 3.7: Production Readiness Considerations
+
+Understanding what makes infrastructure production-ready.
+
+1. **High Availability Setup**:
+   * **Multiple Gateway Replicas**: Scale Envoy Gateway for redundancy
+   * **IP Pool Management**: Ensure sufficient IPs for all services
+   * **Health Checks**: Configure liveness and readiness probes
+
+2. **Security Considerations**:
+   * **Network Policies**: Restrict traffic between namespaces
+   * **Firewall Rules**: Limit external access to necessary ports
+   * **TLS Termination**: Use HTTPS for production traffic (covered in Demo 4)
+
+3. **Monitoring and Observability**:
+   * **Metrics Collection**: Monitor traffic patterns and performance
+   * **Logging**: Centralize gateway and application logs
+   * **Alerting**: Set up notifications for service failures
+
+4. **Resource Management**:
+   * **Resource Limits**: Set CPU and memory limits for gateway pods
+   * **Scaling Policies**: Configure horizontal pod autoscaling
+   * **IP Pool Monitoring**: Track IP address usage and availability
+
+### Demo 3 Cleanup
+
+**Resources to Keep for Next Demo:**
+- ✅ **Keep**: `my-first-gateway` (or `demo-gateway`) - needed for TLS configuration in Demo 4
+- ✅ **Keep**: `echo-route` - will be used to compare HTTP vs HTTPS behavior
+- ✅ **Keep**: MetalLB configuration - permanent infrastructure needed for external IPs
+- ✅ **Keep**: All services (`echo-service`, `echo-service-v1`, `echo-service-v2`) - backend services for testing
+
+**Nothing to Clean Up:**
+- All infrastructure created in Demo 3 is foundational and will be used in subsequent demos
+- MetalLB LoadBalancer is permanent cluster infrastructure
+- External IP assignment is required for TLS testing in Demo 4
+
+**Verification:**
+```bash
+# Verify LoadBalancer is working
+kubectl get gateways -n demo
+# Should show External IP assigned (e.g., 10.96.1.100)
+
+# Verify services are accessible via external IP
+curl -H "Host: echo.local" http://<GATEWAY-EXTERNAL-IP>/
+```
 
 ### Key Concepts Learned
 
-* **LoadBalancer Services**: How external IPs are assigned
-* **MetalLB**: Local LoadBalancer implementation for development
-* **Network Architecture**: How traffic flows from client to service
-* **Proxy Management**: Reliable kubectl connectivity for testing
+* **LoadBalancer Services**: How external IPs are assigned and managed in Kubernetes
+* **MetalLB Configuration**: Setting up bare-metal LoadBalancer for local development
+* **Network Architecture**: Understanding traffic flow from client to application
+* **External IP vs Proxy**: Different methods for accessing services and their use cases
+* **Proxy Management**: Reliable kubectl connectivity for debugging and development
+* **Smart URL Analysis**: v0.12.1 feature helping distinguish network access patterns
+* **Production Readiness**: Infrastructure considerations for real-world deployments
+* **Troubleshooting**: Common networking issues and resolution strategies
 
 ---
 
@@ -574,6 +940,51 @@ The extension provides automated certificate management.
    * Response should include TLS connection details
    * Headers show secure connection established
 
+### Demo 4 Cleanup
+
+**Resources to Delete (REQUIRED):**
+- ❌ **DELETE**: `secure-gateway` - will conflict with security demo TLS configurations
+- ❌ **DELETE**: `secure-echo-route` - prevents routing conflicts with subsequent demos
+
+**Resources to Keep for Next Demo:**
+- ✅ **Keep**: `demo-tls-cert` - certificate needed for security policy demos
+- ✅ **Keep**: cert-manager installation - permanent infrastructure for TLS management
+- ✅ **Keep**: All original Demo 1-3 resources (my-first-gateway, echo-route, echo-service)
+
+**Why This Cleanup is Critical:**
+- The secure gateway and route will interfere with security policy testing in Demo 7
+- Multiple gateways listening on port 443 can cause TLS conflicts
+- Security demos require clean TLS certificate setup without conflicting routes
+
+**Cleanup Steps:**
+1. **Navigate to Infrastructure Management**:
+   * Go to **Infrastructure** tab → **HTTP Routes** sub-tab
+   * **Delete**: `secure-echo-route` - click delete icon and confirm
+
+2. **Delete Secure Gateway**:
+   * Go to **Infrastructure** tab → **Gateways** sub-tab
+   * **Delete**: `secure-gateway` - click delete icon and confirm
+
+3. **Verification Commands**:
+   ```bash
+   # Verify secure resources are removed
+   kubectl get httproutes -n demo
+   # Should NOT show: secure-echo-route
+   
+   kubectl get gateways -n demo
+   # Should NOT show: secure-gateway
+   # Should still show: my-first-gateway (or demo-gateway)
+   
+   # Verify certificates remain available
+   kubectl get certificates -n demo
+   # Should show: demo-tls-cert
+   ```
+
+**Expected State After Cleanup:**
+- Original Demo 1-3 infrastructure intact (gateway, route, services)
+- TLS certificate available but no conflicting HTTPS routes
+- Clean foundation for security policy demonstrations
+
 ### Key Concepts Learned
 
 * **TLS Termination**: Gateway handles encryption/decryption
@@ -636,6 +1047,58 @@ Traffic splitting allows you to:
    * Use pre-configured scenarios for common patterns
    * **Canary Stages**: Progressive rollout phases
    * **Emergency Rollback**: Instant return to stable version
+
+### Demo 5 Cleanup
+
+**Resources to Delete (REQUIRED):**
+- ❌ **DELETE**: `canary-route` - traffic splitting route conflicts with performance testing
+- ❌ **DELETE**: All traffic splitting configurations and weighted routes
+- ❌ **DELETE**: Any canary deployment HTTPRoutes created during wizard
+
+**Resources to Keep for Next Demo:**
+- ✅ **Keep**: `my-first-gateway` (or `demo-gateway`) - base infrastructure for performance testing
+- ✅ **Keep**: `echo-route` - foundation route for load testing
+- ✅ **Keep**: `echo-service`, `echo-service-v1`, `echo-service-v2` - backend services for testing
+- ✅ **Keep**: All Demo 1-3 foundational infrastructure
+
+**Why This Cleanup is Critical:**
+- Traffic splitting routes will interfere with performance testing baseline metrics
+- Multiple weighted routes cause unpredictable load distribution during performance tests
+- Clean routing setup ensures accurate performance measurements in Demo 6
+
+**Cleanup Steps:**
+1. **Navigate to Traffic Splitting Management**:
+   * Go to **Traffic & Testing** tab → **Traffic Splitting** sub-tab
+   * **Remove**: All active traffic splitting configurations
+   * Click **"Reset Traffic Splitting"** if available
+
+2. **Delete Traffic Splitting Routes**:
+   * Go to **Infrastructure** tab → **HTTP Routes** sub-tab
+   * **Delete**: `canary-route` - click delete icon and confirm
+   * **Delete**: Any other traffic splitting routes created during wizard
+
+3. **Clean Up Wizard Resources**:
+   * **Undeploy**: Traffic splitting templates if deployed
+   * **Reset**: Traffic distribution to default single-service routing
+
+4. **Verification Commands**:
+   ```bash
+   # Verify only foundation routes remain
+   kubectl get httproutes -n demo
+   # Should show only: echo-route (from Demo 1)
+   
+   # Verify services are available for performance testing
+   kubectl get services -n demo
+   # Should show: echo-service, echo-service-v1, echo-service-v2
+   
+   # Test baseline routing for performance testing
+   curl -H "Host: echo.local" http://<GATEWAY-EXTERNAL-IP>/
+   ```
+
+**Expected State After Cleanup:**
+- Single, predictable routing configuration for performance baseline
+- All backend services available for load testing scenarios
+- Clean foundation for accurate performance measurement in Demo 6
 
 ### Key Concepts Learned
 
@@ -709,6 +1172,57 @@ Performance testing with gateways helps you:
    * Compare response times between versions
    * Analyze error rates for each service
    * Validate that traffic splitting maintains performance
+
+### Demo 6 Cleanup
+
+**Resources to Delete (REQUIRED):**
+- ❌ **DELETE**: All traffic generator configurations and test scenarios
+- ❌ **DELETE**: Performance testing profiles and saved configurations
+- ❌ **DELETE**: Any temporary routes created for load testing
+
+**Resources to Keep for Next Demo:**
+- ✅ **Keep**: All foundational infrastructure (gateways, routes, services)
+- ✅ **Keep**: `demo-tls-cert` and cert-manager - needed for security policies
+- ✅ **Keep**: MetalLB LoadBalancer configuration - required for external access
+
+**Why This Cleanup is Critical:**
+- Running traffic generators can interfere with security policy testing
+- High load scenarios may mask security policy enforcement behavior
+- Clean baseline needed for accurate security policy validation in Demo 7
+
+**Cleanup Steps:**
+1. **Stop All Traffic Generation**:
+   * Go to **Traffic & Testing** tab → **Performance Testing** sub-tab
+   * **Stop**: Any running traffic tests - click "Stop Traffic Test"
+   * **Clear**: Saved test configurations and profiles
+
+2. **Reset Traffic Generator**:
+   * **Clear**: All target URLs and configuration parameters
+   * **Reset**: Request rates and concurrency settings to defaults
+   * **Remove**: Any custom headers or request bodies
+
+3. **Clean Test Data**:
+   * **Clear**: Performance metrics and historical data
+   * **Reset**: Live visualization charts and dashboards
+
+4. **Verification Commands**:
+   ```bash
+   # Verify no background traffic generation
+   kubectl get pods -n demo
+   # Should NOT show traffic generator or load testing pods
+   
+   # Test normal routing for security demos
+   curl -H "Host: echo.local" http://<GATEWAY-EXTERNAL-IP>/
+   # Should receive normal response without load
+   
+   # Verify infrastructure ready for security policies
+   kubectl get gateways,httproutes,services -n demo
+   ```
+
+**Expected State After Cleanup:**
+- No background load generation affecting security testing
+- Clean performance metrics baseline for security policy evaluation
+- All infrastructure ready for security policy demonstrations
 
 ### Key Concepts Learned
 
@@ -888,6 +1402,63 @@ Modern applications require comprehensive security policies to protect against t
    * Syntax highlighting and real-time validation
    * Template insertion and comprehensive error reporting
 
+### Demo 7 Cleanup
+
+**Resources to Delete (REQUIRED):**
+- ❌ **DELETE**: `api-basic-auth` policy - BasicAuth conflicts with JWT authentication
+- ❌ **DELETE**: `api-cors-policy` - CORS policies can interfere with JWT headers
+- ❌ **DELETE**: `office-access-only` IP filtering policy - IP restrictions conflict with JWT testing
+- ❌ **DELETE**: `api-rate-limit` policy - rate limiting interferes with JWT authentication flow
+
+**Resources to Keep for Next Demo:**
+- ✅ **Keep**: mTLS configurations (if created) - can coexist with JWT authentication
+- ✅ **Keep**: All foundational infrastructure (gateways, routes, services, certificates)
+- ✅ **Keep**: cert-manager and TLS certificate for potential HTTPS JWT endpoints
+
+**Why This Cleanup is Critical:**
+- BasicAuth and JWT authentication cannot be applied to the same route simultaneously
+- CORS policies may interfere with JWT token headers (Authorization, Bearer tokens)
+- IP filtering can block JWT authentication testing from different network contexts
+- Rate limiting policies may throttle JWT authentication flows during testing
+
+**Cleanup Steps:**
+1. **Remove Authentication Policies**:
+   * Go to **Security & Policies** tab → **Security Policies** sub-tab
+   * **Delete**: `api-basic-auth` policy - click delete icon and confirm
+   * **Remove**: BasicAuth enforcement from all routes
+
+2. **Remove Access Control Policies**:
+   * **Delete**: `api-cors-policy` - click delete icon and confirm
+   * **Delete**: `office-access-only` IP filtering policy - click delete icon and confirm
+
+3. **Remove Rate Limiting**:
+   * **Delete**: `api-rate-limit` policy - click delete icon and confirm
+   * **Stop**: Any running burst tests in Performance Testing section
+
+4. **Preserve mTLS (if configured)**:
+   * **Keep**: mTLS configurations as they can work alongside JWT
+   * **Review**: mTLS settings to ensure they don't conflict with JWT testing
+
+5. **Verification Commands**:
+   ```bash
+   # Verify security policies are removed
+   kubectl get securitypolicies -A
+   # Should NOT show: api-basic-auth, api-cors-policy, office-access-only, api-rate-limit
+   
+   # Test route accessibility without authentication
+   curl -H "Host: echo.local" http://<GATEWAY-EXTERNAL-IP>/
+   # Should work without authentication headers
+   
+   # Verify foundation remains intact
+   kubectl get gateways,httproutes,certificates -n demo
+   ```
+
+**Expected State After Cleanup:**
+- Routes accessible without conflicting authentication mechanisms
+- No CORS or IP filtering policies interfering with JWT headers
+- Clean foundation ready for JWT authentication configuration
+- mTLS configurations preserved if they don't conflict with JWT testing
+
 ### Key Concepts Learned
 
 * **Enterprise Security**: Implementing comprehensive security policies
@@ -1058,6 +1629,68 @@ JSON Web Tokens (JWT) provide a modern, stateless authentication mechanism that'
    * Test fallback scenarios when primary provider fails
    * Validate provider-specific claim mapping
 
+### Demo 8 Cleanup
+
+**Resources to Delete (REQUIRED):**
+- ❌ **DELETE**: `api-jwt-auth` policy - JWT policies can conflict with resilience policy testing
+- ❌ **DELETE**: `auth0-provider` JWT provider configuration
+- ❌ **DELETE**: All JWT authentication policies and provider configurations
+- ❌ **DELETE**: JWT testing tokens and saved authentication configurations
+
+**Resources to Keep for Next Demo:**
+- ✅ **Keep**: All foundational infrastructure (gateways, routes, services)
+- ✅ **Keep**: TLS certificates - may be useful for resilience policy testing
+- ✅ **Keep**: mTLS configurations - can coexist with resilience policies
+
+**Why This Cleanup is Critical:**
+- JWT authentication adds latency that interferes with accurate timeout policy testing
+- Authentication failures can mask resilience policy behavior (retry vs auth failure)
+- Clean routes needed to isolate resilience policy effects from authentication overhead
+- Token validation timeouts can interfere with gateway timeout policy evaluation
+
+**Cleanup Steps:**
+1. **Remove JWT Authentication Policies**:
+   * Go to **Security & Policies** tab → **Security Policies** sub-tab
+   * **Delete**: `api-jwt-auth` policy - click delete icon and confirm
+   * **Remove**: JWT authentication from all routes
+
+2. **Clean JWT Provider Configuration**:
+   * **Delete**: `auth0-provider` JWT provider - click delete icon and confirm
+   * **Remove**: All JWT provider configurations
+   * **Clear**: JWKS URI and audience configurations
+
+3. **Reset JWT Testing Tools**:
+   * Go to **Traffic & Testing** tab → **HTTP Testing** sub-tab
+   * **Clear**: JWT token configurations in HTTP client
+   * **Remove**: Saved JWT tokens and authentication headers
+   * **Reset**: JWT tester component configurations
+
+4. **Clean Authentication Headers**:
+   * **Remove**: Authorization headers from HTTP client
+   * **Clear**: JWT token prefixes and Bearer token configurations
+   * **Reset**: Headers interface to default state
+
+5. **Verification Commands**:
+   ```bash
+   # Verify JWT policies are removed
+   kubectl get securitypolicies -A
+   # Should NOT show JWT authentication policies
+   
+   # Test route accessibility without JWT
+   curl -H "Host: echo.local" http://<GATEWAY-EXTERNAL-IP>/
+   # Should work without JWT authentication
+   
+   # Verify clean routing for resilience testing
+   kubectl get httproutes -n demo
+   # Should show clean routes without authentication requirements
+   ```
+
+**Expected State After Cleanup:**
+- Routes accessible without JWT authentication overhead
+- Clean request/response patterns for accurate resilience policy testing
+- No authentication-related timeouts interfering with gateway timeout policies
+- Foundation ready for pure resilience policy evaluation
+
 ### Key Concepts Learned
 
 * **JWT Authentication**: Modern token-based authentication implementation
@@ -1179,6 +1812,61 @@ In this demo, you've learned to:
 
 Your gateway now has enterprise-grade resilience policies that will help maintain service availability even when individual components fail.
 
+### Demo 9 Cleanup
+
+**Resources to Delete (REQUIRED):**
+- ❌ **DELETE**: All timeout policies applied to gateways and routes
+- ❌ **DELETE**: All retry policies with exponential backoff configurations
+- ❌ **DELETE**: Resilience policy configurations from Demo 9
+
+**Resources to Keep for Next Demo:**
+- ✅ **Keep**: All foundational infrastructure (gateways, routes, services)
+- ✅ **Keep**: TLS certificates and cert-manager for operational monitoring
+- ✅ **Keep**: LoadBalancer configuration for external access monitoring
+
+**Why This Cleanup is Critical:**
+- Timeout and retry policies can mask operational issues during monitoring demos
+- Resilience policies may affect normal response patterns needed for troubleshooting
+- Clean baseline required for accurate operational health monitoring in Demo 10
+- Retry policies can complicate error analysis and troubleshooting scenarios
+
+**Cleanup Steps:**
+1. **Remove Resilience Policies**:
+   * Go to **Security & Policies** tab → **Resilience Policies** sub-tab
+   * **Delete**: All timeout policies - click delete icon and confirm
+   * **Delete**: All retry policies - click delete icon and confirm
+
+2. **Reset Policy Dashboard**:
+   * **Clear**: Policy statistics and monitoring data
+   * **Reset**: Resilience policy dashboard to default state
+
+3. **Verify Policy Removal**:
+   * **Check**: No active resilience policies shown in dashboard
+   * **Confirm**: Routes operate with default timeout/retry behavior
+
+4. **Test Normal Operation**:
+   * **Verify**: Routes respond normally without policy interference
+   * **Confirm**: Clean request/response patterns for monitoring
+
+5. **Verification Commands**:
+   ```bash
+   # Verify resilience policies removed
+   kubectl get backendtrafficpolicies -A
+   # Should NOT show timeout or retry policies
+   
+   # Test normal route behavior
+   curl -H "Host: echo.local" http://<GATEWAY-EXTERNAL-IP>/
+   # Should respond with default timeout/retry behavior
+   
+   # Verify infrastructure ready for monitoring
+   kubectl get gateways,httproutes,services -n demo
+   ```
+
+**Expected State After Cleanup:**
+- Clean request/response patterns without resilience policy interference
+- Default timeout and retry behavior for accurate operational monitoring
+- All infrastructure ready for comprehensive operational monitoring in Demo 10
+
 ---
 
 ## Demo 10: Operational Monitoring and Troubleshooting
@@ -1247,12 +1935,79 @@ Production gateways require:
    * Review and update security policies
    * Monitor for unusual traffic patterns
 
+### Demo 10 Complete Environment Reset
+
+**IMPORTANT**: Demo 10 focuses on operational monitoring and troubleshooting. After completing the operational demonstrations, you should perform a complete environment reset to return to a clean state.
+
+**Complete Cleanup (All Demo Resources):**
+
+1. **Remove All HTTPRoutes**:
+   ```bash
+   kubectl delete httproutes --all -n demo
+   ```
+
+2. **Remove All Gateways**:
+   ```bash
+   kubectl delete gateways --all -n demo
+   ```
+
+3. **Remove Demo Services**:
+   ```bash
+   kubectl delete services echo-service echo-service-v1 echo-service-v2 -n demo
+   kubectl delete deployments echo-service echo-service-v1 echo-service-v2 -n demo
+   ```
+
+4. **Remove TLS Certificates**:
+   ```bash
+   kubectl delete certificates --all -n demo
+   kubectl delete secrets --all -n demo
+   ```
+
+5. **Remove Demo Namespace** (Optional):
+   ```bash
+   kubectl delete namespace demo
+   ```
+
+6. **Reset Extension State**:
+   * Go to **Traffic & Testing** tab → **HTTP Testing** sub-tab
+   * **Stop**: kubectl proxy if running
+   * **Clear**: All saved configurations and request history
+   * **Reset**: Template gallery to undeployed state
+
+**Infrastructure to Preserve** (if desired):
+- ✅ **Keep**: cert-manager installation (cluster-wide utility)
+- ✅ **Keep**: MetalLB LoadBalancer configuration (cluster infrastructure)
+- ✅ **Keep**: Envoy Gateway installation (cluster infrastructure)
+
+**Verification of Clean State**:
+```bash
+# Verify demo resources removed
+kubectl get all -n demo
+# Should show: No resources found
+
+# Verify cluster infrastructure remains
+kubectl get gatewayclasses
+# Should show: envoy-gateway
+
+# Verify LoadBalancer remains functional
+kubectl get pods -n metallb-system
+# Should show MetalLB pods running
+```
+
+**Return to Clean State:**
+After this cleanup, you can:
+- Start fresh with Demo 1 for new learning scenarios
+- Use the clean environment for your own Envoy Gateway projects
+- Apply the learned concepts to production deployments
+- Experiment with different configurations without conflicts
+
 ### Key Concepts Learned
 
 * **Operational Visibility**: Understanding system health at a glance
 * **Proactive Troubleshooting**: Identifying issues before they become problems
 * **Performance Monitoring**: Tracking key metrics for optimization
 * **Maintenance Practices**: Keeping your gateway healthy and secure
+* **Environment Management**: Complete lifecycle management from deployment to cleanup
 
 ---
 
