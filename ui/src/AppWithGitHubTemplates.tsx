@@ -734,6 +734,17 @@ export function App() {
             color="primary"
             onClick={handleInstallClick}
             disabled={isInstalling}
+            sx={{
+              backgroundColor: 'primary.main',
+              color: 'primary.contrastText',
+              '&:hover': {
+                backgroundColor: 'primary.dark',
+              },
+              '&:disabled': {
+                backgroundColor: 'action.disabled',
+                color: 'action.disabled',
+              }
+            }}
           >
             {isInstalling ? "Installing..." : "Install Envoy Gateway"}
           </Button>
