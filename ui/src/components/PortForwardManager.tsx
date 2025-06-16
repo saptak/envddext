@@ -32,8 +32,7 @@ import {
   Launch as LaunchIcon,
   Refresh as RefreshIcon,
   ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  AutoAwesome as QuickStartIcon
+  ExpandLess as ExpandLessIcon
 } from '@mui/icons-material';
 import { portForwardService, PortForwardRequest, PortForwardStatus } from '../services/portForwardService';
 
@@ -197,10 +196,6 @@ export const PortForwardManager: React.FC<PortForwardManagerProps> = ({
 
     return (
       <Box sx={{ mb: 2 }}>
-        <Typography variant="h6" sx={{ mb: 1, display: 'flex', alignItems: 'center' }}>
-          <QuickStartIcon sx={{ mr: 1 }} />
-          Quick Actions
-        </Typography>
         <Grid container spacing={2}>
           <Grid item>
             <Button

@@ -71,8 +71,8 @@ const SUB_TAB_IDS = {
   RESILIENCE_POLICIES: 1,
   
   // Traffic & Testing sub-tabs
-  TRAFFIC_SPLITTING: 0,
-  HTTP_TESTING: 1,
+  HTTP_TESTING: 0,
+  TRAFFIC_SPLITTING: 1,
   PERFORMANCE_TESTING: 2,
   
   // Operations sub-tabs (commented out until implemented)
@@ -289,15 +289,11 @@ const TrafficTestingTab = memo(({
         variant="scrollable"
         scrollButtons="auto"
       >
-        <Tab label="Traffic Splitting" />
         <Tab label="HTTP Testing" />
+        <Tab label="Traffic Splitting" />
         <Tab label="Performance Testing" />
       </Tabs>
     </Box>
-
-    {currentSubTab === SUB_TAB_IDS.TRAFFIC_SPLITTING && (
-      <TrafficSplittingManager />
-    )}
 
     {currentSubTab === SUB_TAB_IDS.HTTP_TESTING && (
       <Box>
@@ -323,6 +319,10 @@ const TrafficTestingTab = memo(({
           }} />
         </Box>
       </Box>
+    )}
+
+    {currentSubTab === SUB_TAB_IDS.TRAFFIC_SPLITTING && (
+      <TrafficSplittingManager />
     )}
 
     {currentSubTab === SUB_TAB_IDS.PERFORMANCE_TESTING && (
@@ -413,7 +413,7 @@ export function App() {
     [TAB_IDS.QUICK_START]: SUB_TAB_IDS.OVERVIEW,
     [TAB_IDS.INFRASTRUCTURE]: SUB_TAB_IDS.GATEWAYS,
     [TAB_IDS.SECURITY_POLICIES]: SUB_TAB_IDS.SECURITY_POLICIES,
-    [TAB_IDS.TRAFFIC_TESTING]: SUB_TAB_IDS.TRAFFIC_SPLITTING,
+    [TAB_IDS.TRAFFIC_TESTING]: SUB_TAB_IDS.HTTP_TESTING,
     // [TAB_IDS.OPERATIONS]: SUB_TAB_IDS.MONITORING, // Commented out until implemented
   });
 
@@ -589,54 +589,72 @@ export function App() {
 
   return (
     <Box sx={{ p: 4 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-        <EnvoyLogo width={48} height={48} />
-        <Typography variant="h3" gutterBottom sx={{ mb: 0, fontWeight: 500 }}>
-          Envoy Gateway
-        </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <EnvoyLogo width={48} height={48} />
+          <Typography variant="h3" sx={{ mb: 0, fontWeight: 500 }}>
+            Envoy Gateway
+          </Typography>
+        </Box>
+        
+        {/* Status Panel */}
+        <Paper sx={{ p: 2 }}>
+          <Stack direction="row" spacing={3} alignItems="center">
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Backend
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                <Box 
+                  sx={{ 
+                    width: 12, 
+                    height: 12, 
+                    borderRadius: '50%', 
+                    backgroundColor: error || installationError ? '#f44336' : '#4caf50'
+                  }} 
+                />
+                <Typography variant="body1" fontWeight="medium">
+                  {error || installationError ? "Error" : "Ready"}
+                </Typography>
+              </Box>
+            </Box>
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Kubernetes
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                <Box 
+                  sx={{ 
+                    width: 12, 
+                    height: 12, 
+                    borderRadius: '50%', 
+                    backgroundColor: loading || isInstalling ? '#ff9800' : '#4caf50'
+                  }} 
+                />
+                <Typography variant="body1" fontWeight="medium">
+                  {loading || isInstalling ? "Loading..." : "Ready"}
+                </Typography>
+              </Box>
+            </Box>
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Gateways
+              </Typography>
+              <Typography variant="body1" fontWeight="medium">
+                {gateways.length}
+              </Typography>
+            </Box>
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Routes
+              </Typography>
+              <Typography variant="body1" fontWeight="medium">
+                {routes.length}
+              </Typography>
+            </Box>
+          </Stack>
+        </Paper>
       </Box>
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-        Manage and observe Envoy Gateway resources in your local Kubernetes
-        cluster using Docker Desktop.
-      </Typography>
-
-      {/* Backend Status and Summary */}
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Stack direction="row" spacing={4} alignItems="center">
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary">
-              Backend Status
-            </Typography>
-            <Typography variant="body1" fontWeight="medium">
-              {error || installationError ? "Error" : "Ready"}
-            </Typography>
-          </Box>
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary">
-              Kubernetes
-            </Typography>
-            <Typography variant="body1" fontWeight="medium">
-              {loading || isInstalling ? "Loading..." : "Ready"}
-            </Typography>
-          </Box>
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary">
-              Gateways
-            </Typography>
-            <Typography variant="body1" fontWeight="medium">
-              {gateways.length}
-            </Typography>
-          </Box>
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary">
-              Routes
-            </Typography>
-            <Typography variant="body1" fontWeight="medium">
-              {routes.length}
-            </Typography>
-          </Box>
-        </Stack>
-      </Paper>
 
       {loading || isInstalling ? (
         <Box sx={{ display: "flex", justifyContent: "center", mt: 5 }}>
