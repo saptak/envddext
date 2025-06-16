@@ -305,6 +305,7 @@ spec:
         </Box>
         <Button
           variant="contained"
+          color="primary"
           startIcon={<AddIcon />}
           onClick={handleCreateNew}
         >
@@ -386,6 +387,7 @@ kubectl apply -f https://raw.githubusercontent.com/envoyproxy/ratelimit/main/exa
                   <Button 
                     size="small" 
                     variant="contained" 
+                    color="primary"
                     startIcon={<AddIcon />}
                     onClick={() => {
                       // TODO: Implement automated deployment
@@ -636,6 +638,7 @@ spec:
               </Typography>
               <Button
                 variant="contained"
+                color="primary"
                 startIcon={<AddIcon />}
                 onClick={handleCreateNew}
               >
@@ -810,6 +813,7 @@ spec:
           </Button>
           <Button 
             variant="contained" 
+            color="primary"
             onClick={handleSave} 
             disabled={isCreating}
           >
@@ -858,7 +862,7 @@ spec:
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setYamlDialogOpen(false)} variant="contained">
+          <Button onClick={() => setYamlDialogOpen(false)} variant="contained" color="primary">
             Close
           </Button>
         </DialogActions>

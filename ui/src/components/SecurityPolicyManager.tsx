@@ -129,6 +129,7 @@ export const SecurityPolicyManager: React.FC<SecurityPolicyManagerProps> = ({
           <Tooltip title="Create new security policy with guided wizard">
             <Button
               variant="contained"
+              color="primary"
               startIcon={<AddIcon />}
               onClick={handleCreatePolicy}
               sx={{ borderRadius: 2 }}
