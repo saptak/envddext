@@ -73,15 +73,19 @@ export class PortForwardService {
         localPort
       }) as any;
 
-      if (!response.success) {
-        throw new Error(response.error || 'Failed to stop port forward');
+      // Handle nested response structure from Docker Desktop VM service
+      const actualResponse = response?.data || response;
+
+      if (!actualResponse || !actualResponse.success) {
+        const backendError = actualResponse?.error || 'Backend returned no error message';
+        throw new Error(`Backend error: ${backendError}`);
       }
 
       console.log('Port forward stopped successfully');
 
     } catch (error) {
       console.error('Failed to stop port forward:', error);
-      throw new Error(`Failed to stop port forward: ${error}`);
+      throw error; // Re-throw the original error
     }
   }
 
