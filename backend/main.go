@@ -767,11 +767,17 @@ func (s *Server) convertHTTPRules(rules []HTTPRule) []map[string]interface{} {
 func (s *Server) getKubeconfigPath() string {
 	kubeconfigPath := os.Getenv("KUBECONFIG")
 	if kubeconfigPath != "" {
-		return kubeconfigPath
+		// Verify the KUBECONFIG environment variable points to an existing file
+		if _, err := os.Stat(kubeconfigPath); err == nil {
+			log.Printf("Using KUBECONFIG environment variable: %s", kubeconfigPath)
+			return kubeconfigPath
+		}
+		log.Printf("KUBECONFIG environment variable set to %s but file doesn't exist, trying other paths", kubeconfigPath)
 	}
 	
 	// Try common Docker Desktop mount paths
 	possiblePaths := []string{
+		"/host_kube/config",               // New direct mount from docker-compose.yaml
 		"/host/.kube/config",
 		"/host_users/" + os.Getenv("USER") + "/.kube/config",
 		"/root/.kube/config",
@@ -798,7 +804,13 @@ func (s *Server) getKubeconfigPath() string {
 		}
 	}
 	
-	// Fallback to default if none found
+	// Fallback to KUBECONFIG env var even if file doesn't exist (might be created later)
+	if kubeconfigPath != "" {
+		log.Printf("No kubeconfig found, falling back to KUBECONFIG env var: %s", kubeconfigPath)
+		return kubeconfigPath
+	}
+	
+	// Final fallback to default
 	log.Printf("No kubeconfig found, using default path")
 	return "/host/.kube/config"
 }

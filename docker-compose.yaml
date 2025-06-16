@@ -8,8 +8,9 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - /tmp:/tmp
       - /host_mnt/Users:/host_users:ro
+      - ${HOME}/.kube:/host_kube:ro
     environment:
-      - KUBECONFIG=/host_users/${USER}/.kube/config
+      - KUBECONFIG=/host_kube/config
     extra_hosts:
       - "kubernetes.docker.internal:host-gateway"
     command: ["/backend"]
