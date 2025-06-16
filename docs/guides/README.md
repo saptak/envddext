@@ -59,7 +59,10 @@ This documentation is organized into focused, manageable sections:
 ## 🚀 Version Information
 
 This guide reflects **v0.12.2 - Enhanced User Experience** of the Envoy Gateway Docker Desktop Extension, featuring:
-- **NEW: Port Forward Manager** - One-click gateway port forwarding for seamless testing
+- **NEW: Port Forward Manager** - Revolutionary dynamic service discovery with intelligent service selector
+- **Smart Service Management** - No more hardcoded service names, automatic LoadBalancer discovery
+- **Professional Service Selector** - Dropdown interface showing service names, types, and available ports
+- **Namespace Management** - Switch between namespaces with automatic service reloading
 - Enhanced HTTP Client with professional headers interface
 - Smart URL analysis and error handling
 - Dynamic dashboard monitoring

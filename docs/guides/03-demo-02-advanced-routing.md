@@ -129,13 +129,20 @@ Now let's verify that your advanced routing rules work correctly using the enhan
    * Ensure the kubectl proxy is running (click "Start Proxy" if needed)
 
 2. **Test V2 Route with Header**:
-   * **URL Options**:
-     * **Option A - Gateway External IP**: `http://10.96.1.100/api` (replace with your actual gateway IP from Infrastructure tab)
+   * **URL Options (Recommended: Port Forward Manager)**:
+     * **Option A - Port Forward Manager (Revolutionary v0.12.2)**: 
+       * In the **Port Forward Manager** section (top of HTTP Testing)
+       * **Quick Actions**: Click **"Start Gateway Port Forward"** for auto-discovery
+         - Automatically finds your gateway LoadBalancer service
+         - No hardcoded service names - everything discovered dynamically!
+       * **Advanced Setup**: Expand the form for full control
+         - **Service Name**: Use the SERVICE SELECTOR DROPDOWN to choose your gateway service
+         - **Namespace**: Switch to `envoy-gateway-system` (auto-reloads services)
+         - **Service Port**: Auto-populated from selected service
+       * URL automatically populates in HTTP Client (e.g., `http://localhost:8080/api`)
      * **Option B - kubectl proxy URL**: `http://localhost:8001/api/v1/namespaces/demo/services/echo-service-v2:80/proxy/api`
-       * To find kubectl proxy URL: Go to **Traffic & Testing** tab → **HTTP Testing** sub-tab → **Proxy Manager** section
-       * Ensure proxy shows "Running on http://localhost:8001"
-       * Format: `http://localhost:8001/api/v1/namespaces/<NAMESPACE>/services/<SERVICE-NAME>:<PORT>/proxy/<PATH>`
-       * For this test: `http://localhost:8001/api/v1/namespaces/demo/services/echo-service-v2:80/proxy/api`
+       * Note: This bypasses gateway routing and goes directly to service
+     * **Option C - Gateway External IP**: `http://10.96.1.100/api` (replace with your actual gateway IP)
    * **Method**: `GET`
    * **Headers Section** (click to expand):
      * **For Gateway External IP**: Add `Host: api.local` and `X-API-Version: v2`

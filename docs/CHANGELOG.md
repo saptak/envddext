@@ -5,6 +5,49 @@ All notable changes to the Envoy Gateway Docker Desktop Extension will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.2] - 2025-06-15 "Port Forward Manager & Testing Experience"
+
+### Added - 🚀 Revolutionary Port Forward Manager
+
+- **🎯 Dynamic Service Discovery**:
+    - **Intelligent Service Discovery**: Automatically discovers all LoadBalancer services across namespaces with real-time updates
+    - **No Hardcoded Values**: Complete elimination of hardcoded service names like "envoy-gateway-lb" 
+    - **Professional Service Selector**: Dropdown interface showing service names, types, and available ports
+    - **Cross-Namespace Support**: Service discovery works across any namespace with instant switching
+
+- **🎮 Enhanced User Experience**:
+    - **One-Click Gateway Setup**: "Start Gateway Port Forward" button with automatic service discovery
+    - **Smart Namespace Management**: Change namespaces with automatic service list reloading and form reset
+    - **Intelligent Port Management**: Automatic port conflict resolution and localhost URL generation
+    - **Real-time Service Updates**: Services discovered dynamically from actual cluster state
+
+- **🔧 Professional Interface Design**:
+    - **Service Selector Dropdown**: Material-UI dropdown replacing manual text input for service names
+    - **Service Information Display**: Shows service type (LoadBalancer, ClusterIP, etc.) and all available ports
+    - **Loading States**: Professional "Loading services..." indicator while fetching data
+    - **Active Port Forward Management**: Clean table interface for monitoring and stopping active forwards
+
+### Enhanced - 🛠️ Backend Service Discovery
+
+- **Dynamic kubectl Integration**: Real-time service discovery using kubectl with field selectors for LoadBalancer detection
+- **Response Structure Handling**: Proper parsing of nested Docker Desktop VM service API responses  
+- **Error Response Processing**: Clean error handling with actionable guidance when no services found
+- **Cross-Namespace Queries**: Backend support for service discovery across multiple namespaces
+
+### Technical Implementation - v0.12.2 Service Architecture
+
+- **Frontend State Management**: Efficient React state management for service lists with automatic refresh on namespace changes
+- **API Integration**: Enhanced `/kubectl` endpoint for dynamic service discovery with proper error handling
+- **Form Validation**: Prevents invalid service/namespace combinations with real-time validation
+- **Docker Desktop Compatibility**: Optimized for Docker Desktop VM service response structures
+
+### User Experience Improvements - Zero Configuration
+
+- **Eliminates Manual Setup**: No more typing service names or guessing ports
+- **Professional Workflows**: Service selector integrates seamlessly with all testing scenarios
+- **Error Prevention**: Dynamic validation prevents common configuration mistakes
+- **Guided Discovery**: Clear guidance when no services found with actionable next steps
+
 ## [0.12.1] - 2025-06-14 "Interface Redesign & Envoy Branding"
 
 ### Added - 🎨 4-Tab Progressive Complexity Interface

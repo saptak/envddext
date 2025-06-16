@@ -25,6 +25,17 @@ These templates can be applied directly from the Envoy Gateway Docker Desktop Ex
 3. Click "Quick Start"
 4. Select a template
 5. Click "Apply Directly" to apply the template directly from GitHub
+6. Use the **Port Forward Manager** in the "Traffic & Testing" tab for instant access with localhost URLs
+
+## Testing Your Templates
+
+The extension includes a revolutionary **Port Forward Manager** that eliminates networking complexity:
+
+- **One-Click Access**: Start gateway port forwarding with a single click
+- **Dynamic Service Discovery**: Automatically finds your gateway services
+- **Service Selector**: Choose from available LoadBalancer services with port information
+- **Localhost URLs**: Get reliable `localhost:port` URLs that work in Docker Desktop
+- **No Manual Commands**: Eliminates the need for complex `kubectl port-forward` commands
 
 ## Contributing
 

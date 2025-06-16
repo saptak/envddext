@@ -13,7 +13,7 @@ Absolutely! This extension was designed specifically for developers who want API
 - Create basic Gateway resources with visual forms
 - Set up HTTP routing rules (HTTPRoutes) with path matching and validation
 - Deploy a working example application from templates
-- **NEW: One-click port forwarding** for instant gateway access without complex networking
+- **NEW: Dynamic Port Forwarding** with intelligent service discovery and one-click gateway access
 - Set up traffic splitting between service versions with the guided wizard
 - Configure TLS certificates with automatic cert-manager installation
 - Test your routes and HTTPS endpoints with the built-in HTTP client
@@ -32,7 +32,7 @@ Absolutely! This extension was designed specifically for developers who want API
 - Follow interactive step-by-step tutorials for Gateway setup, JWT authentication, and traffic splitting
 - Configure advanced resilience policies with timeout and retry management for production reliability
 - Access everything from a streamlined four-tab interface with progressive complexity design
-- **NEW: Port Forward Manager** - eliminate manual kubectl commands with one-click gateway access
+- **NEW: Port Forward Manager** - Dynamic service discovery with service selector dropdown and intelligent port management
 
 ### I'm already using Kubernetes tools. Why switch?
 
@@ -138,7 +138,15 @@ This means you need to set up the LoadBalancer. The extension will show you a "C
 
 ### I can't reach my services from outside
 
-**NEW: Try Port Forward Manager first!** Go to **Traffic & Testing** tab → **HTTP Testing** sub-tab and use the **Port Forward Manager** section. Click "Start Gateway Port Forward" for one-click access with localhost URLs that work reliably in Docker Desktop.
+**NEW: Use the enhanced Port Forward Manager!** Go to **Traffic & Testing** tab → **HTTP Testing** sub-tab and use the **Port Forward Manager** section. The new v0.12.2 features include:
+
+- **Dynamic Service Discovery**: Automatically finds all LoadBalancer services in any namespace
+- **Service Selector Dropdown**: Choose from available services with type and port information
+- **Intelligent Port Management**: Automatic port conflict resolution and localhost URL generation
+- **No Hardcoded Values**: All service names are discovered dynamically from your cluster
+- **Namespace Switching**: Change namespaces and automatically reload available services
+
+Click "Start Gateway Port Forward" or use the advanced form with service selector for reliable localhost URLs that work perfectly in Docker Desktop.
 
 If you need external access: First, check that your gateway has an IP address (green status). Then make sure you're using the right URL format: `http://[gateway-ip]/your-path`. The HTTP client in the extension shows you exactly what URLs to use.
 
@@ -207,18 +215,44 @@ New in v0.11.0, Resilience Policies provide enterprise-grade reliability feature
 - **Visual Policy Management**: Professional dashboard with policy overview, status monitoring, and complete CRUD operations
 - **Production-Ready Reliability**: Enterprise-grade policies for production deployments with comprehensive validation and best practices
 
+### What is the revolutionary Port Forward Manager in v0.12.2?
+
+The Port Forward Manager represents a complete transformation in how developers test and interact with API gateways. It eliminates every manual configuration step with intelligent automation:
+
+**🚀 Dynamic Service Discovery**:
+- **Zero Hardcoded Values**: No more typing "envoy-gateway-lb" or guessing service names
+- **Real-time Discovery**: Automatically finds all LoadBalancer services across your entire cluster
+- **Professional Service Selector**: Dropdown shows service names, types (LoadBalancer, ClusterIP), and available ports
+- **Cross-Namespace Intelligence**: Instantly discover services in any namespace with automatic switching
+
+**🎯 Revolutionary User Experience**:
+- **One-Click Gateway Access**: "Start Gateway Port Forward" button with automatic service discovery
+- **Smart Namespace Management**: Switch namespaces and watch available services update automatically
+- **Intelligent Port Management**: Automatic port conflict resolution and localhost URL generation
+- **Professional Interface**: Material-UI components with loading states and error handling
+
+**💡 Real-World Impact**:
+- **Before**: "Let me check kubectl... is it envoy-gateway-lb? What namespace? Port 80 or 8080? Service not found..."
+- **After**: Click dropdown → See "my-gateway-service (LoadBalancer - Ports: 80, 443)" → Select → Instant localhost URL
+
+**🔧 Technical Excellence**:
+- **Dynamic Backend Queries**: Real-time kubectl service discovery with field selectors
+- **React State Optimization**: Efficient service list management with automatic refresh
+- **Error Prevention**: Clear guidance when no services found with actionable next steps
+- **Professional Status Tracking**: Live monitoring of all active port forwards
+
+This completely eliminates the networking complexity that traditionally blocked developers from testing gateway configurations effectively.
+
 ### What about the enhanced user experience features?
 
-Version 0.12.2 includes major UX improvements including the revolutionary **Port Forward Manager**:
+Version 0.12.2 includes the revolutionary Port Forward Manager plus comprehensive UX improvements:
 
-- **Port Forward Manager**: One-click gateway port forwarding for seamless testing without manual kubectl commands
-- **Smart Gateway Integration**: Automatic port discovery and URL generation for testing workflows
 - **Resource Creation Wizard**: Multi-step guided interface for creating complex Gateways, HTTPRoutes, and Security Policies with contextual help
 - **Advanced YAML Editor**: Professional editor with syntax highlighting, validation, templates, and real-time error reporting
 - **Enhanced Template Gallery**: Comprehensive gallery with search, filtering, categorization, ratings, and one-click deployment
 - **Professional Interface**: All features use Material-UI theming with responsive design and intuitive workflows
 
-These features make complex configurations accessible to users of all experience levels while eliminating networking complexity.
+These features make complex configurations accessible to users of all experience levels while completely eliminating networking complexity and hardcoded values.
 
 ### How does JWT authentication work?
 
@@ -313,30 +347,57 @@ The extension includes built-in guidance:
 - Each screen has contextual help
 - The GitHub repository has detailed documentation
 
+### How does the Port Forward Manager solve common testing problems?
+
+The v0.12.2 Port Forward Manager eliminates the most frustrating issues developers face:
+
+**❌ Problem: "Service not found" errors**
+✅ **Solution**: Dynamic service discovery shows only services that actually exist in your cluster
+
+**❌ Problem: Hardcoded service names in documentation**  
+✅ **Solution**: Professional dropdown eliminates all manual typing - just select from available services
+
+**❌ Problem: Wrong namespace confusion**
+✅ **Solution**: Namespace switching with automatic service list updates prevents invalid combinations
+
+**❌ Problem: Port conflicts and guessing ports**
+✅ **Solution**: Intelligent port conflict resolution with automatic assignment
+
+**❌ Problem: Manual kubectl port-forward commands**
+✅ **Solution**: One-click setup with professional management interface
+
+**❌ Problem: Outdated team documentation with wrong service names**
+✅ **Solution**: Always current service discovery - no documentation to maintain
+
+**❌ Problem: "Which services are available?" questions**
+✅ **Solution**: Clear dropdown showing all services with types and ports
+
+**❌ Problem: New team member onboarding confusion**
+✅ **Solution**: Zero learning curve - dropdown shows exactly what's available
+
 ### Can I request new features?
 
-Definitely! The development team actively listens to user feedback. Top requested features include:
+Definitely! The development team actively listens to user feedback. With the revolutionary Port Forward Manager complete, top requested features now include:
 
 - **Resource editing capabilities** (update existing Gateways and HTTPRoutes)
-- **JWT Authentication** (token-based authentication policies)
-- **Rate limiting interface** (traffic throttling and quotas)
 - **Multi-protocol support** (TCP, UDP, gRPC routing)
 - **Enhanced workflow automation** and advanced template features
+- **Additional service types** beyond LoadBalancer in the service selector
 
-Note: Comprehensive security policy management (Basic Auth, CORS, IP Filtering, mTLS), advanced YAML editor, Resource Creation Wizard, and enhanced Template Gallery have been completed in v0.9.0!
+Note: Major user pain points around hardcoded service names and manual port forwarding have been completely solved in v0.12.2!
 
 ### Is this actively maintained?
 
-Yes! The extension receives regular updates with the latest v0.12.2 release featuring the revolutionary Port Forward Manager for seamless testing. Major releases include:
+Yes! The extension receives regular updates with the latest v0.12.2 release featuring the revolutionary Port Forward Manager with dynamic service discovery. Major releases include:
 
-- **v0.12.2**: Port Forward Manager & Testing Experience - One-click gateway access, eliminating networking complexity
+- **v0.12.2**: Port Forward Manager & Testing Experience - Dynamic service discovery, intelligent service selector, no hardcoded values
 - **v0.12.0**: Performance Optimization & Polish - 40-50% faster load times, 20-30% smaller bundle size, enterprise-grade performance monitoring
 - **v0.11.0**: Documentation & Help System, Resilience Policies with contextual help and interactive tutorials
 - **v0.10.0**: JWT Authentication & Policy Management with comprehensive token testing
 - **v0.9.1**: Rate Limiting & Advanced Traffic Control with burst testing and analytics
 - **v0.9.0**: Security Policies & Enhanced User Experience with comprehensive policy management
 
-The development team is responsive to issues and feature requests, and v0.12.0 represents the completion of the comprehensive implementation plan with enterprise-grade performance characteristics.
+The development team is responsive to issues and feature requests, and v0.12.2 represents the culmination of user feedback with intelligent service management that eliminates all hardcoded values and networking complexity.
 
 ---
 

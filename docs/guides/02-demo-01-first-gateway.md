@@ -116,12 +116,20 @@ Now let's test the gateway you just created.
    * In the **HTTP Testing** sub-tab
    * **Important**: `echo.local` is for routing configuration only. For actual testing, use one of these options:
    
-   **Option A - Port Forward Manager (Recommended - New in v0.12.2)**:
+   **Option A - Port Forward Manager (Revolutionary - New in v0.12.2)**:
    * In the **Port Forward Manager** section (top of HTTP Testing)
-   * Click **"Start Gateway Port Forward"** for instant setup
+   * **Quick Actions**: Click **"Start Gateway Port Forward"** for instant auto-discovery setup
+     - Automatically discovers LoadBalancer services in envoy-gateway-system namespace
+     - No hardcoded service names - everything found dynamically!
+     - Intelligent port conflict resolution
+   * **Advanced Setup**: Expand the form for full control
+     - **Service Name**: Use the professional SERVICE SELECTOR DROPDOWN
+     - Shows all available services with their types and ports
+     - **Namespace**: Switch namespaces (automatically reloads available services)
+     - **Service Port**: Auto-populated from selected service information
    * The URL will automatically populate in the HTTP Client below
    * **Headers**: Add `Host: echo.local` using the enhanced Headers interface
-   * Click **"Send Request"** - perfect for testing gateway routing!
+   * Click **"Send Request"** - perfect for testing gateway routing with zero hardcoded values!
    
    **Option B - Gateway External IP (if accessible)**:
    * Go to **Infrastructure** tab → **Gateways** section

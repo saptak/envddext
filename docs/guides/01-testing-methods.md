@@ -11,18 +11,27 @@
 
 ### 🎯 Four Methods for Testing Your Gateway
 
-#### Method 1: Port Forwarding via UI (New - Recommended for Gateway Routing)
+#### Method 1: Port Forward Manager (Revolutionary - Recommended for Gateway Routing)
 ```bash
-# Use the built-in Port Forward Manager in the HTTP Testing tab
+# NEW v0.12.2: Dynamic Service Discovery with Intelligent Service Selector
 # 1. Go to Traffic & Testing tab → HTTP Testing sub-tab
-# 2. Use Port Forward Manager section
-# 3. Quick Actions: "Start Gateway Port Forward" button
-# 4. Or manual setup: 
-#    - Service Name: envoy-gateway-lb
-#    - Namespace: envoy-gateway-system  
-#    - Service Port: 80
-#    - Local Port: 8080 (auto-assigned)
-# 5. URL automatically populates in HTTP Client below
+# 2. Use Port Forward Manager section with enhanced features:
+
+# Quick Actions (One-Click Setup):
+# 3a. Click "Start Gateway Port Forward" for automatic gateway discovery
+#     - Automatically finds LoadBalancer services in envoy-gateway-system
+#     - No hardcoded service names - everything discovered dynamically!
+#     - Intelligent port conflict resolution
+
+# Advanced Form (Full Control):
+# 3b. Expand the form for complete service management:
+#     - Service Name: Use the SERVICE SELECTOR DROPDOWN (no manual typing!)
+#     - Shows all available services with their types and ports
+#     - Namespace: Switch namespaces (auto-reloads available services)
+#     - Service Port: Auto-populated from selected service
+#     - Local Port: Auto-assigned to avoid conflicts
+# 4. URL automatically populates in HTTP Client below
+# 5. Active port forwards displayed in professional table with stop controls
 ```
 
 **✅ Best for**: Proper gateway routing tests including path-based, header-based, and method-based routing rules.
@@ -95,24 +104,27 @@ Headers: Host: echo.local
 - "Add Header" functionality
 - Integration with JWT and TLS testing
 
-**Port Forward Manager (v0.12.2)**: New built-in port forwarding capabilities provide:
-- **One-click Gateway Setup**: "Start Gateway Port Forward" button for instant testing
-- **Auto Port Discovery**: Automatically finds available local ports
+**Port Forward Manager (v0.12.2 Revolutionary Update)**: Dynamic service discovery capabilities provide:
+- **Intelligent Service Discovery**: Automatically discovers all LoadBalancer services across namespaces
+- **Professional Service Selector**: Dropdown interface showing service names, types, and available ports
+- **Dynamic Service Management**: No hardcoded service names - everything discovered in real-time
+- **Namespace Intelligence**: Switch between namespaces with automatic service list updates
+- **One-click Gateway Setup**: "Start Gateway Port Forward" button with auto-discovery
+- **Smart Port Management**: Intelligent port conflict resolution and localhost URL generation
 - **Seamless Integration**: URLs automatically populate in HTTP Client
-- **Multi-Service Support**: Forward to any service, pod, or deployment
-- **Real-time Status**: Live monitoring of active port forwards
-- **Demo Templates**: Pre-configured settings for common demo services
+- **Real-time Monitoring**: Live status of all active port forwards with professional management interface
 
 ### 🧭 Testing Strategy by Use Case
 
 | Testing Scenario | Recommended Method | Notes |
 |------------------|-------------------|--------|
 | **Basic Service Connectivity** | kubectl proxy | Quick verification that services are running |
-| **Gateway Routing Rules** | **Port Forward Manager (UI)** | **Easy one-click setup, proper gateway routing** |
-| **Load Balancing** | Port Forward Manager (UI) | See traffic distribution across multiple pods |
-| **TLS/HTTPS** | Port Forward Manager (UI) | Test certificate management and encryption |
-| **Security Policies** | Port Forward Manager (UI) | Validate JWT, rate limiting, CORS policies |
-| **Demo Workflows** | Port Forward Manager (UI) | **Seamless integration with HTTP testing** |
+| **Gateway Routing Rules** | **Port Forward Manager (Dynamic)** | **Intelligent service discovery, no hardcoded values** |
+| **Load Balancing** | Port Forward Manager (Dynamic) | Professional service selector with automatic discovery |
+| **TLS/HTTPS** | Port Forward Manager (Dynamic) | Smart namespace switching and service management |
+| **Security Policies** | Port Forward Manager (Dynamic) | Professional interface with real-time service updates |
+| **Demo Workflows** | Port Forward Manager (Dynamic) | **Revolutionary UX with intelligent service management** |
+| **Multi-Namespace Testing** | Port Forward Manager (Dynamic) | **Seamless namespace switching with auto-reload** |
 | **External Access** | Gateway External IP | Only if accessible from your environment |
 
 ### 🔧 Troubleshooting Common Issues

@@ -47,7 +47,17 @@
 
 * Docker Desktop with Kubernetes enabled
 * Minimum 4GB RAM allocated to Docker Desktop
-* Envoy Gateway Docker Desktop Extension v0.12.1+ (Production Ready)
+* Envoy Gateway Docker Desktop Extension v0.12.2+ (Production Ready)
+
+### New in v0.12.2 - Revolutionary Port Forward Manager
+
+🚀 **Dynamic Service Discovery**: The new Port Forward Manager completely eliminates hardcoded service names and provides:
+
+- **Intelligent Service Selector**: Professional dropdown showing all available LoadBalancer services with their types and ports
+- **Cross-Namespace Discovery**: Automatically discover services across any namespace with instant switching
+- **Zero Configuration**: No more typing service names or guessing ports - everything discovered dynamically
+- **One-Click Gateway Access**: Instant setup with "Start Gateway Port Forward" button
+- **Smart Port Management**: Automatic port conflict resolution and localhost URL generation
 
 ### Setup Verification
 

@@ -19,7 +19,11 @@ Performance testing with gateways helps you:
    * Switch to **Configuration** tab
 
 2. **Basic Configuration**:
-   * **Target URL**: Use Port Forward Manager to get gateway URL
+   * **Target URL**: Use the revolutionary Port Forward Manager (v0.12.2)
+     - **Quick Setup**: Click "Start Gateway Port Forward" for automatic gateway discovery
+     - **Service Selector**: Use the dropdown to choose your gateway service with dynamic discovery
+     - **No Hardcoded Values**: Everything discovered from your actual cluster state
+     - **Auto-Port Assignment**: Intelligent port conflict resolution
    * **HTTP Method**: `GET`
    * **Requests Per Second**: Start with `50`
    * **Duration**: `60` seconds
