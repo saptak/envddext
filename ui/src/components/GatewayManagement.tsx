@@ -126,6 +126,7 @@ export const GatewayManagement: React.FC<GatewayManagementProps> = ({
           </Button>
           <Button
             variant="contained"
+            color="primary"
             startIcon={<AddIcon />}
             onClick={() => setShowCreateForm(true)}
           >

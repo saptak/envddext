@@ -329,21 +329,10 @@ export function CertificateManager({ onCertificateCreated, selectedNamespace = "
         <Typography variant="h6">Certificate Management</Typography>
         <Button
           variant="contained"
+          color="primary"
           startIcon={<AddIcon />}
           onClick={() => setCreateDialogOpen(true)}
           disabled={crdCheckStatus !== "checked_present" || createDialogOpen || loading}
-          sx={(theme) =>
-            theme.palette.mode === "light"
-              ? {
-                  bgcolor: theme.palette.primary.main,
-                  color: theme.palette.primary.contrastText,
-                  border: `1px solid ${theme.palette.primary.dark}`,
-                  "&:hover": {
-                    bgcolor: theme.palette.primary.dark,
-                  },
-                }
-              : {}
-          }
         >
           Generate Certificate
         </Button>
@@ -379,6 +368,7 @@ export function CertificateManager({ onCertificateCreated, selectedNamespace = "
           )}
           <Button
             variant="contained"
+            color="primary"
             startIcon={<CloudDownloadIcon />}
             onClick={handleInstallCertManager}
           >

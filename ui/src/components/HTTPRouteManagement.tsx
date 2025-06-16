@@ -134,6 +134,7 @@ export const HTTPRouteManagement: React.FC<HTTPRouteManagementProps> = ({
           </Button>
           <Button
             variant="contained"
+            color="primary"
             startIcon={<AddIcon />}
             onClick={() => setShowCreateForm(true)}
           >
