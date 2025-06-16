@@ -143,7 +143,7 @@ export const GatewayStatusMonitor: React.FC<GatewayStatusMonitorProps> = ({
         <Alert severity="error">
           <Typography variant="subtitle2">Error loading Gateway status</Typography>
           <Typography variant="body2">{error}</Typography>
-          <Button size="small" onClick={handleRefresh} sx={{ mt: 1 }}>
+          <Button variant="outlined" size="small" onClick={handleRefresh} sx={{ mt: 1 }}>
             Retry
           </Button>
         </Alert>

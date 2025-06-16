@@ -377,7 +377,7 @@ export const TrafficGenerator: React.FC = () => {
                         onChange={(e) => setHeaderValue(e.target.value)}
                         disabled={isRunning}
                       />
-                      <Button onClick={addHeader} disabled={!headerKey || !headerValue || isRunning}>
+                      <Button variant="outlined" onClick={addHeader} disabled={!headerKey || !headerValue || isRunning}>
                         Add
                       </Button>
                     </Box>
@@ -642,7 +642,7 @@ export const TrafficGenerator: React.FC = () => {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShowMetricsDialog(false)}>Close</Button>
+          <Button variant="outlined" onClick={() => setShowMetricsDialog(false)}>Close</Button>
         </DialogActions>
       </Dialog>
     </Box>

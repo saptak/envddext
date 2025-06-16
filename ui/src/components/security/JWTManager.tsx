@@ -682,7 +682,7 @@ export const JWTManager: React.FC<JWTManagerProps> = ({ onPolicyCreated }) => {
                   </Grid>
                 </Grid>
                 <Box sx={{ mt: 2, display: "flex", gap: 1 }}>
-                  <Button onClick={() => setActiveStep(0)}>Back</Button>
+                  <Button variant="outlined" onClick={() => setActiveStep(0)}>Back</Button>
                   <Button variant="contained" color="primary" onClick={() => setActiveStep(2)}>
                     Next: Configure Claims
                   </Button>
@@ -781,7 +781,7 @@ export const JWTManager: React.FC<JWTManagerProps> = ({ onPolicyCreated }) => {
                 )}
 
                 <Box sx={{ mt: 2, display: "flex", gap: 1 }}>
-                  <Button onClick={() => setActiveStep(1)}>Back</Button>
+                  <Button variant="outlined" onClick={() => setActiveStep(1)}>Back</Button>
                   <Button variant="contained" color="primary" onClick={() => setActiveStep(3)}>
                     Next: Review
                   </Button>
@@ -840,7 +840,7 @@ export const JWTManager: React.FC<JWTManagerProps> = ({ onPolicyCreated }) => {
                 </Paper>
 
                 <Box sx={{ mt: 2, display: "flex", gap: 1 }}>
-                  <Button onClick={() => setActiveStep(2)}>Back</Button>
+                  <Button variant="outlined" onClick={() => setActiveStep(2)}>Back</Button>
                   <Button
                     variant="contained" color="primary"
                     onClick={() => {
@@ -857,7 +857,7 @@ export const JWTManager: React.FC<JWTManagerProps> = ({ onPolicyCreated }) => {
           </Stepper>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
+          <Button variant="outlined" onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
         </DialogActions>
       </Dialog>
 
@@ -941,7 +941,7 @@ export const JWTManager: React.FC<JWTManagerProps> = ({ onPolicyCreated }) => {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setViewDialogOpen(false)}>Close</Button>
+          <Button variant="outlined" onClick={() => setViewDialogOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
     </Box>

@@ -461,7 +461,7 @@ export const RateLimitTester: React.FC<RateLimitTesterProps> = ({
                   </Grid>
                 </Grid>
               ))}
-              <Button size="small" onClick={addHeader} startIcon={<InfoIcon />}>
+              <Button variant="outlined" size="small" onClick={addHeader} startIcon={<InfoIcon />}>
                 Add Header
               </Button>
             </AccordionDetails>

@@ -514,7 +514,7 @@ export function CertificateManager({ onCertificateCreated, selectedNamespace = "
             <Box sx={{ mb: 2 }}>
               <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
                 <Typography variant="subtitle2">DNS Names</Typography>
-                <Button size="small" onClick={addDnsName} startIcon={<AddIcon />}>
+                <Button variant="outlined" size="small" onClick={addDnsName} startIcon={<AddIcon />}>
                   Add DNS Name
                 </Button>
               </Box>

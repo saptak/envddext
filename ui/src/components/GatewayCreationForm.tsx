@@ -844,7 +844,7 @@ export const GatewayCreationForm: React.FC<GatewayCreationFormProps> = ({
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setCertificateDialogOpen(false)}>
+          <Button variant="outlined" onClick={() => setCertificateDialogOpen(false)}>
             Close
           </Button>
         </DialogActions>

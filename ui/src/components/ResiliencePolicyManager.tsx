@@ -490,7 +490,7 @@ export const ResiliencePolicyManager: React.FC<ResiliencePolicyManagerProps> = (
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setViewingPolicy(null)}>Close</Button>
+          <Button variant="outlined" onClick={() => setViewingPolicy(null)}>Close</Button>
         </DialogActions>
       </Dialog>
 

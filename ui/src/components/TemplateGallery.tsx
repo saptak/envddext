@@ -869,6 +869,7 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
 
               <CardActions sx={{ justifyContent: 'space-between' }}>
                 <Button 
+                  variant="outlined"
                   size="small" 
                   startIcon={<ViewIcon />}
                   onClick={() => handleTemplateClick(template)}
@@ -878,6 +879,7 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                 <Box sx={{ display: 'flex', gap: 1 }}>
                   {deployedTemplates.has(template.id) && (
                     <Button 
+                      variant="outlined"
                       size="small" 
                       color="error"
                       startIcon={undeployingTemplate === template.id ? <CircularProgress size={16} /> : <UndeployIcon />}
@@ -1091,6 +1093,7 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
               <Box sx={{ display: 'flex', gap: 1 }}>
                 {selectedTemplate && deployedTemplates.has(selectedTemplate.id) && (
                   <Button
+                    variant="outlined"
                     color="error"
                     startIcon={undeployingTemplate === selectedTemplate?.id ? <CircularProgress size={16} /> : <UndeployIcon />}
                     onClick={(e) => {

@@ -281,7 +281,7 @@ export const HTTPRequestHistory: React.FC<HTTPRequestHistoryProps> = ({
           )}
         </DialogContent>
         <DialogActions sx={{ backgroundColor: 'background.default' }}>
-          <Button onClick={() => setDetailsOpen(false)}>
+          <Button variant="outlined" onClick={() => setDetailsOpen(false)}>
             Close
           </Button>
           {selectedResult && (

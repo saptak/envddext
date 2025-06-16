@@ -681,7 +681,7 @@ spec:
           </Accordion>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogOpen(false)} disabled={isCreating}>
+          <Button variant="outlined" onClick={() => setDialogOpen(false)} disabled={isCreating}>
             Cancel
           </Button>
           <Button onClick={handleSave} variant="contained" color="primary" disabled={isCreating}>

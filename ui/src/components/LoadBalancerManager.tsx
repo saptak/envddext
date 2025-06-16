@@ -209,6 +209,7 @@ export const LoadBalancerManager: React.FC<LoadBalancerManagerProps> = ({
               />
             </Box>
             <Button
+              variant="outlined"
               startIcon={<SettingsIcon />}
               onClick={checkStatus}
               disabled={loading}

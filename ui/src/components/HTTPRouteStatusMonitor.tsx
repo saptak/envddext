@@ -355,7 +355,7 @@ export const HTTPRouteStatusMonitor: React.FC<HTTPRouteStatusMonitorProps> = ({
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)} disabled={deleting}>
+          <Button variant="outlined" onClick={() => setDeleteDialogOpen(false)} disabled={deleting}>
             Cancel
           </Button>
           <Button

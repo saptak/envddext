@@ -514,7 +514,7 @@ export const TimeoutConfiguration: React.FC<TimeoutConfigurationProps> = ({
 
       {/* Actions */}
       <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', mt: 3 }}>
-        <Button onClick={onCancel} disabled={saving}>
+        <Button variant="outlined" onClick={onCancel} disabled={saving}>
           Cancel
         </Button>
         <Button 

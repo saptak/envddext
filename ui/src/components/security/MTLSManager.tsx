@@ -647,6 +647,7 @@ spec:
                       }
                     </Button>
                     <Button
+                      variant="outlined"
                       disabled={index === 0 || isCreating}
                       onClick={handleBack}
                     >
@@ -659,7 +660,7 @@ spec:
           </Stepper>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogOpen(false)} disabled={isCreating}>
+          <Button variant="outlined" onClick={() => setDialogOpen(false)} disabled={isCreating}>
             Cancel
           </Button>
         </DialogActions>
