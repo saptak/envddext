@@ -322,10 +322,7 @@ func (s *Server) handleStartProxy(w http.ResponseWriter, r *http.Request) {
 	// Test kubectl connectivity first
 	testCmd := exec.Command("kubectl", "cluster-info")
 	// Set the same environment as proxy command
-	kubeconfigPath := os.Getenv("KUBECONFIG")
-	if kubeconfigPath == "" {
-		kubeconfigPath = "/host/.kube/config"
-	}
+	kubeconfigPath := s.getKubeconfigPath()
 	testCmd.Env = append(os.Environ(), "KUBECONFIG="+kubeconfigPath)
 	
 	if output, err := testCmd.CombinedOutput(); err != nil {
@@ -542,10 +539,7 @@ func (s *Server) handleKubectl(w http.ResponseWriter, r *http.Request) {
 	cmd := exec.Command("kubectl", req.Args...)
 
 	// Set environment to use the updated kubeconfig - same pattern as port forward handler
-	kubeconfigPath := os.Getenv("KUBECONFIG")
-	if kubeconfigPath == "" {
-		kubeconfigPath = "/host/.kube/config"
-	}
+	kubeconfigPath := s.getKubeconfigPath()
 	cmd.Env = append(os.Environ(), "KUBECONFIG="+kubeconfigPath)
 
 	// Use separate stderr and stdout for better error reporting
@@ -769,16 +763,52 @@ func (s *Server) convertHTTPRules(rules []HTTPRule) []map[string]interface{} {
 	return result
 }
 
+// getKubeconfigPath dynamically finds the kubeconfig file location
+func (s *Server) getKubeconfigPath() string {
+	kubeconfigPath := os.Getenv("KUBECONFIG")
+	if kubeconfigPath != "" {
+		return kubeconfigPath
+	}
+	
+	// Try common Docker Desktop mount paths
+	possiblePaths := []string{
+		"/host/.kube/config",
+		"/host_users/" + os.Getenv("USER") + "/.kube/config",
+		"/root/.kube/config",
+		"/.kube/config",
+	}
+	
+	// If USER env var is not set, try to detect from common mount patterns
+	if os.Getenv("USER") == "" {
+		// Try to find user-specific paths by checking /host_users directory
+		if entries, err := ioutil.ReadDir("/host_users"); err == nil {
+			for _, entry := range entries {
+				if entry.IsDir() {
+					possiblePaths = append(possiblePaths, "/host_users/"+entry.Name()+"/.kube/config")
+				}
+			}
+		}
+	}
+	
+	// Find the first existing kubeconfig file
+	for _, path := range possiblePaths {
+		if _, err := os.Stat(path); err == nil {
+			log.Printf("Found kubeconfig at: %s", path)
+			return path
+		}
+	}
+	
+	// Fallback to default if none found
+	log.Printf("No kubeconfig found, using default path")
+	return "/host/.kube/config"
+}
+
 func (s *Server) ensureKubeconfig() error {
 	// For Docker Desktop extensions running in containers, we need to update
 	// the kubeconfig to use the accessible server endpoint
 
-	// Use the same kubeconfig logic as other kubectl handlers
-	kubeconfigPath := os.Getenv("KUBECONFIG")
-	if kubeconfigPath == "" {
-		kubeconfigPath = "/host/.kube/config"
-	}
-	//
+	kubeconfigPath := s.getKubeconfigPath()
+	
 	configBytes, err := ioutil.ReadFile(kubeconfigPath)
 	if err != nil {
 		return fmt.Errorf("failed to read kubeconfig: %v", err)
@@ -943,10 +973,7 @@ func (s *Server) handleStartPortForward(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Start kubectl port-forward
-	kubeconfigPath := os.Getenv("KUBECONFIG")
-	if kubeconfigPath == "" {
-		kubeconfigPath = "/host/.kube/config"
-	}
+	kubeconfigPath := s.getKubeconfigPath()
 
 	var cmd *exec.Cmd
 	switch req.ResourceType {
