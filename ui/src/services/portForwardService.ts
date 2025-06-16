@@ -310,14 +310,15 @@ export class PortForwardService {
   async quickStartGatewayForward(gatewayName?: string): Promise<PortForwardStatus> {
     const localPort = await this.findAvailablePort(8080);
     
-    // Find the actual gateway LoadBalancer service dynamically
+    // Find the actual gateway LoadBalancer service dynamically across all namespaces
     let serviceName: string | null = null;
+    let serviceNamespace: string = 'envoy-gateway-system';
     let debugInfo = '';
     
     try {
-      // Discover LoadBalancer services in envoy-gateway-system namespace
+      // First, try to find LoadBalancer services across all namespaces (not just envoy-gateway-system)
       const response = await ddClient.extension.vm?.service?.post('/kubectl', {
-        args: ['get', 'services', '-n', 'envoy-gateway-system', '--field-selector=spec.type=LoadBalancer', '-o', 'json']
+        args: ['get', 'services', '-A', '--field-selector=spec.type=LoadBalancer', '-o', 'json']
       }) as any;
       
       const actualResponse = response?.data || response;
@@ -331,13 +332,33 @@ export class PortForwardService {
           const services = JSON.parse(outputData);
           debugInfo += `Parsed services: found ${services.items?.length || 0} items\n`;
           if (services.items && services.items.length > 0) {
-            // Use the first LoadBalancer service found
-            const gatewayService = services.items[0];
-            serviceName = gatewayService.metadata.name;
-            debugInfo += `Found LoadBalancer service: ${serviceName}\n`;
-            console.log('Auto-discovered gateway service:', serviceName);
+            // Look for Gateway-related LoadBalancer services
+            const gatewayServices = services.items.filter((service: any) => {
+              const name = service.metadata.name.toLowerCase();
+              const namespace = service.metadata.namespace;
+              
+              // Filter for gateway-related services (often contain "gateway", "envoy", or match provided gateway name)
+              return name.includes('gateway') || 
+                     name.includes('envoy') || 
+                     (gatewayName && name.includes(gatewayName.toLowerCase())) ||
+                     namespace === 'envoy-gateway-system';
+            });
+            
+            if (gatewayServices.length > 0) {
+              // Prefer services in envoy-gateway-system namespace, otherwise use first found
+              const preferredService = gatewayServices.find((s: any) => s.metadata.namespace === 'envoy-gateway-system') || gatewayServices[0];
+              serviceName = preferredService.metadata.name;
+              serviceNamespace = preferredService.metadata.namespace;
+              debugInfo += `Found Gateway LoadBalancer service: ${serviceNamespace}/${serviceName}\n`;
+              console.log('Auto-discovered gateway service:', serviceName, 'in namespace:', serviceNamespace);
+            } else {
+              debugInfo += `Found ${services.items.length} LoadBalancer services but none appear gateway-related:\n`;
+              services.items.forEach((s: any) => {
+                debugInfo += `  - ${s.metadata.namespace}/${s.metadata.name}\n`;
+              });
+            }
           } else {
-            debugInfo += `No LoadBalancer services found in envoy-gateway-system\n`;
+            debugInfo += `No LoadBalancer services found in any namespace\n`;
           }
         } catch (parseError) {
           debugInfo += `JSON parse error: ${parseError}\n`;
@@ -353,14 +374,14 @@ export class PortForwardService {
       console.warn('Service discovery failed:', error);
     }
     
-    // If no service found, throw an error instead of falling back to hardcoded values
+    // If no service found, throw an error with better guidance
     if (!serviceName) {
-      throw new Error(`No LoadBalancer services found in envoy-gateway-system namespace.\n\nPlease ensure you have:\n1. Deployed a Gateway resource\n2. The Gateway has a LoadBalancer service\n3. The service is in envoy-gateway-system namespace\n\nDebug info:\n${debugInfo}`);
+      throw new Error(`No Gateway LoadBalancer services found.\n\nPlease ensure you have:\n1. Deployed a Gateway resource\n2. The Gateway has a LoadBalancer service (usually created automatically)\n3. MetalLB or cloud LoadBalancer is configured\n\nTo check LoadBalancer services: kubectl get services -A --field-selector=spec.type=LoadBalancer\n\nDebug info:\n${debugInfo}`);
     }
     
     const request: PortForwardRequest = {
       serviceName,
-      namespace: 'envoy-gateway-system',
+      namespace: serviceNamespace,
       servicePort: 80,
       localPort,
       resourceType: 'service'
