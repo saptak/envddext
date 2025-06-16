@@ -387,7 +387,7 @@ data:
               
               {onApply && (
                 <Button
-                  variant="contained" color="primary"
+                  variant="contained"
                   color="secondary"
                   startIcon={<ApplyIcon />}
                   onClick={handleApply}

@@ -304,7 +304,7 @@ spec:
           </Typography>
         </Box>
         <Button
-          variant="contained" color="primary"
+          variant="contained" 
           color="primary"
           startIcon={<AddIcon />}
           onClick={handleCreateNew}
@@ -386,7 +386,7 @@ kubectl apply -f https://raw.githubusercontent.com/envoyproxy/ratelimit/main/exa
                 <CardActions>
                   <Button 
                     size="small" 
-                    variant="contained" color="primary" 
+                    variant="contained"
                     color="primary"
                     startIcon={<AddIcon />}
                     onClick={() => {
@@ -637,7 +637,7 @@ spec:
                 per IP, user, or globally to prevent abuse and overload.
               </Typography>
               <Button
-                variant="contained" color="primary"
+                variant="contained" 
                 color="primary"
                 startIcon={<AddIcon />}
                 onClick={handleCreateNew}
@@ -812,7 +812,7 @@ spec:
             Cancel
           </Button>
           <Button 
-            variant="contained" color="primary" 
+            variant="contained"
             color="primary"
             onClick={handleSave} 
             disabled={isCreating}

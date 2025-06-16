@@ -327,7 +327,7 @@ spec:
                 Create your first Basic Authentication policy to protect your routes.
               </Typography>
               <Button
-                variant="contained" color="primary"
+                variant="contained" 
                 color="primary"
                 startIcon={<AddIcon />}
                 onClick={handleCreateNew}
