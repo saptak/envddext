@@ -51,6 +51,7 @@ export const PortForwardManager: React.FC<PortForwardManagerProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [availableServices, setAvailableServices] = useState<{name: string, type: string, ports: number[]}[]>([]);
 
   // Form state
   const [formData, setFormData] = useState<PortForwardRequest>({
@@ -63,7 +64,15 @@ export const PortForwardManager: React.FC<PortForwardManagerProps> = ({
 
   useEffect(() => {
     loadActiveForwards();
+    loadAvailableServices();
   }, []);
+
+  useEffect(() => {
+    // Reload services when namespace changes
+    if (formData.namespace) {
+      loadAvailableServices();
+    }
+  }, [formData.namespace]);
 
   const loadActiveForwards = async () => {
     try {
@@ -71,6 +80,15 @@ export const PortForwardManager: React.FC<PortForwardManagerProps> = ({
       setActiveForwards(forwards);
     } catch (err) {
       console.error('Failed to load port forwards:', err);
+    }
+  };
+
+  const loadAvailableServices = async () => {
+    try {
+      const services = await portForwardService.listServices(formData.namespace);
+      setAvailableServices(services);
+    } catch (err) {
+      console.error('Failed to load services:', err);
     }
   };
 
@@ -133,6 +151,7 @@ export const PortForwardManager: React.FC<PortForwardManagerProps> = ({
     setSuccess(null);
 
     try {
+      console.log('Starting gateway port forward...');
       const result = await portForwardService.quickStartGatewayForward();
       setSuccess(`Gateway port forward started: localhost:${result.localPort}`);
       await loadActiveForwards();
@@ -141,7 +160,20 @@ export const PortForwardManager: React.FC<PortForwardManagerProps> = ({
         onPortForwardReady(result.url);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to start gateway port forward');
+      console.error('Gateway port forward error:', err);
+      
+      // Show the actual error message without truncating
+      let errorMessage = 'Failed to start gateway port forward';
+      
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      } else if (err && typeof err === 'object') {
+        errorMessage = JSON.stringify(err, null, 2);
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -184,15 +216,18 @@ export const PortForwardManager: React.FC<PortForwardManagerProps> = ({
           <Grid item>
             <Button
               variant="outlined"
-              onClick={() => setFormData({
-                serviceName: 'echo-service',
-                namespace: 'demo',
-                servicePort: 80,
-                localPort: 8080,
-                resourceType: 'service'
-              })}
+              onClick={() => {
+                setFormData({
+                  serviceName: '',
+                  namespace: 'demo',
+                  servicePort: 80,
+                  localPort: 8080,
+                  resourceType: 'service'
+                });
+                setExpanded(true);
+              }}
             >
-              Demo Service Template
+              Demo Namespace
             </Button>
           </Grid>
         </Grid>
@@ -314,20 +349,48 @@ export const PortForwardManager: React.FC<PortForwardManagerProps> = ({
 
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6} md={3}>
-                <TextField
-                  fullWidth
-                  label="Service Name"
-                  value={formData.serviceName}
-                  onChange={(e) => setFormData({ ...formData, serviceName: e.target.value })}
-                  size="small"
-                />
+                <FormControl fullWidth size="small">
+                  <InputLabel>Service Name</InputLabel>
+                  <Select
+                    value={formData.serviceName}
+                    label="Service Name"
+                    onChange={(e) => {
+                      const selectedService = availableServices.find(s => s.name === e.target.value);
+                      setFormData({ 
+                        ...formData, 
+                        serviceName: e.target.value,
+                        servicePort: selectedService?.ports[0] || 80
+                      });
+                    }}
+                  >
+                    {availableServices.map((service) => (
+                      <MenuItem key={service.name} value={service.name}>
+                        <Box>
+                          <Typography variant="body2">{service.name}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {service.type} - Ports: {service.ports.join(', ')}
+                          </Typography>
+                        </Box>
+                      </MenuItem>
+                    ))}
+                    {availableServices.length === 0 && (
+                      <MenuItem disabled>
+                        <Typography variant="caption">Loading services...</Typography>
+                      </MenuItem>
+                    )}
+                  </Select>
+                </FormControl>
               </Grid>
               <Grid item xs={12} sm={6} md={2}>
                 <TextField
                   fullWidth
                   label="Namespace"
                   value={formData.namespace}
-                  onChange={(e) => setFormData({ ...formData, namespace: e.target.value })}
+                  onChange={(e) => setFormData({ 
+                    ...formData, 
+                    namespace: e.target.value,
+                    serviceName: '' // Reset service when namespace changes
+                  })}
                   size="small"
                 />
               </Grid>
@@ -383,7 +446,9 @@ export const PortForwardManager: React.FC<PortForwardManagerProps> = ({
 
         {error && (
           <Alert severity="error" sx={{ mt: 2 }} onClose={() => setError(null)}>
-            {error}
+            <Box component="pre" sx={{ whiteSpace: 'pre-wrap', fontSize: '0.875rem', fontFamily: 'monospace' }}>
+              {error}
+            </Box>
           </Alert>
         )}
 

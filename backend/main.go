@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -529,32 +530,49 @@ func (s *Server) handleKubectl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Ensure kubeconfig is properly configured for container access
+	if err := s.ensureKubeconfig(); err != nil {
+		log.Printf("Kubeconfig setup failed: %v", err)
+		s.sendError(w, fmt.Sprintf("Kubeconfig setup failed: %v", err), http.StatusInternalServerError)
+		return
+	}
+
 	// For Docker Desktop extension, use kubectl without server override
 	// Let kubectl use the mounted kubeconfig as-is
 	cmd := exec.Command("kubectl", req.Args...)
 
-	// Set environment to use the mounted kubeconfig
-	// Use KUBECONFIG environment variable if set, otherwise use default Docker Desktop path
+	// Set environment to use the updated kubeconfig - same pattern as port forward handler
 	kubeconfigPath := os.Getenv("KUBECONFIG")
 	if kubeconfigPath == "" {
-		// Default Docker Desktop kubeconfig path in container
 		kubeconfigPath = "/host/.kube/config"
 	}
 	cmd.Env = append(os.Environ(), "KUBECONFIG="+kubeconfigPath)
 
-	output, err := cmd.CombinedOutput()
+	// Use separate stderr and stdout for better error reporting
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	
+	err := cmd.Run()
 
 	// If kubectl fails, try to provide more helpful error context
 	if err != nil {
-		log.Printf("kubectl command failed: %v, output: %s", err, string(output))
+		log.Printf("kubectl command failed: %v", err)
+		log.Printf("kubectl stdout: %s", stdout.String())
+		log.Printf("kubectl stderr: %s", stderr.String())
 	}
 
 	response := APIResponse{
 		Success: err == nil,
-		Data:    string(output),
+		Data:    map[string]string{"output": stdout.String()},
 	}
 	if err != nil {
-		response.Error = err.Error()
+		// Include both error and stderr in the response
+		errorMsg := err.Error()
+		if stderr.Len() > 0 {
+			errorMsg = fmt.Sprintf("%s: %s", errorMsg, stderr.String())
+		}
+		response.Error = errorMsg
 	}
 
 	json.NewEncoder(w).Encode(response)
@@ -755,10 +773,10 @@ func (s *Server) ensureKubeconfig() error {
 	// For Docker Desktop extensions running in containers, we need to update
 	// the kubeconfig to use the accessible server endpoint
 
-	// Read the current kubeconfig
+	// Use the same kubeconfig logic as other kubectl handlers
 	kubeconfigPath := os.Getenv("KUBECONFIG")
 	if kubeconfigPath == "" {
-		return fmt.Errorf("KUBECONFIG environment variable is not set. Please ensure it's configured for the backend service.")
+		kubeconfigPath = "/host/.kube/config"
 	}
 	//
 	configBytes, err := ioutil.ReadFile(kubeconfigPath)
@@ -1104,16 +1122,23 @@ func (s *Server) handlePortForwardStatus(w http.ResponseWriter, r *http.Request)
 
 func (s *Server) handleListPortForwards(w http.ResponseWriter, r *http.Request) {
 	s.mutex.RLock()
+	log.Printf("Listing port forwards: found %d stored forwards", len(s.portForwards))
 	forwards := make([]*PortForwardStatus, 0, len(s.portForwards))
-	for _, pf := range s.portForwards {
+	for key, pf := range s.portForwards {
+		log.Printf("Checking port forward %s: isRunning=%v, localPort=%d", key, pf.IsRunning, pf.LocalPort)
 		// Verify each port forward is still running
-		if pf.IsRunning && s.isPortAvailable(pf.LocalPort) {
+		// If port is available (not in use), then port forward is not running
+		portAvailable := s.isPortAvailable(pf.LocalPort)
+		log.Printf("Port %d available: %v", pf.LocalPort, portAvailable)
+		if pf.IsRunning && portAvailable {
+			log.Printf("Marking port forward %s as not running (port became available)", key)
 			pf.IsRunning = false
 		}
 		forwards = append(forwards, pf)
 	}
 	s.mutex.RUnlock()
 
+	log.Printf("Returning %d port forwards in response", len(forwards))
 	response := APIResponse{Success: true, Data: forwards}
 	json.NewEncoder(w).Encode(response)
 }
