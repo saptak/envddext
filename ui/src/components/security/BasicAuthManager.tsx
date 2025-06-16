@@ -232,7 +232,7 @@ spec:
           </Typography>
         </Box>
         <Button
-          variant="contained" color="primary"
+          variant="contained" 
           color="primary"
           startIcon={<AddIcon />}
           onClick={handleCreateNew}
