@@ -567,7 +567,7 @@ export const ResourceCreationWizard: React.FC<ResourceCreationWizardProps> = ({
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={handleClose} disabled={isCreating}>
+        <Button onClick={handleClose} disabled={isCreating} variant="outlined" color="primary">
           Cancel
         </Button>
       </DialogActions>

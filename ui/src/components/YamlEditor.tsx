@@ -574,8 +574,10 @@ data:
           </Paper>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShowPreview(false)}>Close</Button>
-          <Button onClick={handleCopy} startIcon={<CopyIcon />}>
+          <Button onClick={() => setShowPreview(false)} variant="outlined" color="primary">
+            Close
+          </Button>
+          <Button onClick={handleCopy} startIcon={<CopyIcon />} variant="contained" color="primary">
             Copy
           </Button>
         </DialogActions>

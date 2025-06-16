@@ -748,7 +748,9 @@ export const TutorialManager: React.FC<TutorialManagerProps> = ({
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose}>Close</Button>
+          <Button onClick={onClose} variant="outlined" color="primary">
+            Close
+          </Button>
         </DialogActions>
       </Dialog>
     );

@@ -805,7 +805,7 @@ spec:
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogOpen(false)} disabled={isCreating}>
+          <Button onClick={() => setDialogOpen(false)} disabled={isCreating} variant="outlined" color="primary">
             Cancel
           </Button>
           <Button 

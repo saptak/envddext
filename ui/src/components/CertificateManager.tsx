@@ -554,9 +554,16 @@ export function CertificateManager({ onCertificateCreated, selectedNamespace = "
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={() => setCreateDialogOpen(false)}
+            variant="outlined" 
+            color="primary"
+          >
+            Cancel
+          </Button>
           <Button
             variant="contained"
+            color="primary"
             onClick={handleCreateCertificate}
             disabled={creating || !formData.name.trim()}
           >
@@ -577,9 +584,9 @@ export function CertificateManager({ onCertificateCreated, selectedNamespace = "
             </Typography>
             <Box
               component="pre"
-              sx={{
-                backgroundColor: "rgba(0, 0, 0, 0.04)",
-                border: "1px solid rgba(0, 0, 0, 0.12)",
+              sx={(theme) => ({
+                backgroundColor: theme.palette.mode === 'light' ? 'grey.100' : 'rgba(0, 0, 0, 0.04)',
+                border: `1px solid ${theme.palette.divider}`,
                 borderRadius: 1,
                 p: 2,
                 overflowX: "auto",
@@ -588,14 +595,20 @@ export function CertificateManager({ onCertificateCreated, selectedNamespace = "
                 whiteSpace: "pre-wrap",
                 wordBreak: "break-word",
                 maxHeight: 400,
-              }}
+              })}
             >
               {certificateYaml}
             </Box>
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setViewDialogOpen(false)}>Close</Button>
+          <Button 
+            onClick={() => setViewDialogOpen(false)}
+            variant="outlined" 
+            color="primary"
+          >
+            Close
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

@@ -376,10 +376,10 @@ export const HTTPClient: React.FC<HTTPClientProps> = ({
                 onChange={(e) => handleMethodChange(e.target.value as HTTPMethod)}
                 sx={{
                   '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'rgba(255, 255, 255, 0.23)'
+                    borderColor: 'divider'
                   },
                   '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'rgba(255, 255, 255, 0.5)'
+                    borderColor: 'text.secondary'
                   },
                   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                     borderColor: 'primary.main'

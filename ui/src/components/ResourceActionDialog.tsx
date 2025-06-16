@@ -177,7 +177,12 @@ export const ResourceActionDialog: React.FC<ResourceActionDialogProps> = ({
     if (action === "delete") {
       return (
         <>
-          <Button onClick={handleClose} disabled={loading}>
+          <Button 
+            onClick={handleClose} 
+            disabled={loading}
+            variant="outlined" 
+            color="primary"
+          >
             Cancel
           </Button>
           <Button
@@ -193,7 +198,7 @@ export const ResourceActionDialog: React.FC<ResourceActionDialogProps> = ({
       );
     } else {
       return (
-        <Button onClick={handleClose} variant="contained">
+        <Button onClick={handleClose} variant="contained" color="primary">
           Close
         </Button>
       );

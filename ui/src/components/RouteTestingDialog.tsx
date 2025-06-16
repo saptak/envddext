@@ -287,10 +287,10 @@ export const RouteTestingDialog: React.FC<RouteTestingDialogProps> = ({
       </DialogContent>
 
       <DialogActions sx={{ backgroundColor: 'background.default', p: 2 }}>
-        <Button onClick={onClose} variant="outlined">
+        <Button onClick={onClose} variant="outlined" color="primary">
           Close
         </Button>
-        <Button onClick={fetchRouteStatus} variant="contained" disabled={loading}>
+        <Button onClick={fetchRouteStatus} variant="contained" color="primary" disabled={loading}>
           Refresh Route Info
         </Button>
       </DialogActions>

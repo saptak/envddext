@@ -1085,7 +1085,7 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
               </Box>
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => setDetailsOpen(false)}>
+              <Button onClick={() => setDetailsOpen(false)} variant="outlined" color="primary">
                 Close
               </Button>
               <Box sx={{ display: 'flex', gap: 1 }}>
@@ -1166,7 +1166,7 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCancelUndeploy}>
+          <Button onClick={handleCancelUndeploy} variant="outlined" color="primary">
             Cancel
           </Button>
           <Button

@@ -316,7 +316,7 @@ const HelpDialog: React.FC<HelpDialogProps> = ({ open, onClose, content }) => {
       </DialogContent>
       
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} variant="contained">
+        <Button onClick={onClose} variant="contained" color="primary">
           Got it!
         </Button>
       </DialogActions>
