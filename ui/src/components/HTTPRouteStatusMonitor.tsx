@@ -364,6 +364,17 @@ export const HTTPRouteStatusMonitor: React.FC<HTTPRouteStatusMonitorProps> = ({
             variant="contained"
             disabled={deleting}
             startIcon={deleting ? <CircularProgress size={20} /> : undefined}
+            sx={{
+              backgroundColor: 'error.main',
+              color: 'error.contrastText',
+              '&:hover': {
+                backgroundColor: 'error.dark',
+              },
+              '&:disabled': {
+                backgroundColor: 'action.disabled',
+                color: 'action.disabled',
+              }
+            }}
           >
             {deleting ? 'Deleting...' : 'Delete'}
           </Button>

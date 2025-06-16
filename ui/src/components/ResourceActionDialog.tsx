@@ -191,6 +191,17 @@ export const ResourceActionDialog: React.FC<ResourceActionDialogProps> = ({
             variant="contained"
             disabled={loading}
             startIcon={loading ? <CircularProgress size={16} /> : undefined}
+            sx={{
+              backgroundColor: 'error.main',
+              color: 'error.contrastText',
+              '&:hover': {
+                backgroundColor: 'error.dark',
+              },
+              '&:disabled': {
+                backgroundColor: 'action.disabled',
+                color: 'action.disabled',
+              }
+            }}
           >
             {loading ? "Deleting..." : "Delete"}
           </Button>
@@ -198,7 +209,18 @@ export const ResourceActionDialog: React.FC<ResourceActionDialogProps> = ({
       );
     } else {
       return (
-        <Button onClick={handleClose} variant="contained" color="primary">
+        <Button onClick={handleClose} variant="contained" color="primary"
+          sx={{
+            backgroundColor: 'primary.main',
+            color: 'primary.contrastText',
+            '&:hover': {
+              backgroundColor: 'primary.dark',
+            },
+            '&:disabled': {
+              backgroundColor: 'action.disabled',
+              color: 'action.disabled',
+            }
+          }}>
           Close
         </Button>
       );

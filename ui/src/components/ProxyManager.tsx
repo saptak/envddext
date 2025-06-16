@@ -269,18 +269,17 @@ export const ProxyManager: React.FC<ProxyManagerProps> = ({
                   <PlayArrowIcon />
                 )
               }
-              sx={(theme) =>
-                !proxyStatus.isRunning && theme.palette.mode === "light"
-                  ? {
-                      bgcolor: theme.palette.primary.main,
-                      color: theme.palette.primary.contrastText,
-                      border: `1px solid ${theme.palette.primary.dark}`,
-                      "&:hover": {
-                        bgcolor: theme.palette.primary.dark,
-                      },
-                    }
-                  : {}
-              }
+              sx={{
+                backgroundColor: proxyStatus.isRunning ? 'error.main' : 'primary.main',
+                color: proxyStatus.isRunning ? 'error.contrastText' : 'primary.contrastText',
+                '&:hover': {
+                  backgroundColor: proxyStatus.isRunning ? 'error.dark' : 'primary.dark',
+                },
+                '&:disabled': {
+                  backgroundColor: 'action.disabled',
+                  color: 'action.disabled',
+                }
+              }}
             >
               {isLoading
                 ? "Working..."

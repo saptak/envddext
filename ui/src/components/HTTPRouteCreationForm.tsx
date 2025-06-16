@@ -1084,6 +1084,17 @@ export const HTTPRouteCreationForm: React.FC<HTTPRouteCreationFormProps> = ({
               onClick={handleSubmit}
               disabled={loading}
               startIcon={loading ? <CircularProgress size={20} /> : undefined}
+              sx={{
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                },
+                '&:disabled': {
+                  backgroundColor: 'action.disabled',
+                  color: 'action.disabled',
+                }
+              }}
             >
               {loading ? 'Creating...' : 'Create HTTPRoute'}
             </Button>

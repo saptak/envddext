@@ -283,6 +283,17 @@ export const RateLimitTester: React.FC<RateLimitTesterProps> = ({
             onClick={isRunning ? stopTest : runBurstTest}
             color={isRunning ? "error" : "primary"}
             disabled={!config.url}
+            sx={{
+              backgroundColor: isRunning ? 'error.main' : 'primary.main',
+              color: isRunning ? 'error.contrastText' : 'primary.contrastText',
+              '&:hover': {
+                backgroundColor: isRunning ? 'error.dark' : 'primary.dark',
+              },
+              '&:disabled': {
+                backgroundColor: 'action.disabled',
+                color: 'action.disabled',
+              }
+            }}
           >
             {isRunning ? "Stop Test" : "Start Burst Test"}
           </Button>

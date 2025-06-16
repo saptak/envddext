@@ -405,6 +405,17 @@ export const TrafficGenerator: React.FC = () => {
                   startIcon={loading ? <CircularProgress size={20} /> : <PlayIcon />}
                   onClick={startTrafficTest}
                   disabled={loading || !config.targetUrl}
+                  sx={{
+                    backgroundColor: 'primary.main',
+                    color: 'primary.contrastText',
+                    '&:hover': {
+                      backgroundColor: 'primary.dark',
+                    },
+                    '&:disabled': {
+                      backgroundColor: 'action.disabled',
+                      color: 'action.disabled',
+                    }
+                  }}
                 >
                   Start Traffic Test
                 </Button>
