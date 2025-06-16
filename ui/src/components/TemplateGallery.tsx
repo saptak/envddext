@@ -898,6 +898,17 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                     size="small" 
                     variant="contained"
                     startIcon={deployingTemplate === template.id ? <CircularProgress size={16} /> : <DeployIcon />}
+                    sx={{
+                      backgroundColor: 'primary.main',
+                      color: 'primary.contrastText',
+                      '&:hover': {
+                        backgroundColor: 'primary.dark',
+                      },
+                      '&:disabled': {
+                        backgroundColor: 'action.disabled',
+                        color: 'action.disabled',
+                      }
+                    }}
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -1110,6 +1121,17 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                 <Button
                   variant="contained"
                   startIcon={deployingTemplate === selectedTemplate?.id ? <CircularProgress size={16} /> : <DeployIcon />}
+                  sx={{
+                    backgroundColor: 'primary.main',
+                    color: 'primary.contrastText',
+                    '&:hover': {
+                      backgroundColor: 'primary.dark',
+                    },
+                    '&:disabled': {
+                      backgroundColor: 'action.disabled',
+                      color: 'action.disabled',
+                    }
+                  }}
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -1175,6 +1197,17 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
           <Button
             variant="contained"
             color="error"
+            sx={{
+              backgroundColor: 'error.main',
+              color: 'error.contrastText',
+              '&:hover': {
+                backgroundColor: 'error.dark',
+              },
+              '&:disabled': {
+                backgroundColor: 'action.disabled',
+                color: 'action.disabled',
+              }
+            }}
             onClick={handleConfirmUndeploy}
             startIcon={<UndeployIcon />}
           >

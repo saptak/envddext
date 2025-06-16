@@ -129,6 +129,17 @@ export const GatewayManagement: React.FC<GatewayManagementProps> = ({
             color="primary"
             startIcon={<AddIcon />}
             onClick={() => setShowCreateForm(true)}
+            sx={{
+              backgroundColor: 'primary.main',
+              color: 'primary.contrastText',
+              '&:hover': {
+                backgroundColor: 'primary.dark',
+              },
+              '&:disabled': {
+                backgroundColor: 'action.disabled',
+                color: 'action.disabled',
+              }
+            }}
           >
             Create Gateway
           </Button>

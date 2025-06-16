@@ -424,7 +424,18 @@ export const HTTPClient: React.FC<HTTPClientProps> = ({
               onClick={handleSendRequest}
               disabled={state.loading || !state.url.trim()}
               startIcon={state.loading ? <CircularProgress size={16} /> : <SendIcon />}
-              sx={{ height: '40px' }}
+              sx={{ 
+                height: '40px',
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                },
+                '&:disabled': {
+                  backgroundColor: 'action.disabled',
+                  color: 'action.disabled',
+                }
+              }}
             >
               {state.loading ? 'Sending...' : 'Send'}
             </Button>

@@ -204,6 +204,17 @@ export const PortForwardManager: React.FC<PortForwardManagerProps> = ({
               startIcon={<StartIcon />}
               onClick={handleQuickStartGateway}
               disabled={loading}
+              sx={{
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                },
+                '&:disabled': {
+                  backgroundColor: 'action.disabled',
+                  color: 'action.disabled',
+                }
+              }}
             >
               Start Gateway Port Forward
             </Button>

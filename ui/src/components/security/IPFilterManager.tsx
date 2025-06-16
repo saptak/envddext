@@ -684,7 +684,18 @@ spec:
           <Button variant="outlined" onClick={() => setDialogOpen(false)} disabled={isCreating}>
             Cancel
           </Button>
-          <Button onClick={handleSave} variant="contained" color="primary" disabled={isCreating}>
+          <Button onClick={handleSave} variant="contained" color="primary" disabled={isCreating}
+            sx={{
+              backgroundColor: 'primary.main',
+              color: 'primary.contrastText',
+              '&:hover': {
+                backgroundColor: 'primary.dark',
+              },
+              '&:disabled': {
+                backgroundColor: 'action.disabled',
+                color: 'action.disabled',
+              }
+            }}>
             {isCreating ? "Creating..." : editingConfig ? "Update" : "Create"}
           </Button>
         </DialogActions>

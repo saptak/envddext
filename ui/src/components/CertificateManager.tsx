@@ -333,6 +333,17 @@ export function CertificateManager({ onCertificateCreated, selectedNamespace = "
           startIcon={<AddIcon />}
           onClick={() => setCreateDialogOpen(true)}
           disabled={crdCheckStatus !== "checked_present" || createDialogOpen || loading}
+          sx={{
+            backgroundColor: 'primary.main',
+            color: 'primary.contrastText',
+            '&:hover': {
+              backgroundColor: 'primary.dark',
+            },
+            '&:disabled': {
+              backgroundColor: 'action.disabled',
+              color: 'action.disabled',
+            }
+          }}
         >
           Generate Certificate
         </Button>
