@@ -43,6 +43,7 @@ import { TemplateGallery } from "./components/TemplateGallery";
 import ResiliencePolicyManager from "./components/ResiliencePolicyManager";
 import { TutorialManager, TutorialLauncher } from "./components/InteractiveTutorial";
 import { EnvoyLogo } from "./components/EnvoyLogo";
+import { portForwardService } from "./services/portForwardService";
 
 const ddClient = createDockerDesktopClient();
 
@@ -132,7 +133,8 @@ const QuickStartTab = memo(({
   onSubTabChange, 
   gateways, 
   routes, 
-  deployedServices, 
+  deployedServices,
+  discoveredServices, 
   loading, 
   onRefresh, 
   onResourceAction, 
@@ -144,6 +146,7 @@ const QuickStartTab = memo(({
   gateways: any[];
   routes: any[];
   deployedServices: any[];
+  discoveredServices: any[];
   loading: boolean;
   onRefresh: () => void;
   onResourceAction: (action: "delete" | "viewYaml", resourceType: "Gateway" | "HTTPRoute", resourceName: string, resourceNamespace: string) => void;
@@ -169,6 +172,7 @@ const QuickStartTab = memo(({
         gateways={gateways}
         routes={routes}
         deployedServices={deployedServices}
+        discoveredServices={discoveredServices}
         loading={loading}
         onRefresh={onRefresh}
         onResourceAction={onResourceAction}
@@ -425,6 +429,11 @@ export function App() {
     }[]
   >([]);
 
+  // Services discovery state
+  const [discoveredServices, setDiscoveredServices] = React.useState<
+    {name: string, type: string, ports: number[], namespace: string}[]
+  >([]);
+
   // Resource action dialog state
   const [actionDialog, setActionDialog] = React.useState<{
     open: boolean;
@@ -477,6 +486,33 @@ export function App() {
     }
   }, [ddClient]);
 
+  // Discover services across key namespaces
+  const discoverServices = useCallback(async () => {
+    try {
+      const namespacesToCheck = ['default', 'demo', 'envoy-gateway-system', 'kube-system'];
+      const allServices: {name: string, type: string, ports: number[], namespace: string}[] = [];
+
+      // Get services from multiple namespaces in parallel
+      const servicePromises = namespacesToCheck.map(async (namespace) => {
+        try {
+          const services = await portForwardService.listServices(namespace);
+          return services.map(service => ({ ...service, namespace }));
+        } catch (error) {
+          console.log(`No services found in ${namespace} namespace or namespace does not exist`);
+          return [];
+        }
+      });
+
+      const serviceResults = await Promise.all(servicePromises);
+      serviceResults.forEach(services => allServices.push(...services));
+      
+      setDiscoveredServices(allServices);
+    } catch (error) {
+      console.error('Failed to discover services:', error);
+      setDiscoveredServices([]);
+    }
+  }, []);
+
   // Optimized fetchData with caching and error handling
   const apiManager = useMemo(() => ApiCallManager.getInstance(), []);
   
@@ -494,11 +530,12 @@ export function App() {
       setIsEnvoyGatewayInstalled(installed);
 
       if (installed) {
-        // Parallel API calls for better performance, including deployment discovery
+        // Parallel API calls for better performance, including deployment and services discovery
         const [gwResult, rtResult] = await Promise.all([
           apiManager.call('envoy-gateways', () => listEnvoyGateways(ddClient), forceRefresh),
           apiManager.call('envoy-routes', () => listEnvoyHTTPRoutes(ddClient), forceRefresh),
-          discoverDeployments()
+          discoverDeployments(),
+          discoverServices()
         ]);
         
         if (gwResult.error) {
@@ -652,6 +689,14 @@ export function App() {
                 {routes.length}
               </Typography>
             </Box>
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Services
+              </Typography>
+              <Typography variant="body1" fontWeight="medium">
+                {discoveredServices.length}
+              </Typography>
+            </Box>
           </Stack>
         </Paper>
       </Box>
@@ -764,6 +809,7 @@ export function App() {
                 gateways={gateways}
                 routes={routes}
                 deployedServices={deployedServices}
+                discoveredServices={discoveredServices}
                 loading={loading}
                 onRefresh={fetchData}
                 onResourceAction={openActionDialog}

@@ -39,6 +39,12 @@ interface DashboardProps {
     deploymentName: string;
     serviceName: string;
   }[];
+  discoveredServices: {
+    name: string;
+    type: string;
+    ports: number[];
+    namespace: string;
+  }[];
   loading: boolean;
   onRefresh: () => void;
   onResourceAction: (action: "delete" | "viewYaml", resourceType: "Gateway" | "HTTPRoute", resourceName: string, resourceNamespace: string) => void;
@@ -49,6 +55,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
   gateways,
   routes,
   deployedServices,
+  discoveredServices,
   loading,
   onRefresh,
   onResourceAction,
@@ -112,60 +119,6 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
         </Button>
       </Box>
 
-      {/* System Health Overview */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            System Overview
-          </Typography>
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={4}>
-              <Paper sx={{ p: 2, textAlign: 'center' }}>
-                <Typography variant="h3" color="primary">
-                  {gateways.length}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Gateways
-                </Typography>
-              </Paper>
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Paper sx={{ p: 2, textAlign: 'center' }}>
-                <Typography variant="h3" color="secondary">
-                  {routes.length}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  HTTP Routes
-                </Typography>
-              </Paper>
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Paper sx={{ p: 2, textAlign: 'center' }}>
-                <Typography variant="h3" color="info.main">
-                  {deployedServices.length}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Services
-                </Typography>
-              </Paper>
-            </Grid>
-          </Grid>
-
-          <Box sx={{ mt: 2 }}>
-            <Alert 
-              severity={systemHealth.color as any}
-              icon={
-                systemHealth.status === 'healthy' ? <CheckCircleIcon /> :
-                systemHealth.status === 'warning' ? <WarningIcon /> :
-                systemHealth.status === 'critical' ? <ErrorIcon /> :
-                <InfoIcon />
-              }
-            >
-              {systemHealth.message}
-            </Alert>
-          </Box>
-        </CardContent>
-      </Card>
 
       {/* Resources Section */}
       <Card sx={{ mb: 3 }}>
