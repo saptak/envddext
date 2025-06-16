@@ -232,7 +232,7 @@ spec:
           </Typography>
         </Box>
         <Button
-          variant="contained"
+          variant="contained" color="primary"
           color="primary"
           startIcon={<AddIcon />}
           onClick={handleCreateNew}
@@ -327,7 +327,7 @@ spec:
                 Create your first Basic Authentication policy to protect your routes.
               </Typography>
               <Button
-                variant="contained"
+                variant="contained" color="primary"
                 color="primary"
                 startIcon={<AddIcon />}
                 onClick={handleCreateNew}

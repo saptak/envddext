@@ -503,7 +503,7 @@ spec:
               <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
                 {!isDeploymentReady ? (
                   <Button
-                    variant="contained"
+                    variant="contained" color="primary"
                     onClick={deployTrafficSplittingDemo}
                     disabled={loading}
                     startIcon={loading ? <CircularProgress size={20} /> : <PlayIcon />}
@@ -560,7 +560,7 @@ spec:
                         <Chip label={`v2: ${trafficDistribution.v2}%`} color="secondary" variant="outlined" />
                       </Box>
                       <Button
-                        variant="contained"
+                        variant="contained" color="primary"
                         onClick={updateTrafficWeights}
                         disabled={loading}
                         size="small"

@@ -627,7 +627,7 @@ export const RetryPolicyConfiguration: React.FC<RetryPolicyConfigurationProps> =
           Cancel
         </Button>
         <Button 
-          variant="contained" 
+          variant="contained" color="primary" 
           onClick={handleSave}
           disabled={saving || Object.keys(errors).length > 0}
         >

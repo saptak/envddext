@@ -511,7 +511,7 @@ spec:
           </Typography>
         </Box>
         <Button
-          variant="contained"
+          variant="contained" color="primary"
           startIcon={<AddIcon />}
           onClick={handleCreateNew}
         >
@@ -611,7 +611,7 @@ spec:
                 Configure mutual TLS to require client certificates for the highest level of security.
               </Typography>
               <Button
-                variant="contained"
+                variant="contained" color="primary"
                 startIcon={<AddIcon />}
                 onClick={handleCreateNew}
               >
@@ -636,7 +636,7 @@ spec:
                   {renderStepContent(index)}
                   <Box sx={{ mb: 2, mt: 2 }}>
                     <Button
-                      variant="contained"
+                      variant="contained" color="primary"
                       onClick={index === steps.length - 1 ? handleSave : handleNext}
                       disabled={isCreating}
                       sx={{ mr: 1 }}
@@ -705,7 +705,7 @@ spec:
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setYamlDialogOpen(false)} variant="contained">
+          <Button onClick={() => setYamlDialogOpen(false)} variant="contained" color="primary">
             Close
           </Button>
         </DialogActions>

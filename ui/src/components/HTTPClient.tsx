@@ -420,7 +420,7 @@ export const HTTPClient: React.FC<HTTPClientProps> = ({
           <Grid item xs={12} md={2}>
             <Button
               fullWidth
-              variant="contained"
+              variant="contained" color="primary"
               onClick={handleSendRequest}
               disabled={state.loading || !state.url.trim()}
               startIcon={state.loading ? <CircularProgress size={16} /> : <SendIcon />}

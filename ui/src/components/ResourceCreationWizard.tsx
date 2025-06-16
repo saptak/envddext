@@ -543,7 +543,7 @@ export const ResourceCreationWizard: React.FC<ResourceCreationWizardProps> = ({
                 {renderStepContent(index)}
                 <Box sx={{ mb: 2, mt: 2 }}>
                   <Button
-                    variant="contained"
+                    variant="contained" color="primary"
                     onClick={index === steps.length - 1 ? handleCreate : handleNext}
                     disabled={!canProceed || isCreating}
                     sx={{ mr: 1 }}

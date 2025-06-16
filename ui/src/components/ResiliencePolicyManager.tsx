@@ -324,7 +324,7 @@ export const ResiliencePolicyManager: React.FC<ResiliencePolicyManagerProps> = (
       {/* Actions */}
       <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
         <Button
-          variant="contained"
+          variant="contained" color="primary"
           startIcon={<AddIcon />}
           onClick={() => {
             setCreatePolicyType('timeout');

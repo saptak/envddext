@@ -376,7 +376,7 @@ data:
               </Tooltip>
               
               <Button
-                variant="contained"
+                variant="contained" color="primary"
                 startIcon={<SaveIcon />}
                 onClick={handleSave}
                 disabled={!validation.isValid || isSaving}
@@ -387,7 +387,7 @@ data:
               
               {onApply && (
                 <Button
-                  variant="contained"
+                  variant="contained" color="primary"
                   color="secondary"
                   startIcon={<ApplyIcon />}
                   onClick={handleApply}

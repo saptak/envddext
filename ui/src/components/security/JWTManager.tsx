@@ -368,7 +368,7 @@ export const JWTManager: React.FC<JWTManagerProps> = ({ onPolicyCreated }) => {
           </Box>
         </Box>
         <Button
-          variant="contained"
+          variant="contained" color="primary"
           startIcon={<AddIcon />}
           onClick={handleCreatePolicy}
           disabled={loading}
@@ -442,7 +442,7 @@ export const JWTManager: React.FC<JWTManagerProps> = ({ onPolicyCreated }) => {
           <Typography variant="body2" color="text.secondary" paragraph>
             Create your first JWT authentication policy to protect routes with token validation.
           </Typography>
-          <Button variant="contained" startIcon={<AddIcon />} onClick={handleCreatePolicy}>
+          <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={handleCreatePolicy}>
             Create JWT Policy
           </Button>
         </Paper>
@@ -608,7 +608,7 @@ export const JWTManager: React.FC<JWTManagerProps> = ({ onPolicyCreated }) => {
                   </Grid>
                 </Grid>
                 <Box sx={{ mt: 2 }}>
-                  <Button variant="contained" onClick={() => setActiveStep(1)}>
+                  <Button variant="contained" color="primary" onClick={() => setActiveStep(1)}>
                     Next: Configure Provider
                   </Button>
                 </Box>
@@ -683,7 +683,7 @@ export const JWTManager: React.FC<JWTManagerProps> = ({ onPolicyCreated }) => {
                 </Grid>
                 <Box sx={{ mt: 2, display: "flex", gap: 1 }}>
                   <Button onClick={() => setActiveStep(0)}>Back</Button>
-                  <Button variant="contained" onClick={() => setActiveStep(2)}>
+                  <Button variant="contained" color="primary" onClick={() => setActiveStep(2)}>
                     Next: Configure Claims
                   </Button>
                 </Box>
@@ -782,7 +782,7 @@ export const JWTManager: React.FC<JWTManagerProps> = ({ onPolicyCreated }) => {
 
                 <Box sx={{ mt: 2, display: "flex", gap: 1 }}>
                   <Button onClick={() => setActiveStep(1)}>Back</Button>
-                  <Button variant="contained" onClick={() => setActiveStep(3)}>
+                  <Button variant="contained" color="primary" onClick={() => setActiveStep(3)}>
                     Next: Review
                   </Button>
                 </Box>
@@ -842,7 +842,7 @@ export const JWTManager: React.FC<JWTManagerProps> = ({ onPolicyCreated }) => {
                 <Box sx={{ mt: 2, display: "flex", gap: 1 }}>
                   <Button onClick={() => setActiveStep(2)}>Back</Button>
                   <Button
-                    variant="contained"
+                    variant="contained" color="primary"
                     onClick={() => {
                       handleAddProvider();
                       handleSubmitPolicy();

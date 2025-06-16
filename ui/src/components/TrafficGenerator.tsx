@@ -400,7 +400,7 @@ export const TrafficGenerator: React.FC = () => {
             <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
               {!isRunning ? (
                 <Button
-                  variant="contained"
+                  variant="contained" color="primary"
                   startIcon={loading ? <CircularProgress size={20} /> : <PlayIcon />}
                   onClick={startTrafficTest}
                   disabled={loading || !config.targetUrl}

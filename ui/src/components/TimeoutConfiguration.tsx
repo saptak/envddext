@@ -518,7 +518,7 @@ export const TimeoutConfiguration: React.FC<TimeoutConfigurationProps> = ({
           Cancel
         </Button>
         <Button 
-          variant="contained" 
+          variant="contained" color="primary" 
           onClick={handleSave}
           disabled={saving || Object.keys(errors).length > 0}
         >

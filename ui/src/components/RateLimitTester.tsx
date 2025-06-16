@@ -278,7 +278,7 @@ export const RateLimitTester: React.FC<RateLimitTesterProps> = ({
         </Box>
         <Box sx={{ display: "flex", gap: 1 }}>
           <Button
-            variant="contained"
+            variant="contained" color="primary"
             startIcon={isRunning ? <StopIcon /> : <StartIcon />}
             onClick={isRunning ? stopTest : runBurstTest}
             color={isRunning ? "error" : "primary"}

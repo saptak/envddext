@@ -811,7 +811,7 @@ export const GatewayCreationForm: React.FC<GatewayCreationFormProps> = ({
               Cancel
             </Button>
             <Button
-              variant="contained"
+              variant="contained" color="primary"
               onClick={handleSubmit}
               disabled={isSubmitting}
               startIcon={

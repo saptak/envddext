@@ -147,7 +147,7 @@ export const DeploymentStatusMonitor: React.FC<DeploymentStatusMonitorProps> = (
         <Typography variant="subtitle1">Error fetching deployment status</Typography>
         <Typography variant="body2">{error}</Typography>
         <Button 
-          variant="contained" 
+          variant="contained" color="primary" 
           size="small" 
           onClick={handleRefresh}
           sx={{ mt: 1 }}

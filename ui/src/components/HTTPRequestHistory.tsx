@@ -290,7 +290,7 @@ export const HTTPRequestHistory: React.FC<HTTPRequestHistoryProps> = ({
                 onReplay(selectedResult);
                 setDetailsOpen(false);
               }}
-              variant="contained"
+              variant="contained" color="primary"
               startIcon={<ReplayIcon />}
             >
               Replay

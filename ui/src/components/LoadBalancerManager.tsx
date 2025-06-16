@@ -233,7 +233,7 @@ export const LoadBalancerManager: React.FC<LoadBalancerManagerProps> = ({
               {showConfigureButton && (
                 <Box sx={{ mt: 1 }}>
                   <Button
-                    variant="contained"
+                    variant="contained" color="primary"
                     size="small"
                     onClick={() => {
                       setConfigError(null); // Reset dialog-specific error when opening
@@ -436,7 +436,7 @@ export const LoadBalancerManager: React.FC<LoadBalancerManagerProps> = ({
           </Button>
           <Button
             onClick={handleConfigure}
-            variant="contained"
+            variant="contained" color="primary"
             disabled={
               configuring || (!config.autoDetectRange && !config.ipRange.trim())
             }

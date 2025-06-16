@@ -572,7 +572,7 @@ export const JWTTester: React.FC<JWTTesterProps> = ({ onTestComplete }) => {
                   <Grid item xs={12}>
                     <Button
                       fullWidth
-                      variant="contained"
+                      variant="contained" color="primary"
                       size="large"
                       startIcon={<TestIcon />}
                       onClick={handleJWTTest}
@@ -849,7 +849,7 @@ export const JWTTester: React.FC<JWTTesterProps> = ({ onTestComplete }) => {
                   <Grid item xs={12}>
                     <Button
                       fullWidth
-                      variant="contained"
+                      variant="contained" color="primary"
                       startIcon={<GenerateIcon />}
                       onClick={generateSampleJWT}
                       disabled={generating}

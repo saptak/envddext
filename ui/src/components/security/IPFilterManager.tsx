@@ -311,7 +311,7 @@ spec:
           </Typography>
         </Box>
         <Button
-          variant="contained"
+          variant="contained" color="primary"
           startIcon={<AddIcon />}
           onClick={handleCreateNew}
         >
@@ -411,7 +411,7 @@ spec:
                 Create your first IP filter policy to control access based on client IP addresses.
               </Typography>
               <Button
-                variant="contained"
+                variant="contained" color="primary"
                 startIcon={<AddIcon />}
                 onClick={handleCreateNew}
               >
@@ -684,7 +684,7 @@ spec:
           <Button onClick={() => setDialogOpen(false)} disabled={isCreating}>
             Cancel
           </Button>
-          <Button onClick={handleSave} variant="contained" disabled={isCreating}>
+          <Button onClick={handleSave} variant="contained" color="primary" disabled={isCreating}>
             {isCreating ? "Creating..." : editingConfig ? "Update" : "Create"}
           </Button>
         </DialogActions>
@@ -730,7 +730,7 @@ spec:
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setYamlDialogOpen(false)} variant="contained">
+          <Button onClick={() => setYamlDialogOpen(false)} variant="contained" color="primary">
             Close
           </Button>
         </DialogActions>

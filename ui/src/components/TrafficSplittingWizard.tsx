@@ -467,7 +467,7 @@ spec:
 
             <Box sx={{ mt: 3 }}>
               <Button
-                variant="contained"
+                variant="contained" color="primary"
                 onClick={deployInfrastructure}
                 disabled={isDeploying}
                 startIcon={isDeploying ? <CircularProgress size={20} /> : undefined}
@@ -538,7 +538,7 @@ spec:
               </Box>
               <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
                 <Button
-                  variant="contained"
+                  variant="contained" color="primary"
                   onClick={updateTrafficWeights}
                   size="small"
                 >
@@ -630,7 +630,7 @@ spec:
                 {getStepContent(index)}
                 <Box sx={{ mt: 3 }}>
                   <Button
-                    variant="contained"
+                    variant="contained" color="primary"
                     onClick={handleNext}
                     sx={{ mr: 1 }}
                     disabled={

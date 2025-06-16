@@ -871,7 +871,7 @@ export const TutorialManager: React.FC<TutorialManagerProps> = ({
                     />
                   ) : (
                     <Button
-                      variant="contained"
+                      variant="contained" color="primary"
                       disabled={validatingStep}
                       onClick={() => handleStepComplete(step.id)}
                       endIcon={validatingStep ? <CircularProgress size={16} /> : <ArrowForwardIcon />}
@@ -908,7 +908,7 @@ export const TutorialManager: React.FC<TutorialManagerProps> = ({
               </Typography>
               <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
                 <Button 
-                  variant="contained"
+                  variant="contained" color="primary"
                   onClick={() => setCurrentTutorial(null)}
                 >
                   Choose Another Tutorial
