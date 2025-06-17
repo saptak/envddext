@@ -669,7 +669,7 @@ spec:
               },
               '&:disabled': {
                 backgroundColor: 'action.disabled',
-                color: 'action.disabled',
+                color: 'grey.500',
               }
             }}>
             {isCreating ? "Creating..." : editingConfig ? "Update" : "Create"}

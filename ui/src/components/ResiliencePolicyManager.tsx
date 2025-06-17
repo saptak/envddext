@@ -338,7 +338,7 @@ export const ResiliencePolicyManager: React.FC<ResiliencePolicyManagerProps> = (
             },
             '&:disabled': {
               backgroundColor: 'action.disabled',
-              color: 'action.disabled',
+              color: 'grey.500',
             }
           }}
         >

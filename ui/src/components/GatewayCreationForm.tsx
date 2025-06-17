@@ -811,12 +811,24 @@ export const GatewayCreationForm: React.FC<GatewayCreationFormProps> = ({
               Cancel
             </Button>
             <Button
-              variant="contained" color="primary"
+              variant="contained"
+              color="primary"
               onClick={handleSubmit}
               disabled={isSubmitting}
               startIcon={
                 isSubmitting ? <CircularProgress size={20} /> : undefined
               }
+              sx={{
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                },
+                '&:disabled': {
+                  backgroundColor: 'grey.300',
+                  color: 'grey.500',
+                }
+              }}
             >
               {isSubmitting ? "Creating..." : "Create Gateway"}
             </Button>

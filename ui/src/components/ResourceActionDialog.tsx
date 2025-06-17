@@ -201,7 +201,7 @@ export const ResourceActionDialog: React.FC<ResourceActionDialogProps> = ({
               },
               '&:disabled': {
                 backgroundColor: 'action.disabled',
-                color: 'action.disabled',
+                color: 'grey.500',
               }
             }}
           >
@@ -220,7 +220,7 @@ export const ResourceActionDialog: React.FC<ResourceActionDialogProps> = ({
             },
             '&:disabled': {
               backgroundColor: 'action.disabled',
-              color: 'action.disabled',
+              color: 'grey.500',
             }
           }}>
           Close

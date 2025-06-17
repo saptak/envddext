@@ -291,7 +291,7 @@ export const RateLimitTester: React.FC<RateLimitTesterProps> = ({
               },
               '&:disabled': {
                 backgroundColor: 'action.disabled',
-                color: 'action.disabled',
+                color: 'grey.500',
               }
             }}
           >

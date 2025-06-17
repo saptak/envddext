@@ -906,7 +906,7 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                       },
                       '&:disabled': {
                         backgroundColor: 'action.disabled',
-                        color: 'action.disabled',
+                        color: 'grey.500',
                       }
                     }}
                     onClick={(e) => {
@@ -1129,7 +1129,7 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
                     },
                     '&:disabled': {
                       backgroundColor: 'action.disabled',
-                      color: 'action.disabled',
+                      color: 'grey.500',
                     }
                   }}
                   onClick={(e) => {
@@ -1205,7 +1205,7 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({
               },
               '&:disabled': {
                 backgroundColor: 'action.disabled',
-                color: 'action.disabled',
+                color: 'grey.500',
               }
             }}
             onClick={handleConfirmUndeploy}

@@ -433,7 +433,7 @@ export const HTTPClient: React.FC<HTTPClientProps> = ({
                 },
                 '&:disabled': {
                   backgroundColor: 'action.disabled',
-                  color: 'action.disabled',
+                  color: 'grey.500',
                 }
               }}
             >

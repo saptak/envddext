@@ -145,7 +145,7 @@ export const HTTPRouteManagement: React.FC<HTTPRouteManagementProps> = ({
               },
               '&:disabled': {
                 backgroundColor: 'action.disabled',
-                color: 'action.disabled',
+                color: 'grey.500',
               }
             }}
           >

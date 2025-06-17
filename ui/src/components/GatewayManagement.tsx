@@ -137,7 +137,7 @@ export const GatewayManagement: React.FC<GatewayManagementProps> = ({
               },
               '&:disabled': {
                 backgroundColor: 'action.disabled',
-                color: 'action.disabled',
+                color: 'grey.500',
               }
             }}
           >

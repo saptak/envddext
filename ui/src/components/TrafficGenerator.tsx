@@ -413,7 +413,7 @@ export const TrafficGenerator: React.FC = () => {
                     },
                     '&:disabled': {
                       backgroundColor: 'action.disabled',
-                      color: 'action.disabled',
+                      color: 'grey.500',
                     }
                   }}
                 >

@@ -212,7 +212,7 @@ export const PortForwardManager: React.FC<PortForwardManagerProps> = ({
                 },
                 '&:disabled': {
                   backgroundColor: 'action.disabled',
-                  color: 'action.disabled',
+                  color: 'grey.500',
                 }
               }}
             >

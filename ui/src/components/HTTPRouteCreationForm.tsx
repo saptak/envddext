@@ -1093,7 +1093,7 @@ export const HTTPRouteCreationForm: React.FC<HTTPRouteCreationFormProps> = ({
                 },
                 '&:disabled': {
                   backgroundColor: 'action.disabled',
-                  color: 'action.disabled',
+                  color: 'grey.500',
                 }
               }}
             >
