@@ -554,6 +554,7 @@ export const ResourceCreationWizard: React.FC<ResourceCreationWizardProps> = ({
                     }
                   </Button>
                   <Button
+                    variant="outlined"
                     disabled={index === 0 || isCreating}
                     onClick={handleBack}
                   >

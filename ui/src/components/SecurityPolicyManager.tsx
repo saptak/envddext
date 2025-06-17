@@ -224,6 +224,7 @@ export const SecurityPolicyManager: React.FC<SecurityPolicyManagerProps> = ({
                   <CardActions>
                     <Button 
                       size="small" 
+                      variant="outlined"
                       startIcon={<SettingsIcon />}
                       onClick={() => {
                         const tabIndex = securityPolicies.findIndex(p => p.id === policy.id) + 1;

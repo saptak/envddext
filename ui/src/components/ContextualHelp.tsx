@@ -396,6 +396,7 @@ export const ContextualHelp: React.FC<ContextualHelpProps> = ({
           </Typography>
           <Button 
             size="small"
+            variant="outlined"
             onClick={handleClick}
             endIcon={<HelpIcon />}
           >

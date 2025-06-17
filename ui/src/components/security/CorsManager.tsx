@@ -386,6 +386,7 @@ spec:
               <CardActions>
                 <Button 
                   size="small" 
+                  variant="outlined"
                   startIcon={<EditIcon />}
                   onClick={() => handleEdit(config)}
                 >
@@ -393,6 +394,7 @@ spec:
                 </Button>
                 <Button 
                   size="small" 
+                  variant="outlined"
                   startIcon={<ViewIcon />}
                   onClick={() => handleViewYaml(config)}
                 >
@@ -400,6 +402,7 @@ spec:
                 </Button>
                 <Button 
                   size="small" 
+                  variant="outlined"
                   color="error"
                   startIcon={<DeleteIcon />}
                   onClick={() => handleDelete(config.id)}

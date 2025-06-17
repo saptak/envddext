@@ -500,6 +500,7 @@ export const JWTManager: React.FC<JWTManagerProps> = ({ onPolicyCreated }) => {
                 <CardActions>
                   <Button
                     size="small"
+                    variant="outlined"
                     startIcon={<ViewIcon />}
                     onClick={() => {
                       setSelectedPolicy(policy);
@@ -510,6 +511,7 @@ export const JWTManager: React.FC<JWTManagerProps> = ({ onPolicyCreated }) => {
                   </Button>
                   <Button
                     size="small"
+                    variant="outlined"
                     color="error"
                     startIcon={<DeleteIcon />}
                     onClick={() => handleDeletePolicy(policy.id)}

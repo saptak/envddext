@@ -1074,6 +1074,7 @@ export const HTTPRouteCreationForm: React.FC<HTTPRouteCreationFormProps> = ({
           <Divider sx={{ my: 2 }} />
           <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
             <Button
+              variant="outlined"
               onClick={onCancel}
               disabled={loading}
             >

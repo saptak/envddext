@@ -398,6 +398,7 @@ kubectl apply -f https://raw.githubusercontent.com/envoyproxy/ratelimit/main/exa
                   </Button>
                   <Button 
                     size="small" 
+                    variant="outlined"
                     startIcon={<InfoIcon />}
                     href="https://github.com/envoyproxy/ratelimit"
                     target="_blank"
@@ -600,6 +601,7 @@ spec:
               <CardActions>
                 <Button 
                   size="small" 
+                  variant="outlined"
                   startIcon={<EditIcon />}
                   onClick={() => handleEdit(rule)}
                 >
@@ -607,6 +609,7 @@ spec:
                 </Button>
                 <Button 
                   size="small" 
+                  variant="outlined"
                   startIcon={<ViewIcon />}
                   onClick={() => handleViewYaml(rule)}
                 >
@@ -614,6 +617,7 @@ spec:
                 </Button>
                 <Button 
                   size="small" 
+                  variant="outlined"
                   color="error"
                   startIcon={<DeleteIcon />}
                   onClick={() => handleDelete(rule.id)}

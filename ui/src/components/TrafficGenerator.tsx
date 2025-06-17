@@ -432,6 +432,7 @@ export const TrafficGenerator: React.FC = () => {
               )}
               
               <Button
+                variant="outlined"
                 startIcon={<RefreshIcon />}
                 onClick={fetchMetrics}
                 disabled={!metrics || loading}
