@@ -380,10 +380,79 @@ export class OptimizedLoadBalancerService {
   }
 
   /**
-   * Create IP address pool using backend service
+   * Helper method to get the current node IP
+   */
+  private async getNodeIP(): Promise<string | null> {
+    try {
+      const result = await this.ddClient.extension.host?.cli.exec("kubectl", [
+        "get", "nodes", "-o", "jsonpath={.items[0].status.addresses[?(@.type=='InternalIP')].address}"
+      ]);
+      
+      if (result?.stdout?.trim()) {
+        return result.stdout.trim();
+      }
+      return null;
+    } catch (error) {
+      console.error("OptimizedLoadBalancerService: Error getting node IP:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Create IP address pool using backend service with validation
    */
   private async createIPAddressPool(ipRange: string): Promise<{ success: boolean; error?: string }> {
     try {
+      // Check for existing IP address pool and validate network match
+      console.log("OptimizedLoadBalancerService: Checking for existing IP address pools...");
+      const existingPoolResult = await this.ddClient.extension.host?.cli.exec("kubectl", [
+        "get", "ipaddresspool", "-n", "metallb-system", "docker-desktop-pool", 
+        "--ignore-not-found", "-o", "json"
+      ]);
+
+      let needsPoolUpdate = false;
+      if (existingPoolResult?.stdout?.trim()) {
+        try {
+          const existingPool = JSON.parse(existingPoolResult.stdout);
+          const existingAddresses = existingPool.spec?.addresses || [];
+          console.log("OptimizedLoadBalancerService: Found existing IP pool with addresses:", existingAddresses);
+          
+          // Check if the existing pool range matches our detected network
+          const currentNodeIP = await this.getNodeIP();
+          if (currentNodeIP && existingAddresses.length > 0) {
+            const existingRange = existingAddresses[0];
+            const existingStartIP = existingRange.split('-')[0];
+            const nodeSubnet = currentNodeIP.split('.').slice(0, 3).join('.');
+            const existingSubnet = existingStartIP.split('.').slice(0, 3).join('.');
+            
+            if (nodeSubnet !== existingSubnet) {
+              console.log(
+                `OptimizedLoadBalancerService: IP pool mismatch detected! Node subnet: ${nodeSubnet}, Pool subnet: ${existingSubnet}. Will update the pool.`
+              );
+              needsPoolUpdate = true;
+              
+              // Delete the existing pool with wrong range
+              console.log("OptimizedLoadBalancerService: Deleting mismatched IP address pool...");
+              await this.ddClient.extension.host?.cli.exec("kubectl", [
+                "delete", "ipaddresspool", "docker-desktop-pool", "-n", "metallb-system", "--ignore-not-found"
+              ]);
+            } else {
+              console.log("OptimizedLoadBalancerService: Existing IP pool range matches current network. No update needed.");
+              return { success: true };
+            }
+          }
+        } catch (e: any) {
+          console.warn("OptimizedLoadBalancerService: Error parsing existing IP pool, will recreate:", e.message);
+          needsPoolUpdate = true;
+        }
+      } else {
+        console.log("OptimizedLoadBalancerService: No existing IP address pool found. Will create new one.");
+        needsPoolUpdate = true;
+      }
+
+      if (!needsPoolUpdate) {
+        return { success: true };
+      }
       const ipPoolYaml = `
 apiVersion: metallb.io/v1beta1
 kind: IPAddressPool

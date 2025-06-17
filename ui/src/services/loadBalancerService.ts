@@ -634,6 +634,28 @@ export class LoadBalancerService {
   /**
    * Configure MetalLB LoadBalancer for Docker Desktop using host CLI for apply operations.
    */
+  /**
+   * Helper method to get the current node IP
+   */
+  private async getNodeIP(): Promise<string | null> {
+    try {
+      const result = await this.ddClient.extension.host!.cli.exec("kubectl", [
+        "get",
+        "nodes",
+        "-o",
+        'jsonpath={.items[0].status.addresses[?(@.type=="InternalIP")].address}',
+      ]);
+      
+      if (result.stdout && result.stdout.trim() !== "") {
+        return result.stdout.trim();
+      }
+      return null;
+    } catch (error) {
+      console.error("LoadBalancerService: Error getting node IP:", error);
+      return null;
+    }
+  }
+
   async configureMetalLB(
     config: LoadBalancerConfiguration,
   ): Promise<{ success: boolean; error?: string }> {
@@ -743,12 +765,72 @@ export class LoadBalancerService {
         };
       }
 
-      // Step 4: Create IP address pool using backend /apply-yaml
-      // This assumes backend /apply-yaml can correctly talk to K8s API
-      console.log(
-        `LoadBalancerService: Creating IP address pool with range: ${ipRange} (using backend /apply-yaml)...`,
+      // Step 4: Validate existing IP address pool and fix if mismatched
+      console.log("LoadBalancerService: Checking for existing IP address pools...");
+      const existingPoolResult = await this.ddClient.extension.host!.cli.exec(
+        "kubectl",
+        [
+          "get",
+          "ipaddresspool",
+          "-n",
+          "metallb-system",
+          "docker-desktop-pool",
+          "--ignore-not-found",
+          "-o",
+          "json",
+        ],
       );
-      const poolYaml = `apiVersion: metallb.io/v1beta1
+
+      let needsPoolUpdate = false;
+      if (existingPoolResult.stdout && existingPoolResult.stdout.trim() !== "") {
+        try {
+          const existingPool = JSON.parse(existingPoolResult.stdout);
+          const existingAddresses = existingPool.spec?.addresses || [];
+          console.log("LoadBalancerService: Found existing IP pool with addresses:", existingAddresses);
+          
+          // Check if the existing pool range matches our detected network
+          const currentNodeIP = await this.getNodeIP();
+          if (currentNodeIP && existingAddresses.length > 0) {
+            const existingRange = existingAddresses[0];
+            const existingStartIP = existingRange.split('-')[0];
+            const nodeSubnet = currentNodeIP.split('.').slice(0, 3).join('.');
+            const existingSubnet = existingStartIP.split('.').slice(0, 3).join('.');
+            
+            if (nodeSubnet !== existingSubnet) {
+              console.log(
+                `LoadBalancerService: IP pool mismatch detected! Node subnet: ${nodeSubnet}, Pool subnet: ${existingSubnet}. Will update the pool.`
+              );
+              needsPoolUpdate = true;
+              
+              // Delete the existing pool with wrong range
+              console.log("LoadBalancerService: Deleting mismatched IP address pool...");
+              await this.ddClient.extension.host!.cli.exec("kubectl", [
+                "delete",
+                "ipaddresspool",
+                "docker-desktop-pool",
+                "-n",
+                "metallb-system",
+                "--ignore-not-found",
+              ]);
+            } else {
+              console.log("LoadBalancerService: Existing IP pool range matches current network. No update needed.");
+            }
+          }
+        } catch (e: any) {
+          console.warn("LoadBalancerService: Error parsing existing IP pool, will recreate:", e.message);
+          needsPoolUpdate = true;
+        }
+      } else {
+        console.log("LoadBalancerService: No existing IP address pool found. Will create new one.");
+        needsPoolUpdate = true;
+      }
+
+      // Step 5: Create IP address pool using backend /apply-yaml (if needed)
+      if (needsPoolUpdate || !existingPoolResult.stdout || existingPoolResult.stdout.trim() === "") {
+        console.log(
+          `LoadBalancerService: Creating IP address pool with range: ${ipRange} (using backend /apply-yaml)...`,
+        );
+        const poolYaml = `apiVersion: metallb.io/v1beta1
 kind: IPAddressPool
 metadata:
   name: docker-desktop-pool
@@ -848,8 +930,11 @@ spec:
           "LoadBalancerService: IPAddressPool application via backend /apply-yaml reported success.",
         );
       }
+      } else {
+        console.log("LoadBalancerService: Skipping IP address pool creation - existing pool is correct.");
+      }
 
-      // Step 5: Create L2 advertisement using backend /apply-yaml
+      // Step 6: Create L2 advertisement using backend /apply-yaml
       console.log(
         "LoadBalancerService: Creating L2 advertisement (using backend /apply-yaml)...",
       );
