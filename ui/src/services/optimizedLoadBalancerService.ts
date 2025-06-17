@@ -310,13 +310,29 @@ export class OptimizedLoadBalancerService {
           throw new Error("Invalid IP format");
         }
 
-        // Create a small range for LoadBalancer IPs
+        // Create a safe range for LoadBalancer IPs, avoiding conflicts with node IP
         const baseIP = `${ipParts[0]}.${ipParts[1]}.${ipParts[2]}`;
-        return `${baseIP}.200-${baseIP}.250`;
+        const nodeLastOctet = parseInt(ipParts[3], 10);
+        
+        // Choose a range that avoids the node IP and common Docker Desktop IPs
+        let startIP, endIP;
+        if (nodeLastOctet < 100) {
+          // If node is in lower range, use higher range for LoadBalancer
+          startIP = Math.max(200, nodeLastOctet + 50);
+          endIP = Math.min(250, startIP + 20);
+        } else {
+          // If node is in higher range, use lower range for LoadBalancer  
+          startIP = Math.max(10, nodeLastOctet - 50);
+          endIP = Math.min(startIP + 20, nodeLastOctet - 10);
+        }
+        
+        return `${baseIP}.${startIP}-${baseIP}.${endIP}`;
 
       } catch (error) {
         console.error("Error detecting Docker network range:", error);
-        return null;
+        // Provide a sensible fallback for common Docker Desktop setups
+        console.log("Using fallback Docker Desktop IP range");
+        return "192.168.65.200-192.168.65.220"; // Common Docker Desktop range
       }
     });
   }
@@ -327,7 +343,7 @@ export class OptimizedLoadBalancerService {
   private async installMetalLBManifest(): Promise<{ success: boolean; error?: string }> {
     try {
       const result = await this.ddClient.extension.host?.cli.exec("kubectl", [
-        "apply", "-f", "https://raw.githubusercontent.com/metallb/metallb/v0.13.7/config/manifests/metallb-native.yaml",
+        "apply", "-f", "https://raw.githubusercontent.com/metallb/metallb/v0.14.8/config/manifests/metallb-native.yaml",
         "--validate=false"
       ]);
 
@@ -433,7 +449,7 @@ spec:
 
       // Remove MetalLB resources
       const result = await this.ddClient.extension.host?.cli.exec("kubectl", [
-        "delete", "-f", "https://raw.githubusercontent.com/metallb/metallb/v0.13.7/config/manifests/metallb-native.yaml",
+        "delete", "-f", "https://raw.githubusercontent.com/metallb/metallb/v0.14.8/config/manifests/metallb-native.yaml",
         "--ignore-not-found=true"
       ]);
 

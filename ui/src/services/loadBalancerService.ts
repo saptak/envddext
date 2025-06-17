@@ -1005,35 +1005,76 @@ spec:
       }
       const nodeIP = result.stdout.trim();
       console.log("LoadBalancerService: Detected node IP:", nodeIP);
+      
+      let detectedRange = null;
 
       // Heuristic for Docker Desktop IP ranges
       if (nodeIP.startsWith("172.18.")) {
-        return "172.18.200.1-172.18.200.100";
+        detectedRange = "172.18.200.1-172.18.200.100";
+        console.log("LoadBalancerService: Using 172.18.x.x range:", detectedRange);
+        return detectedRange;
       } else if (nodeIP.startsWith("172.")) {
         // More generic 172.x range
         const parts = nodeIP.split(".");
         if (parts.length >= 2) {
-          return `172.${parts[1]}.200.1-172.${parts[1]}.200.100`;
+          detectedRange = `172.${parts[1]}.200.1-172.${parts[1]}.200.100`;
+          console.log("LoadBalancerService: Using 172.x.x.x range:", detectedRange);
+          return detectedRange;
         }
       } else if (nodeIP.startsWith("10.")) {
         const parts = nodeIP.split(".");
         if (parts.length >= 2) {
-          return `10.${parts[1]}.200.1-10.${parts[1]}.200.100`;
+          detectedRange = `10.${parts[1]}.200.1-10.${parts[1]}.200.100`;
+          console.log("LoadBalancerService: Using 10.x.x.x range:", detectedRange);
+          return detectedRange;
         }
       } else if (nodeIP.startsWith("192.168.")) {
         const parts = nodeIP.split(".");
         if (parts.length >= 3) {
           // Common for Docker Desktop on some systems, e.g., 192.168.65.x or 192.168.1.x
-          // This heuristic might need adjustment based on typical Docker Desktop network setups.
-          // A smaller range might be safer.
-          return `192.168.${parts[2]}.200-192.168.${parts[2]}.250`;
+          // Use a safe range within the same subnet, avoiding the node IP itself
+          const subnet = parts[2];
+          const nodeLastOctet = parseInt(parts[3], 10);
+          // Choose a range that avoids the node IP and common Docker Desktop IPs
+          let startIP, endIP;
+          if (nodeLastOctet < 100) {
+            // If node is in lower range, use higher range for LoadBalancer
+            startIP = Math.max(200, nodeLastOctet + 50);
+            endIP = Math.min(250, startIP + 20);
+          } else {
+            // If node is in higher range, use lower range for LoadBalancer
+            startIP = Math.max(10, nodeLastOctet - 50);
+            endIP = Math.min(startIP + 20, nodeLastOctet - 10);
+          }
+          detectedRange = `192.168.${subnet}.${startIP}-192.168.${subnet}.${endIP}`;
+          console.log("LoadBalancerService: Using 192.168.x.x range:", detectedRange);
+          return detectedRange;
         }
       }
       console.warn(
         "LoadBalancerService: Could not determine a typical Docker Desktop IP range from node IP:",
         nodeIP,
       );
-      return null; // Fallback if no typical Docker Desktop pattern matches
+      
+      // Enhanced fallback: try to create a safe range in the same subnet
+      const parts = nodeIP.split(".");
+      if (parts.length === 4) {
+        const nodeLastOctet = parseInt(parts[3], 10);
+        // Use a conservative range that's likely to be safe
+        let startIP, endIP;
+        if (nodeLastOctet < 100) {
+          startIP = 200;
+          endIP = 220;
+        } else {
+          startIP = 10; 
+          endIP = 30;
+        }
+        const fallbackRange = `${parts[0]}.${parts[1]}.${parts[2]}.${startIP}-${parts[0]}.${parts[1]}.${parts[2]}.${endIP}`;
+        console.log("LoadBalancerService: Using fallback IP range:", fallbackRange);
+        return fallbackRange;
+      }
+      
+      return null; // Final fallback if IP parsing fails completely
     } catch (error: any) {
       console.error(
         "LoadBalancerService: Critical error detecting Docker network range:",
