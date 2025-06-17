@@ -551,8 +551,14 @@ spec:
             <Paper
               sx={{
                 p: 2,
-                backgroundColor: "grey.900",
-                color: "common.white",
+                backgroundColor: (theme) => 
+                  theme.palette.mode === 'light' 
+                    ? 'grey.50' 
+                    : 'grey.900',
+                color: (theme) => 
+                  theme.palette.mode === 'light' 
+                    ? 'text.primary' 
+                    : 'common.white',
                 border: "1px solid",
                 borderColor: "divider",
                 maxHeight: "500px",

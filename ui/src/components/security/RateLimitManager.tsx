@@ -363,12 +363,22 @@ spec:
                   <Typography variant="subtitle2" gutterBottom>
                     Deployment Command:
                   </Typography>
-                  <Paper sx={{ p: 2, backgroundColor: "grey.900", borderRadius: 1 }}>
+                  <Paper sx={{ 
+                    p: 2, 
+                    borderRadius: 1,
+                    backgroundColor: (theme) => 
+                      theme.palette.mode === 'light' 
+                        ? 'grey.50' 
+                        : 'grey.900'
+                  }}>
                     <Typography 
                       component="pre" 
                       variant="body2" 
                       sx={{ 
-                        color: "grey.100", 
+                        color: (theme) => 
+                          theme.palette.mode === 'light' 
+                            ? 'text.primary' 
+                            : 'grey.100', 
                         fontFamily: "monospace",
                         margin: 0,
                         whiteSpace: "pre-wrap",
@@ -454,12 +464,22 @@ kubectl apply -f https://raw.githubusercontent.com/envoyproxy/ratelimit/main/exa
                   <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>
                     Gateway Configuration:
                   </Typography>
-                  <Paper sx={{ p: 2, backgroundColor: "grey.900", borderRadius: 1 }}>
+                  <Paper sx={{ 
+                    p: 2, 
+                    borderRadius: 1,
+                    backgroundColor: (theme) => 
+                      theme.palette.mode === 'light' 
+                        ? 'grey.50' 
+                        : 'grey.900'
+                  }}>
                     <Typography 
                       component="pre" 
                       variant="body2" 
                       sx={{ 
-                        color: "grey.100", 
+                        color: (theme) => 
+                          theme.palette.mode === 'light' 
+                            ? 'text.primary' 
+                            : 'grey.100', 
                         fontFamily: "monospace",
                         margin: 0,
                         whiteSpace: "pre-wrap",
@@ -839,16 +859,18 @@ spec:
             <Paper
               sx={{
                 p: 2,
-                backgroundColor: "grey.900",
-                color: "common.white",
+                backgroundColor: (theme) => 
+                  theme.palette.mode === 'light' 
+                    ? 'grey.50' 
+                    : 'grey.900',
+                color: (theme) => 
+                  theme.palette.mode === 'light' 
+                    ? 'text.primary' 
+                    : 'common.white',
                 border: "1px solid",
                 borderColor: "divider",
                 maxHeight: "500px",
                 overflow: "auto",
-                ...(theme => theme.palette.mode === 'light' && {
-                  backgroundColor: 'grey.100',
-                  color: 'text.primary'
-                })
               }}
             >
               <Typography

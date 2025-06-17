@@ -491,8 +491,15 @@ data:
             }
           }}
           InputProps={{
-            style: {
-              backgroundColor: '#f8f9fa',
+            sx: {
+              backgroundColor: (theme) => 
+                theme.palette.mode === 'light' 
+                  ? 'grey.50' 
+                  : 'grey.900',
+              color: (theme) => 
+                theme.palette.mode === 'light' 
+                  ? 'text.primary' 
+                  : 'common.white',
               border: 'none'
             }
           }}
@@ -562,12 +569,22 @@ data:
       >
         <DialogTitle>YAML Preview</DialogTitle>
         <DialogContent>
-          <Paper sx={{ p: 2, backgroundColor: '#f8f9fa' }}>
+          <Paper sx={{ 
+            p: 2, 
+            backgroundColor: (theme) => 
+              theme.palette.mode === 'light' 
+                ? 'grey.50' 
+                : 'grey.900'
+          }}>
             <Typography component="pre" sx={{ 
               fontFamily: 'monospace', 
               fontSize: '0.875rem',
               whiteSpace: 'pre-wrap',
-              margin: 0
+              margin: 0,
+              color: (theme) => 
+                theme.palette.mode === 'light' 
+                  ? 'text.primary' 
+                  : 'common.white'
             }}>
               {lineNumbers ? addLineNumbers(yaml) : yaml}
             </Typography>
