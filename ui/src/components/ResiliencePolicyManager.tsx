@@ -330,6 +330,17 @@ export const ResiliencePolicyManager: React.FC<ResiliencePolicyManagerProps> = (
             setCreatePolicyType('timeout');
             setCreateDialogOpen(true);
           }}
+          sx={{
+            backgroundColor: 'primary.main',
+            color: 'primary.contrastText',
+            '&:hover': {
+              backgroundColor: 'primary.dark',
+            },
+            '&:disabled': {
+              backgroundColor: 'action.disabled',
+              color: 'action.disabled',
+            }
+          }}
         >
           Add Timeout Policy
         </Button>
